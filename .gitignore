@@ -1,0 +1,11 @@
+node_modules
+dist
+.DS_Store
+*.local
+
+# Generated data artefacts. Rebuild with `npm run data` (~9 minutes).
+data/*.csv
+data/*.pdf
+data/store/
+data/model/*.f32
+data/model/*.bin

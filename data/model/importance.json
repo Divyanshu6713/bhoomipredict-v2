@@ -1,0 +1,1398 @@
+{
+ "permutation": [
+  {
+   "feature": "legal_case_count",
+   "group": "Legal disputes",
+   "label": "Open legal cases",
+   "aucDrop": 0.03981
+  },
+  {
+   "feature": "schedule_consumed",
+   "group": "Stage schedule pressure",
+   "label": "Stage time consumed vs allowed",
+   "aucDrop": 0.03888
+  },
+  {
+   "feature": "inactivity_days",
+   "group": "Inactivity",
+   "label": "Days since last recorded action",
+   "aucDrop": 0.03414
+  },
+  {
+   "feature": "document_completeness",
+   "group": "Documentation & verification",
+   "label": "Document completeness %",
+   "aucDrop": 0.0238
+  },
+  {
+   "feature": "ownership_complexity=Single",
+   "group": "Ownership complexity",
+   "label": "Ownership complexity: Single",
+   "aucDrop": 0.01687
+  },
+  {
+   "feature": "compensation_pending_days",
+   "group": "Compensation",
+   "label": "Days compensation pending",
+   "aucDrop": 0.01665
+  },
+  {
+   "feature": "verification_status=Pending",
+   "group": "Documentation & verification",
+   "label": "Verification status: Pending",
+   "aucDrop": 0.00901
+  },
+  {
+   "feature": "approval_status=Submitted",
+   "group": "Documentation & verification",
+   "label": "Approval status: Submitted",
+   "aucDrop": 0.00777
+  },
+  {
+   "feature": "project_priority=Routine",
+   "group": "Parcel & project attributes",
+   "label": "Project priority: Routine",
+   "aucDrop": 0.0072
+  },
+  {
+   "feature": "district_historical_delay_rate",
+   "group": "District performance history",
+   "label": "District historical delay rate",
+   "aucDrop": 0.00694
+  },
+  {
+   "feature": "affected_families",
+   "group": "Affected families",
+   "label": "Affected families",
+   "aucDrop": 0.00682
+  },
+  {
+   "feature": "historical_stage_delay_rate",
+   "group": "Historical stage performance",
+   "label": "Historical slip rate of this stage",
+   "aucDrop": 0.00666
+  },
+  {
+   "feature": "ownership_complexity=Joint",
+   "group": "Ownership complexity",
+   "label": "Ownership complexity: Joint",
+   "aucDrop": 0.00628
+  },
+  {
+   "feature": "authority_historical_delay_rate",
+   "group": "Authority performance history",
+   "label": "Authority historical delay rate",
+   "aucDrop": 0.0057
+  },
+  {
+   "feature": "department_response_days",
+   "group": "Administrative response time",
+   "label": "Departmental response time",
+   "aucDrop": 0.00491
+  },
+  {
+   "feature": "elapsed_stage_days",
+   "group": "Stage schedule pressure",
+   "label": "Days elapsed in current stage",
+   "aucDrop": 0.00404
+  },
+  {
+   "feature": "stakeholder_responsiveness=Low",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: Low",
+   "aucDrop": 0.00376
+  },
+  {
+   "feature": "verification_status=Verified",
+   "group": "Documentation & verification",
+   "label": "Verification status: Verified",
+   "aucDrop": 0.00354
+  },
+  {
+   "feature": "approval_status=Not Submitted",
+   "group": "Documentation & verification",
+   "label": "Approval status: Not Submitted",
+   "aucDrop": 0.00329
+  },
+  {
+   "feature": "compensation_completion_percentage",
+   "group": "Compensation",
+   "label": "Compensation completion %",
+   "aucDrop": 0.00328
+  },
+  {
+   "feature": "approval_status=Under Review",
+   "group": "Documentation & verification",
+   "label": "Approval status: Under Review",
+   "aucDrop": 0.00319
+  },
+  {
+   "feature": "land_type=Residential",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Residential",
+   "aucDrop": 0.00309
+  },
+  {
+   "feature": "stakeholder_responsiveness=High",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: High",
+   "aucDrop": 0.00255
+  },
+  {
+   "feature": "land_type=Irrigated Agricultural",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Irrigated Agricultural",
+   "aucDrop": 0.00247
+  },
+  {
+   "feature": "current_stage=Objection / Claims",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Objection / Claims",
+   "aucDrop": 0.00234
+  },
+  {
+   "feature": "land_type=Orchard/Plantation",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Orchard/Plantation",
+   "aucDrop": 0.00212
+  },
+  {
+   "feature": "compensation_status=Awarded",
+   "group": "Compensation",
+   "label": "Compensation status: Awarded",
+   "aucDrop": 0.00211
+  },
+  {
+   "feature": "rr_progress_percentage",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R progress %",
+   "aucDrop": 0.00194
+  },
+  {
+   "feature": "project_priority=Important",
+   "group": "Parcel & project attributes",
+   "label": "Project priority: Important",
+   "aucDrop": 0.00193
+  },
+  {
+   "feature": "current_stage=Valuation",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Valuation",
+   "aucDrop": 0.00185
+  },
+  {
+   "feature": "ownership_complexity=Fragmented",
+   "group": "Ownership complexity",
+   "label": "Ownership complexity: Fragmented",
+   "aucDrop": 0.00135
+  },
+  {
+   "feature": "number_of_owners",
+   "group": "Ownership complexity",
+   "label": "Number of recorded owners",
+   "aucDrop": 0.00133
+  },
+  {
+   "feature": "land_type=Commercial",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Commercial",
+   "aucDrop": 0.00049
+  },
+  {
+   "feature": "current_stage=Compensation",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Compensation",
+   "aucDrop": 0.00038
+  },
+  {
+   "feature": "land_type=Grazing/Common",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Grazing/Common",
+   "aucDrop": 0.00035
+  },
+  {
+   "feature": "doc_gap_frac",
+   "group": "Documentation & verification",
+   "label": "Documentation still to be verified",
+   "aucDrop": 0.0003
+  },
+  {
+   "feature": "possession_status=Not Initiated",
+   "group": "Possession",
+   "label": "Possession status: Not Initiated",
+   "aucDrop": 0.0003
+  },
+  {
+   "feature": "expected_stage_days",
+   "group": "Stage schedule pressure",
+   "label": "Allowed days for current stage",
+   "aucDrop": 0.00028
+  },
+  {
+   "feature": "latitude",
+   "group": "Geography",
+   "label": "Latitude",
+   "aucDrop": 0.0002
+  },
+  {
+   "feature": "compensation_status=Partially Paid",
+   "group": "Compensation",
+   "label": "Compensation status: Partially Paid",
+   "aucDrop": 9e-05
+  },
+  {
+   "feature": "project_type=Power Transmission",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Power Transmission",
+   "aucDrop": 8e-05
+  },
+  {
+   "feature": "authority=NICDC",
+   "group": "Other",
+   "label": "Authority: NICDC",
+   "aucDrop": 7e-05
+  },
+  {
+   "feature": "land_area_ha",
+   "group": "Parcel & project attributes",
+   "label": "Parcel area (ha)",
+   "aucDrop": 6e-05
+  },
+  {
+   "feature": "possession_status=Notice Issued",
+   "group": "Possession",
+   "label": "Possession status: Notice Issued",
+   "aucDrop": 5e-05
+  },
+  {
+   "feature": "state=Himachal Pradesh",
+   "group": "Geography",
+   "label": "State: Himachal Pradesh",
+   "aucDrop": 4e-05
+  },
+  {
+   "feature": "state=Jharkhand",
+   "group": "Geography",
+   "label": "State: Jharkhand",
+   "aucDrop": 4e-05
+  },
+  {
+   "feature": "current_stage=Rehabilitation & Resettlement",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Rehabilitation & Resettlement",
+   "aucDrop": 4e-05
+  },
+  {
+   "feature": "state=Maharashtra",
+   "group": "Geography",
+   "label": "State: Maharashtra",
+   "aucDrop": 3e-05
+  },
+  {
+   "feature": "state=Punjab",
+   "group": "Geography",
+   "label": "State: Punjab",
+   "aucDrop": 3e-05
+  },
+  {
+   "feature": "state=Rajasthan",
+   "group": "Geography",
+   "label": "State: Rajasthan",
+   "aucDrop": 3e-05
+  },
+  {
+   "feature": "current_stage=Notification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Notification",
+   "aucDrop": 3e-05
+  },
+  {
+   "feature": "rehabilitation_cases",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R cases attached",
+   "aucDrop": 2e-05
+  },
+  {
+   "feature": "dispute_complexity=Moderate",
+   "group": "Legal disputes",
+   "label": "Dispute complexity: Moderate",
+   "aucDrop": 2e-05
+  },
+  {
+   "feature": "longitude",
+   "group": "Geography",
+   "label": "Longitude",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "state=Kerala",
+   "group": "Geography",
+   "label": "State: Kerala",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "state=Madhya Pradesh",
+   "group": "Geography",
+   "label": "State: Madhya Pradesh",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "state=Telangana",
+   "group": "Geography",
+   "label": "State: Telangana",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "state=Tripura",
+   "group": "Geography",
+   "label": "State: Tripura",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "state=Uttar Pradesh",
+   "group": "Geography",
+   "label": "State: Uttar Pradesh",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "project_type=Metro Rail",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Metro Rail",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "authority=Command Area Development Authority",
+   "group": "Other",
+   "label": "Authority: Command Area Development Authority",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "authority=Metro Rail Corporation",
+   "group": "Other",
+   "label": "Authority: Metro Rail Corporation",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "authority=MoRTH \u2014 Regional Office",
+   "group": "Other",
+   "label": "Authority: MoRTH \u2014 Regional Office",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "authority=NHSRCL",
+   "group": "Other",
+   "label": "Authority: NHSRCL",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "authority=POWERGRID",
+   "group": "Other",
+   "label": "Authority: POWERGRID",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "current_stage=Possession",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Possession",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "rr_status=In Progress",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr status: In Progress",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "log_inactivity_days",
+   "group": "Inactivity",
+   "label": "Days since last recorded action",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "log_affected_families",
+   "group": "Affected families",
+   "label": "Affected families",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "log_number_of_owners",
+   "group": "Ownership complexity",
+   "label": "Number of recorded owners",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "log_compensation_pending_days",
+   "group": "Compensation",
+   "label": "Days compensation pending",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "log_land_area_ha",
+   "group": "Parcel & project attributes",
+   "label": "Parcel area (ha)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "legal_dispute",
+   "group": "Legal disputes",
+   "label": "Legal dispute",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "rr_required",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr required",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Assam",
+   "group": "Geography",
+   "label": "State: Assam",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Chhattisgarh",
+   "group": "Geography",
+   "label": "State: Chhattisgarh",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Delhi NCR",
+   "group": "Geography",
+   "label": "State: Delhi NCR",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Goa",
+   "group": "Geography",
+   "label": "State: Goa",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Gujarat",
+   "group": "Geography",
+   "label": "State: Gujarat",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Uttarakhand",
+   "group": "Geography",
+   "label": "State: Uttarakhand",
+   "aucDrop": -0.0
+  },
+  {
+   "feature": "state=West Bengal",
+   "group": "Geography",
+   "label": "State: West Bengal",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=DFCCIL",
+   "group": "Other",
+   "label": "Authority: DFCCIL",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=State Civil Aviation Department",
+   "group": "Other",
+   "label": "Authority: State Civil Aviation Department",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=State Road Development Corporation",
+   "group": "Other",
+   "label": "Authority: State Road Development Corporation",
+   "aucDrop": -0.0
+  },
+  {
+   "feature": "authority=State Transmission Utility",
+   "group": "Other",
+   "label": "Authority: State Transmission Utility",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=State Water Resources Department",
+   "group": "Other",
+   "label": "Authority: State Water Resources Department",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "current_stage=Land Identification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Land Identification",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "compensation_status=Paid",
+   "group": "Compensation",
+   "label": "Compensation status: Paid",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "dispute_complexity=High",
+   "group": "Legal disputes",
+   "label": "Dispute complexity: High",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "stakeholder_responsiveness=Moderate",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: Moderate",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "rr_status=Not Applicable",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr status: Not Applicable",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "comp_pending_frac",
+   "group": "Compensation",
+   "label": "Share of compensation still unpaid",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "state=Karnataka",
+   "group": "Geography",
+   "label": "State: Karnataka",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "state=Odisha",
+   "group": "Geography",
+   "label": "State: Odisha",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "state=Tamil Nadu",
+   "group": "Geography",
+   "label": "State: Tamil Nadu",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "project_type=Expressway",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Expressway",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "project_type=Industrial Corridor",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Industrial Corridor",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "project_type=Irrigation",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Irrigation",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "authority=NHAI",
+   "group": "Other",
+   "label": "Authority: NHAI",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "dispute_complexity=Low",
+   "group": "Legal disputes",
+   "label": "Dispute complexity: Low",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "authority=State Industrial Development Corporation",
+   "group": "Other",
+   "label": "Authority: State Industrial Development Corporation",
+   "aucDrop": -2e-05
+  },
+  {
+   "feature": "authority=State PWD (NH Wing)",
+   "group": "Other",
+   "label": "Authority: State PWD (NH Wing)",
+   "aucDrop": -2e-05
+  },
+  {
+   "feature": "current_stage=Survey & Verification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Survey & Verification",
+   "aucDrop": -2e-05
+  },
+  {
+   "feature": "authority=Urban Development Authority",
+   "group": "Other",
+   "label": "Authority: Urban Development Authority",
+   "aucDrop": -3e-05
+  },
+  {
+   "feature": "land_type=Dry Agricultural",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Dry Agricultural",
+   "aucDrop": -3e-05
+  },
+  {
+   "feature": "rr_status=Not Started",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr status: Not Started",
+   "aucDrop": -3e-05
+  },
+  {
+   "feature": "state=Meghalaya",
+   "group": "Geography",
+   "label": "State: Meghalaya",
+   "aucDrop": -4e-05
+  },
+  {
+   "feature": "project_type=Railway Corridor",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Railway Corridor",
+   "aucDrop": -4e-05
+  },
+  {
+   "feature": "project_type=National Highway",
+   "group": "Parcel & project attributes",
+   "label": "Project type: National Highway",
+   "aucDrop": -5e-05
+  },
+  {
+   "feature": "state=Haryana",
+   "group": "Geography",
+   "label": "State: Haryana",
+   "aucDrop": -6e-05
+  },
+  {
+   "feature": "project_land_requirement_ha",
+   "group": "Parcel & project attributes",
+   "label": "Project land requirement (ha)",
+   "aucDrop": -7e-05
+  },
+  {
+   "feature": "possession_status=Partial",
+   "group": "Possession",
+   "label": "Possession status: Partial",
+   "aucDrop": -9e-05
+  },
+  {
+   "feature": "compensation_status=Not Initiated",
+   "group": "Compensation",
+   "label": "Compensation status: Not Initiated",
+   "aucDrop": -0.00018
+  },
+  {
+   "feature": "state=Bihar",
+   "group": "Geography",
+   "label": "State: Bihar",
+   "aucDrop": -0.00024
+  },
+  {
+   "feature": "rr_pending_frac",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R entitlement still pending",
+   "aucDrop": -0.00038
+  }
+ ],
+ "shap": [
+  {
+   "feature": "inactivity_days",
+   "group": "Inactivity",
+   "label": "Days since last recorded action",
+   "meanAbsShap": 0.405004
+  },
+  {
+   "feature": "legal_case_count",
+   "group": "Legal disputes",
+   "label": "Open legal cases",
+   "meanAbsShap": 0.387538
+  },
+  {
+   "feature": "schedule_consumed",
+   "group": "Stage schedule pressure",
+   "label": "Stage time consumed vs allowed",
+   "meanAbsShap": 0.380905
+  },
+  {
+   "feature": "document_completeness",
+   "group": "Documentation & verification",
+   "label": "Document completeness %",
+   "meanAbsShap": 0.337537
+  },
+  {
+   "feature": "compensation_pending_days",
+   "group": "Compensation",
+   "label": "Days compensation pending",
+   "meanAbsShap": 0.262451
+  },
+  {
+   "feature": "ownership_complexity=Single",
+   "group": "Ownership complexity",
+   "label": "Ownership complexity: Single",
+   "meanAbsShap": 0.25035
+  },
+  {
+   "feature": "project_priority=Routine",
+   "group": "Parcel & project attributes",
+   "label": "Project priority: Routine",
+   "meanAbsShap": 0.207345
+  },
+  {
+   "feature": "verification_status=Pending",
+   "group": "Documentation & verification",
+   "label": "Verification status: Pending",
+   "meanAbsShap": 0.182977
+  },
+  {
+   "feature": "historical_stage_delay_rate",
+   "group": "Historical stage performance",
+   "label": "Historical slip rate of this stage",
+   "meanAbsShap": 0.178078
+  },
+  {
+   "feature": "affected_families",
+   "group": "Affected families",
+   "label": "Affected families",
+   "meanAbsShap": 0.170794
+  },
+  {
+   "feature": "district_historical_delay_rate",
+   "group": "District performance history",
+   "label": "District historical delay rate",
+   "meanAbsShap": 0.170675
+  },
+  {
+   "feature": "stakeholder_responsiveness=Low",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: Low",
+   "meanAbsShap": 0.149812
+  },
+  {
+   "feature": "authority_historical_delay_rate",
+   "group": "Authority performance history",
+   "label": "Authority historical delay rate",
+   "meanAbsShap": 0.14353
+  },
+  {
+   "feature": "approval_status=Submitted",
+   "group": "Documentation & verification",
+   "label": "Approval status: Submitted",
+   "meanAbsShap": 0.140651
+  },
+  {
+   "feature": "stakeholder_responsiveness=High",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: High",
+   "meanAbsShap": 0.127
+  },
+  {
+   "feature": "ownership_complexity=Joint",
+   "group": "Ownership complexity",
+   "label": "Ownership complexity: Joint",
+   "meanAbsShap": 0.122482
+  },
+  {
+   "feature": "department_response_days",
+   "group": "Administrative response time",
+   "label": "Departmental response time",
+   "meanAbsShap": 0.111993
+  },
+  {
+   "feature": "elapsed_stage_days",
+   "group": "Stage schedule pressure",
+   "label": "Days elapsed in current stage",
+   "meanAbsShap": 0.110238
+  },
+  {
+   "feature": "approval_status=Not Submitted",
+   "group": "Documentation & verification",
+   "label": "Approval status: Not Submitted",
+   "meanAbsShap": 0.101681
+  },
+  {
+   "feature": "verification_status=Verified",
+   "group": "Documentation & verification",
+   "label": "Verification status: Verified",
+   "meanAbsShap": 0.101267
+  },
+  {
+   "feature": "number_of_owners",
+   "group": "Ownership complexity",
+   "label": "Number of recorded owners",
+   "meanAbsShap": 0.100714
+  },
+  {
+   "feature": "land_type=Residential",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Residential",
+   "meanAbsShap": 0.100334
+  },
+  {
+   "feature": "rr_progress_percentage",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R progress %",
+   "meanAbsShap": 0.083875
+  },
+  {
+   "feature": "rr_pending_frac",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R entitlement still pending",
+   "meanAbsShap": 0.07268
+  },
+  {
+   "feature": "current_stage=Valuation",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Valuation",
+   "meanAbsShap": 0.064555
+  },
+  {
+   "feature": "project_priority=Important",
+   "group": "Parcel & project attributes",
+   "label": "Project priority: Important",
+   "meanAbsShap": 0.063016
+  },
+  {
+   "feature": "land_type=Irrigated Agricultural",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Irrigated Agricultural",
+   "meanAbsShap": 0.062213
+  },
+  {
+   "feature": "current_stage=Objection / Claims",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Objection / Claims",
+   "meanAbsShap": 0.060547
+  },
+  {
+   "feature": "ownership_complexity=Fragmented",
+   "group": "Ownership complexity",
+   "label": "Ownership complexity: Fragmented",
+   "meanAbsShap": 0.058717
+  },
+  {
+   "feature": "compensation_status=Awarded",
+   "group": "Compensation",
+   "label": "Compensation status: Awarded",
+   "meanAbsShap": 0.057919
+  },
+  {
+   "feature": "compensation_completion_percentage",
+   "group": "Compensation",
+   "label": "Compensation completion %",
+   "meanAbsShap": 0.053784
+  },
+  {
+   "feature": "approval_status=Under Review",
+   "group": "Documentation & verification",
+   "label": "Approval status: Under Review",
+   "meanAbsShap": 0.047976
+  },
+  {
+   "feature": "land_type=Orchard/Plantation",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Orchard/Plantation",
+   "meanAbsShap": 0.041901
+  },
+  {
+   "feature": "land_type=Commercial",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Commercial",
+   "meanAbsShap": 0.035382
+  },
+  {
+   "feature": "land_type=Dry Agricultural",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Dry Agricultural",
+   "meanAbsShap": 0.034648
+  },
+  {
+   "feature": "doc_gap_frac",
+   "group": "Documentation & verification",
+   "label": "Documentation still to be verified",
+   "meanAbsShap": 0.0328
+  },
+  {
+   "feature": "expected_stage_days",
+   "group": "Stage schedule pressure",
+   "label": "Allowed days for current stage",
+   "meanAbsShap": 0.025427
+  },
+  {
+   "feature": "land_type=Grazing/Common",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Grazing/Common",
+   "meanAbsShap": 0.023979
+  },
+  {
+   "feature": "project_land_requirement_ha",
+   "group": "Parcel & project attributes",
+   "label": "Project land requirement (ha)",
+   "meanAbsShap": 0.01404
+  },
+  {
+   "feature": "land_area_ha",
+   "group": "Parcel & project attributes",
+   "label": "Parcel area (ha)",
+   "meanAbsShap": 0.012156
+  },
+  {
+   "feature": "latitude",
+   "group": "Geography",
+   "label": "Latitude",
+   "meanAbsShap": 0.011601
+  },
+  {
+   "feature": "possession_status=Notice Issued",
+   "group": "Possession",
+   "label": "Possession status: Notice Issued",
+   "meanAbsShap": 0.011238
+  },
+  {
+   "feature": "possession_status=Not Initiated",
+   "group": "Possession",
+   "label": "Possession status: Not Initiated",
+   "meanAbsShap": 0.010565
+  },
+  {
+   "feature": "rehabilitation_cases",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R cases attached",
+   "meanAbsShap": 0.010434
+  },
+  {
+   "feature": "longitude",
+   "group": "Geography",
+   "label": "Longitude",
+   "meanAbsShap": 0.009672
+  },
+  {
+   "feature": "current_stage=Compensation",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Compensation",
+   "meanAbsShap": 0.009359
+  },
+  {
+   "feature": "comp_pending_frac",
+   "group": "Compensation",
+   "label": "Share of compensation still unpaid",
+   "meanAbsShap": 0.004922
+  },
+  {
+   "feature": "dispute_complexity=Low",
+   "group": "Legal disputes",
+   "label": "Dispute complexity: Low",
+   "meanAbsShap": 0.004473
+  },
+  {
+   "feature": "compensation_status=Not Initiated",
+   "group": "Compensation",
+   "label": "Compensation status: Not Initiated",
+   "meanAbsShap": 0.003978
+  },
+  {
+   "feature": "compensation_status=Partially Paid",
+   "group": "Compensation",
+   "label": "Compensation status: Partially Paid",
+   "meanAbsShap": 0.002052
+  },
+  {
+   "feature": "state=Bihar",
+   "group": "Geography",
+   "label": "State: Bihar",
+   "meanAbsShap": 0.002035
+  },
+  {
+   "feature": "authority=State PWD (NH Wing)",
+   "group": "Other",
+   "label": "Authority: State PWD (NH Wing)",
+   "meanAbsShap": 0.001794
+  },
+  {
+   "feature": "current_stage=Notification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Notification",
+   "meanAbsShap": 0.00174
+  },
+  {
+   "feature": "possession_status=Partial",
+   "group": "Possession",
+   "label": "Possession status: Partial",
+   "meanAbsShap": 0.001655
+  },
+  {
+   "feature": "project_type=Power Transmission",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Power Transmission",
+   "meanAbsShap": 0.001574
+  },
+  {
+   "feature": "project_type=Railway Corridor",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Railway Corridor",
+   "meanAbsShap": 0.001466
+  },
+  {
+   "feature": "state=Haryana",
+   "group": "Geography",
+   "label": "State: Haryana",
+   "meanAbsShap": 0.001252
+  },
+  {
+   "feature": "current_stage=Possession",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Possession",
+   "meanAbsShap": 0.000914
+  },
+  {
+   "feature": "current_stage=Rehabilitation & Resettlement",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Rehabilitation & Resettlement",
+   "meanAbsShap": 0.000894
+  },
+  {
+   "feature": "rr_status=Not Started",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr status: Not Started",
+   "meanAbsShap": 0.000893
+  },
+  {
+   "feature": "authority=NHSRCL",
+   "group": "Other",
+   "label": "Authority: NHSRCL",
+   "meanAbsShap": 0.000855
+  },
+  {
+   "feature": "project_type=National Highway",
+   "group": "Parcel & project attributes",
+   "label": "Project type: National Highway",
+   "meanAbsShap": 0.000833
+  },
+  {
+   "feature": "state=Telangana",
+   "group": "Geography",
+   "label": "State: Telangana",
+   "meanAbsShap": 0.000826
+  },
+  {
+   "feature": "state=Punjab",
+   "group": "Geography",
+   "label": "State: Punjab",
+   "meanAbsShap": 0.000819
+  },
+  {
+   "feature": "state=Karnataka",
+   "group": "Geography",
+   "label": "State: Karnataka",
+   "meanAbsShap": 0.000752
+  },
+  {
+   "feature": "authority=Urban Development Authority",
+   "group": "Other",
+   "label": "Authority: Urban Development Authority",
+   "meanAbsShap": 0.000745
+  },
+  {
+   "feature": "stakeholder_responsiveness=Moderate",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: Moderate",
+   "meanAbsShap": 0.000722
+  },
+  {
+   "feature": "current_stage=Survey & Verification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Survey & Verification",
+   "meanAbsShap": 0.000689
+  },
+  {
+   "feature": "authority=NICDC",
+   "group": "Other",
+   "label": "Authority: NICDC",
+   "meanAbsShap": 0.00061
+  },
+  {
+   "feature": "authority=Command Area Development Authority",
+   "group": "Other",
+   "label": "Authority: Command Area Development Authority",
+   "meanAbsShap": 0.000572
+  },
+  {
+   "feature": "state=Goa",
+   "group": "Geography",
+   "label": "State: Goa",
+   "meanAbsShap": 0.000433
+  },
+  {
+   "feature": "state=Rajasthan",
+   "group": "Geography",
+   "label": "State: Rajasthan",
+   "meanAbsShap": 0.000408
+  },
+  {
+   "feature": "project_type=Metro Rail",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Metro Rail",
+   "meanAbsShap": 0.000379
+  },
+  {
+   "feature": "project_type=Irrigation",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Irrigation",
+   "meanAbsShap": 0.000377
+  },
+  {
+   "feature": "project_type=Industrial Corridor",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Industrial Corridor",
+   "meanAbsShap": 0.000362
+  },
+  {
+   "feature": "state=Meghalaya",
+   "group": "Geography",
+   "label": "State: Meghalaya",
+   "meanAbsShap": 0.000361
+  },
+  {
+   "feature": "authority=POWERGRID",
+   "group": "Other",
+   "label": "Authority: POWERGRID",
+   "meanAbsShap": 0.00036
+  },
+  {
+   "feature": "authority=State Road Development Corporation",
+   "group": "Other",
+   "label": "Authority: State Road Development Corporation",
+   "meanAbsShap": 0.000352
+  },
+  {
+   "feature": "state=Uttar Pradesh",
+   "group": "Geography",
+   "label": "State: Uttar Pradesh",
+   "meanAbsShap": 0.000337
+  },
+  {
+   "feature": "authority=MoRTH \u2014 Regional Office",
+   "group": "Other",
+   "label": "Authority: MoRTH \u2014 Regional Office",
+   "meanAbsShap": 0.000335
+  },
+  {
+   "feature": "state=Himachal Pradesh",
+   "group": "Geography",
+   "label": "State: Himachal Pradesh",
+   "meanAbsShap": 0.000316
+  },
+  {
+   "feature": "state=Kerala",
+   "group": "Geography",
+   "label": "State: Kerala",
+   "meanAbsShap": 0.000281
+  },
+  {
+   "feature": "dispute_complexity=Moderate",
+   "group": "Legal disputes",
+   "label": "Dispute complexity: Moderate",
+   "meanAbsShap": 0.000258
+  },
+  {
+   "feature": "project_type=Expressway",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Expressway",
+   "meanAbsShap": 0.000205
+  },
+  {
+   "feature": "state=West Bengal",
+   "group": "Geography",
+   "label": "State: West Bengal",
+   "meanAbsShap": 0.000197
+  },
+  {
+   "feature": "state=Delhi NCR",
+   "group": "Geography",
+   "label": "State: Delhi NCR",
+   "meanAbsShap": 0.000168
+  },
+  {
+   "feature": "authority=State Industrial Development Corporation",
+   "group": "Other",
+   "label": "Authority: State Industrial Development Corporation",
+   "meanAbsShap": 0.000164
+  },
+  {
+   "feature": "state=Maharashtra",
+   "group": "Geography",
+   "label": "State: Maharashtra",
+   "meanAbsShap": 0.000161
+  },
+  {
+   "feature": "authority=DFCCIL",
+   "group": "Other",
+   "label": "Authority: DFCCIL",
+   "meanAbsShap": 0.000151
+  },
+  {
+   "feature": "state=Jharkhand",
+   "group": "Geography",
+   "label": "State: Jharkhand",
+   "meanAbsShap": 0.000146
+  },
+  {
+   "feature": "state=Uttarakhand",
+   "group": "Geography",
+   "label": "State: Uttarakhand",
+   "meanAbsShap": 0.000144
+  },
+  {
+   "feature": "state=Tripura",
+   "group": "Geography",
+   "label": "State: Tripura",
+   "meanAbsShap": 0.000139
+  },
+  {
+   "feature": "authority=NHAI",
+   "group": "Other",
+   "label": "Authority: NHAI",
+   "meanAbsShap": 0.000134
+  },
+  {
+   "feature": "state=Tamil Nadu",
+   "group": "Geography",
+   "label": "State: Tamil Nadu",
+   "meanAbsShap": 0.00013
+  },
+  {
+   "feature": "state=Odisha",
+   "group": "Geography",
+   "label": "State: Odisha",
+   "meanAbsShap": 0.000129
+  },
+  {
+   "feature": "state=Madhya Pradesh",
+   "group": "Geography",
+   "label": "State: Madhya Pradesh",
+   "meanAbsShap": 9.4e-05
+  },
+  {
+   "feature": "rr_status=In Progress",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr status: In Progress",
+   "meanAbsShap": 7.5e-05
+  },
+  {
+   "feature": "authority=Metro Rail Corporation",
+   "group": "Other",
+   "label": "Authority: Metro Rail Corporation",
+   "meanAbsShap": 6.6e-05
+  },
+  {
+   "feature": "state=Assam",
+   "group": "Geography",
+   "label": "State: Assam",
+   "meanAbsShap": 5.5e-05
+  },
+  {
+   "feature": "log_inactivity_days",
+   "group": "Inactivity",
+   "label": "Days since last recorded action",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "log_affected_families",
+   "group": "Affected families",
+   "label": "Affected families",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "log_number_of_owners",
+   "group": "Ownership complexity",
+   "label": "Number of recorded owners",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "log_compensation_pending_days",
+   "group": "Compensation",
+   "label": "Days compensation pending",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "log_land_area_ha",
+   "group": "Parcel & project attributes",
+   "label": "Parcel area (ha)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "legal_dispute",
+   "group": "Legal disputes",
+   "label": "Legal dispute",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "rr_required",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr required",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "state=Chhattisgarh",
+   "group": "Geography",
+   "label": "State: Chhattisgarh",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "state=Gujarat",
+   "group": "Geography",
+   "label": "State: Gujarat",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=State Civil Aviation Department",
+   "group": "Other",
+   "label": "Authority: State Civil Aviation Department",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=State Transmission Utility",
+   "group": "Other",
+   "label": "Authority: State Transmission Utility",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=State Water Resources Department",
+   "group": "Other",
+   "label": "Authority: State Water Resources Department",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "current_stage=Land Identification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Land Identification",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "compensation_status=Paid",
+   "group": "Compensation",
+   "label": "Compensation status: Paid",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "dispute_complexity=High",
+   "group": "Legal disputes",
+   "label": "Dispute complexity: High",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "rr_status=Not Applicable",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr status: Not Applicable",
+   "meanAbsShap": 0.0
+  }
+ ]
+}

@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --c-bg: 244 246 250;
+    --c-surface: 255 255 255;
+    --c-surface-2: 248 250 252;
+    --c-surface-3: 241 245 249;
+    --c-line: 226 232 240;
+    --c-line-strong: 203 213 225;
+    --c-ink: 10 20 40;
+    --c-ink-2: 71 85 105;
+    --c-ink-3: 130 143 163;
+    --c-brand: 29 78 216;
+    --c-brand-soft: 219 234 254;
+    --c-brand-ink: 30 58 138;
+  }
+
+  .dark {
+    --c-bg: 5 10 22;
+    --c-surface: 11 23 48;
+    --c-surface-2: 15 30 61;
+    --c-surface-3: 20 41 79;
+    --c-line: 25 50 96;
+    --c-line-strong: 34 68 127;
+    --c-ink: 232 240 254;
+    --c-ink-2: 160 178 208;
+    --c-ink-3: 120 140 174;
+    --c-brand: 96 150 255;
+    --c-brand-soft: 16 38 82;
+    --c-brand-ink: 186 214 255;
+  }
+
+  * { border-color: rgb(var(--c-line)); }
+
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'ss01';
+  }
+
+  ::selection { background: rgb(var(--c-brand) / 0.18); }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--c-line-strong));
+    border-radius: 99px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-ink-3)); background-clip: content-box; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+    }
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface border border-line rounded-2xl shadow-card;
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-card-hover hover:border-line-strong hover:-translate-y-0.5;
+  }
+  .label-xs {
+    @apply text-[11px] font-semibold uppercase tracking-[0.09em] text-ink-3;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg;
+  }
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .glass {
+    background: rgba(9, 19, 40, 0.55);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { scrollbar-width: none; }
+}
+
+.recharts-surface:focus { outline: none; }
+.recharts-cartesian-axis-tick text { font-size: 11px; }

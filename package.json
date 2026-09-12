@@ -1,0 +1,43 @@
+{
+  "name": "bhoomipredict",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite",
+    "dev:api": "node server/index.mjs",
+    "build": "tsc -b && vite build",
+    "start": "node server/index.mjs",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "data": "npm run data:generate && npm run data:train && npm run data:store && npm run data:pdf",
+    "data:generate": "node scripts/generate-dataset.mjs",
+    "data:train": "python ml/train.py",
+    "data:store": "node scripts/build-store.mjs",
+    "data:pdf": "node scripts/make-pdf.mjs",
+    "data:pdf:full": "node --max-old-space-size=4096 scripts/make-pdf.mjs --full",
+    "data:verify": "node scripts/verify-data.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.451.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}
