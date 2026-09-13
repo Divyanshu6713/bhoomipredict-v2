@@ -32,6 +32,7 @@ import { OUTCOME_CLASS, RISK_HEX } from '@/lib/risk';
 import { formatDate, formatNumber } from '@/lib/format';
 import { useApi } from '@/hooks';
 import { fetchCase } from '@/api/client';
+import { ParcelSources } from '@/components/integration/ParcelSources';
 
 export default function CaseDetail() {
   const { id = '' } = useParams();
@@ -323,6 +324,8 @@ export default function CaseDetail() {
           </div>
         </Card>
       </section>
+
+      <ParcelSources caseId={c.caseId} />
 
       <Card className="animate-fade-up">
         <CardHeader

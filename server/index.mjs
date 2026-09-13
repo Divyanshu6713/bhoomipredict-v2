@@ -1,5 +1,5 @@
 /**
- * BhoomiPredict API.
+ * LandPulse AI API.
  *
  * A dependency-free Node HTTP service over the columnar case store and the
  * runtime workflow state. Filtering, sorting, paging and aggregation happen
@@ -41,6 +41,7 @@ import {
   advanceStage,
   deletedProjects,
   touchProjects,
+  projectRecord,
   ServiceError,
 } from './lib/projects.mjs';
 import { listInterventions, updateIntervention, listAlerts, updateAlert, notificationCount, allInterventions, INTERVENTION_STATUSES, ALERT_STATUSES } from './lib/workflow.mjs';
@@ -50,9 +51,14 @@ import { uploadDocument, addVersion, reviewDocument, listDocuments, documentFile
 import { processUpload, csvTemplate } from './lib/upload.mjs';
 import { startRetrain, jobStatus, pythonAvailable } from './lib/jobs.mjs';
 import { runConsistencyChecks } from './lib/consistency.mjs';
-import { USERS, ROLES, userById, can, inScope, describeUser, CATEGORIES } from './domain/roles.mjs';
+import { USERS, ROLES, userById, can, inScope, describeUser, CATEGORIES, configuredUser, isUnrestricted, rolesForTier } from './domain/roles.mjs';
+import { hierarchyConfig, levelOptions, organisationById, resolvePosition, templateLevels, projectInPosition, SECTORS } from './domain/hierarchy.mjs';
+import { STATES_AND_UTS } from './domain/india.mjs';
+import { projectIssueProfile, typeIssueMatrix, issueCatalogue } from './domain/issues.mjs';
+import { configureIntegrations, integrationStatus, parcelDataView, projectDataView } from './integration/index.mjs';
+import { portfolioDrilldown, positionPortfolio } from './lib/portfolio.mjs';
 import { evaluateCase, RULE_THRESHOLDS } from './domain/rules.mjs';
-import { FRAMEWORKS, PROJECT_TYPES, PROFILED_STATES, REGISTRY_NOTE, DEPENDENCY_META, authorityOptions } from './domain/registry.mjs';
+import { FRAMEWORKS, PROJECT_TYPES, PROFILED_STATES, REGISTRY_NOTE, DEPENDENCY_META, authorityOptions, dependencyMatrix } from './domain/registry.mjs';
 import { GEO_DIR, districtIndex } from './domain/geography.mjs';
 import { LIFECYCLE_RULES } from './domain/lifecycle.mjs';
 
@@ -69,6 +75,21 @@ console.log(
   `[api] store loaded: ${store.rows.toLocaleString('en-IN')} cases · ${(store.bytes / 1048576).toFixed(1)} MB · ` +
     `${store.projects.length} projects · ${store.loadMs}ms`,
 );
+
+/** Case lookup shared by the case endpoints and the integration layer. */
+function caseRowOf(caseId) {
+  const mm = /^LAC-(\d+)$/i.exec(caseId ?? '');
+  const row = mm ? Number(mm[1]) - 500000 : -1;
+  return row >= 0 && row < store.rows ? row : -1;
+}
+
+configureIntegrations({
+  caseRecord: (caseId) => {
+    const row = caseRowOf(caseId);
+    return row < 0 ? null : caseAt(store, row);
+  },
+  project: (id) => getProject(id),
+});
 
 function reloadStore() {
   store = loadStore();
@@ -132,6 +153,13 @@ function sessionUser(req, url) {
   if (!token) return null;
   const session = getState().sessions[token];
   if (!session) return null;
+  if (session.configured) {
+    try {
+      return configuredUser(session.configured);
+    } catch {
+      return null;
+    }
+  }
   return userById(session.userId);
 }
 
@@ -154,7 +182,7 @@ function projectInScopeOr404(user, id) {
 
 /** Corpus project ids visible to the user, as a filter for case-level queries. */
 function scopeFilter(user, p) {
-  if (ROLES[user.role].scope === 'national') return p;
+  if (isUnrestricted(user)) return p;
   const ids = scopedProjects(user).filter((x) => x.source === 'corpus').map((x) => x.id);
   const requested = p.projectId ? p.projectId.split(',') : null;
   const allowed = requested ? requested.filter((id) => ids.includes(id)) : ids;
@@ -183,6 +211,7 @@ function projectList(user, p) {
   const districts = p.district ? p.district.split(',') : null;
   const statuses = p.status ? p.status.split(',') : null;
   const sources = p.source ? p.source.split(',') : null;
+  const sector = p.sector && p.sector !== 'all' ? SECTORS.find((s) => s.id === p.sector) : null;
   const q = p.q ? p.q.trim().toLowerCase() : null;
 
   let rows = scopedProjects(user).filter((pr) => {
@@ -195,6 +224,7 @@ function projectList(user, p) {
     if (districts && !pr.districts.some((d) => districts.includes(d))) return false;
     if (statuses && !statuses.includes(pr.lifecycle.currentStatus)) return false;
     if (sources && !sources.includes(pr.source)) return false;
+    if (sector && !sector.projectTypes.includes(pr.type)) return false;
     if (p.flag === 'delayed' && !pr.lifecycle.isDelayed) return false;
     if (p.flag === 'blocked' && !pr.lifecycle.isBlocked) return false;
     if (p.flag === 'action' && !pr.recommendations.some((r) => r.intervention && ['High', 'Critical'].includes(r.severity))) return false;
@@ -294,6 +324,13 @@ function projectDetail(user, p) {
     documents: docs,
     activity,
     scenarioSeed: scenarioSeedForProject(p),
+    issues: projectIssueProfile(p, projectRecord(p)),
+    provenance: {
+      record: p.source === 'corpus' ? 'synthetic' : 'user',
+      risk: 'model',
+      riskBasis: p.riskBasis,
+      note: p.source === 'corpus' ? 'Synthetic demonstration project; not an official acquisition record.' : 'Entered by a user of this prototype; scored by the model.',
+    },
     permissions: {
       edit: can(user, 'project.edit'),
       delete: can(user, 'project.delete'),
@@ -313,6 +350,7 @@ function facets(user) {
   return {
     states: uniq((p) => p.state),
     projectTypes: Object.keys(PROJECT_TYPES),
+    sectors: SECTORS.map((s) => ({ id: s.id, label: s.label, projectTypes: s.projectTypes })),
     subtypes: Object.fromEntries(Object.entries(PROJECT_TYPES).map(([k, v]) => [k, v.subtypes])),
     authorities: uniq((p) => p.authority),
     priorities: ['Routine', 'Important', 'Critical'],
@@ -340,6 +378,11 @@ function registryOverview() {
     projectTypes: Object.entries(PROJECT_TYPES).map(([name, t]) => ({ name, subtypes: t.subtypes, linear: t.linear, central: t.central })),
     dependencies: DEPENDENCY_META,
     profiledStates: PROFILED_STATES,
+    statesAndUts: STATES_AND_UTS.map((s) => ({ name: s.name, code: s.code, type: s.type, profiled: PROFILED_STATES.includes(s.name) })),
+    dependencyMatrix: dependencyMatrix(),
+    issueMatrix: typeIssueMatrix(),
+    issues: issueCatalogue(),
+    sectors: SECTORS,
     lifecycleRules: LIFECYCLE_RULES,
     ruleThresholds: RULE_THRESHOLDS,
   };
@@ -359,7 +402,7 @@ function exportCases(res, p) {
   ];
   res.writeHead(200, {
     'Content-Type': 'text/csv; charset=utf-8',
-    'Content-Disposition': `attachment; filename="bhoomipredict-cases-${store.today}.csv"`,
+    'Content-Disposition': `attachment; filename="landpulse-cases-${store.today}.csv"`,
     'Cache-Control': 'no-store',
     'X-Total-Matched': String(total),
     'X-Rows-Exported': String(rows.length),
@@ -391,7 +434,7 @@ function exportProjects(res, user, p) {
   const q = (v) => (v === null || v === undefined ? '' : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
   res.writeHead(200, {
     'Content-Type': 'text/csv; charset=utf-8',
-    'Content-Disposition': `attachment; filename="bhoomipredict-projects-${store.today}.csv"`,
+    'Content-Disposition': `attachment; filename="landpulse-projects-${store.today}.csv"`,
     'Cache-Control': 'no-store',
   });
   res.write(`${[...cols, 'districts', 'supporting_departments'].join(',')}\n`);
@@ -478,6 +521,7 @@ async function handle(req, res, url) {
   if (at('GET', '/api/health')) {
     return json(res, {
       ok: true,
+      product: 'LandPulse AI',
       rows: store.rows,
       projects: effectiveProjects().list.length,
       today: store.today,
@@ -488,14 +532,61 @@ async function handle(req, res, url) {
     });
   }
   if (at('GET', '/api/auth/users')) {
-    return json(res, { note: 'Demonstration profiles. A production deployment authenticates through government SSO and maps directory attributes onto these roles.', users: USERS.map(describeUser) });
+    return json(res, { note: 'Demonstration profiles. A production deployment authenticates through government SSO and maps directory attributes onto these roles and positions.', users: USERS.map((u) => describeUser(userById(u.id))) });
+  }
+  if (at('GET', '/api/hierarchy')) return json(res, hierarchyConfig());
+  if (at('GET', '/api/hierarchy/options')) {
+    const org = organisationById(p.orgId ?? '');
+    if (!org) throw new ServiceError('Unknown organisation', 404);
+    const selection = { region: p.region || undefined, state: org.state ?? (p.state || undefined), division: p.division || undefined, district: p.district || undefined };
+    const levels = templateLevels(org, selection);
+    let position = null;
+    try {
+      position = resolvePosition({ orgId: org.id, units: selection });
+    } catch (err) {
+      throw new ServiceError(err.message, 422);
+    }
+    // Each option carries how many demo projects it would contain, so an empty scope is visible before it is chosen.
+    const projects = effectiveProjects().list;
+    const countFor = (units) => {
+      try {
+        const pos = resolvePosition({ orgId: org.id, units });
+        return projects.filter((pr) => projectInPosition(pos, pr)).length;
+      } catch {
+        return 0;
+      }
+    };
+    const below = { region: ['state', 'division', 'district'], state: ['division', 'district'], division: ['district'], district: [] };
+    const optionsFor = (lv) => {
+      const base = Object.fromEntries(Object.entries(selection).filter(([k, v]) => v && !below[lv].includes(k) && k !== lv));
+      return levelOptions(org.id, lv, selection).map((o) => ({ ...o, projects: countFor({ ...base, [lv]: o.id }) }));
+    };
+    return json(res, {
+      organisation: position.organisation,
+      levels,
+      options: Object.fromEntries(['region', 'state', 'division', 'district'].filter((lv) => levels.includes(lv)).map((lv) => [lv, optionsFor(lv)])),
+      projectsInPosition: countFor(selection),
+      position,
+      roles: rolesForTier(position.tier),
+    });
   }
   if (at('POST', '/api/auth/login')) {
     const body = await readBody(req);
-    const user = userById(body.userId);
+    let user;
+    let configured = null;
+    if (body.position) {
+      try {
+        user = configuredUser({ role: body.role, position: body.position });
+      } catch (err) {
+        throw new ServiceError(err.message, 422);
+      }
+      configured = { role: user.role, position: user.position };
+    } else {
+      user = userById(body.userId);
+    }
     if (!user) throw new ServiceError('Unknown profile', 404);
     const token = crypto.randomBytes(24).toString('hex');
-    getState().sessions[token] = { userId: user.id, createdAt: new Date().toISOString() };
+    getState().sessions[token] = { userId: user.id, ...(configured ? { configured } : {}), createdAt: new Date().toISOString() };
     saveState();
     recordAudit({ user, action: 'session.signed_in', entity: 'user', entityId: user.id });
     return json(res, { token, user: describeUser(user) });
@@ -533,6 +624,11 @@ async function handle(req, res, url) {
         .slice(0, 25)
         .map((pr) => ({ id: pr.id, name: pr.name, state: pr.state, district: pr.district, riskScore: pr.riskScore, riskBand: pr.riskBand, stage: pr.currentStage, stageStatus: pr.lifecycle.currentStatus })),
       jurisdiction: { projects: projects.length, highOrCritical: projects.filter((pr) => ['High', 'Critical'].includes(pr.riskBand)).length, delayed: projects.filter((pr) => pr.lifecycle.isDelayed).length },
+      portfolio: positionPortfolio(user),
+      official: {
+        directory: 'Official contact details are provisioned from the government identity directory at sign-in. No directory is connected in this prototype, so none are shown.',
+        identity: user.configured ? 'Configured demo position (session only)' : 'Demonstration directory profile',
+      },
       assignedInterventions: mine.total,
       assignedCases,
       recentActivity: queryAudit({ userId: user.id, pageSize: 15 }).entries,
@@ -540,10 +636,23 @@ async function handle(req, res, url) {
   }
   if (at('GET', '/api/notifications')) return json(res, notificationCount(user));
   if (at('GET', '/api/users')) {
-    return json(res, { users: USERS.map(describeUser).map((u) => ({ id: u.id, name: u.name, designation: u.designation, role: u.role, roleLabel: u.roleLabel, state: u.state, district: u.district, scopeLabel: u.scopeLabel })) });
+    return json(res, { users: USERS.map((u) => describeUser(userById(u.id))).map((u) => ({ id: u.id, name: u.name, designation: u.designation, role: u.role, roleLabel: u.roleLabel, state: u.state, district: u.district, scopeLabel: u.scopeLabel })) });
   }
 
   if (at('GET', '/api/facets')) return json(res, facets(user));
+  if (at('GET', '/api/hierarchy/portfolio')) return json(res, portfolioDrilldown(user, p));
+  if (at('GET', '/api/integrations')) return json(res, integrationStatus());
+  if ((m = at('GET', /^\/api\/integrations\/parcel\/([^/]+)$/))) {
+    const row = caseRowOf(m[0]);
+    if (row < 0) throw new ServiceError('Case not found', 404);
+    const project = getProject(store.projects[store.col.projectIdx[row]].id);
+    if (!project || !inScope(user, project)) throw new ServiceError('This case is outside your jurisdiction', 403);
+    return json(res, await parcelDataView(m[0].toUpperCase()));
+  }
+  if ((m = at('GET', /^\/api\/integrations\/project\/([^/]+)$/))) {
+    const pr = projectInScopeOr404(user, m[0]);
+    return json(res, await projectDataView(pr.id));
+  }
   if (at('GET', '/api/registry')) return json(res, registryOverview());
   if (at('GET', '/api/geo')) {
     const projects = scopedProjects(user);
@@ -591,7 +700,7 @@ async function handle(req, res, url) {
   if (at('POST', '/api/projects')) {
     requirePermission(user, 'project.create');
     const body = await readBody(req);
-    const scopeProbe = { state: body.state, districts: [body.district], authority: body.authority, network: { nodes: [] } };
+    const scopeProbe = { state: body.state, districts: [body.district], type: body.type, authority: body.authority, network: { nodes: [] } };
     if (!inScope(user, scopeProbe)) throw new ServiceError('You can only create projects inside your jurisdiction', 403);
     const created = createProject(user, body);
     return json(res, { project: projectSummary(created) }, 201);
@@ -777,7 +886,7 @@ async function handle(req, res, url) {
 
   /* --------------------------------------------------------------- admin */
   if (at('GET', '/api/upload/template')) {
-    res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="bhoomipredict-project-upload-template.csv"' });
+    res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="landpulse-project-upload-template.csv"' });
     return res.end(csvTemplate());
   }
   if (at('POST', '/api/upload')) {

@@ -1,5 +1,5 @@
 """
-Delay-risk model pipeline for BhoomiPredict.
+Delay-risk model pipeline for LandPulse AI.
 
 Reads the synthetic acquisition corpus, trains a baseline and a main model with a
 time-aware split, evaluates both, computes explanations and writes every

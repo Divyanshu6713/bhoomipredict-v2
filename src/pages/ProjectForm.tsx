@@ -174,7 +174,7 @@ export default function ProjectForm() {
       <Card>
         <CardHeader title={editing ? `Edit ${existing.data?.project.name}` : 'New acquisition project'} subtitle="Validated server-side: state and district must exist, the acquiring body must be eligible for the type and place, coordinates must fall inside the district, and progress must fit the stage." icon={<Info className="h-4 w-4" />} />
         <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="sm:col-span-2 lg:col-span-3">{input('name', 'Project name', { placeholder: 'e.g. Mandya Ring Road — Segment 2' })}</div>
+          <div className="sm:col-span-2 lg:col-span-3">{input('name', 'Project name', { placeholder: 'e.g. Outer Ring Road — Segment 2' })}</div>
           <Field label="Project type" error={errors.type} hint={locked('type') ? 'Fixed for corpus projects' : undefined}>
             <Select value={String(form.type)} onChange={(v) => set('type', v)} options={(options.data?.projectTypes ?? []).map((t) => ({ label: t.name, value: t.name }))} className={locked('type') ? 'pointer-events-none opacity-60' : ''} />
           </Field>

@@ -26,7 +26,7 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { Badge, Button, Card, CardHeader, DemoDataBadge, EmptyState, InfoDot, Progress, SkeletonCard, Tabs } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, EmptyState, InfoDot, Progress, SkeletonCard, Tabs } from '@/components/ui';
 import { ErrorState, KeyValue, QualityBadge, RiskPill } from '@/components/ui/primitives';
 import { Modal, Field, inputClass } from '@/components/ui/Modal';
 import { ChartTooltip, RiskGauge } from '@/components/charts';
@@ -38,6 +38,8 @@ import { DocumentPanel } from '@/components/documents/DocumentPanel';
 import { AuditTimeline } from '@/components/workflow/AuditTimeline';
 import { IndiaGISMap } from '@/components/gis/IndiaGISMap';
 import { ServerTable, type ServerColumn } from '@/components/ui/ServerTable';
+import { IssueProfilePanel } from '@/components/issues/IssueProfilePanel';
+import { ProvenanceBadge } from '@/components/brand/Provenance';
 import { PRIORITY_CLASS, RISK_HEX } from '@/lib/risk';
 import { RISK_BASIS_LABEL, STAGE_STATUS_CLASS, STAGE_STATUS_LABEL } from '@/lib/status';
 import { formatCompact, formatCrore, formatDate, formatNumber } from '@/lib/format';
@@ -214,7 +216,8 @@ export default function ProjectDetail() {
                   {current.name}: {STAGE_STATUS_LABEL[current.status]}
                   {current.delayDays > 0 && current.status !== 'COMPLETED' ? ` · ${current.delayDays}d overdue` : ''}
                 </Badge>
-                <DemoDataBadge />
+                <ProvenanceBadge mode={data.provenance.record} />
+                <ProvenanceBadge mode="model" compact className="border-violet-300/30 bg-violet-400/10 text-violet-200" />
                 {project.source !== 'corpus' && <Badge className="border-sky-400/30 bg-sky-400/10 text-sky-200">Added via {project.source === 'upload' ? 'CSV upload' : 'form'}</Badge>}
               </div>
               <h2 className="mt-2 font-display text-[22px] font-extrabold leading-tight tracking-tight text-white sm:text-[26px]">{project.name}</h2>
@@ -350,6 +353,8 @@ export default function ProjectDetail() {
           </Card>
         </div>
       </section>
+
+      <IssueProfilePanel className="animate-fade-up" profile={data.issues} />
 
       {/* --------------------------------------------------- lifecycle */}
       <Card className="animate-fade-up">

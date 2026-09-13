@@ -1,9 +1,14 @@
-# BhoomiPredict
+<p align="left"><img src="public/brand/landpulse-logo-on-light.svg" alt="LandPulse AI" height="56" /></p>
 
-**AI-enabled land acquisition delay risk and decision-support platform**
+# LandPulse AI
 
-Data → acquisition workflow → state & project-type authority logic → stage / case status → ML risk →
-explanation → recommendation → intervention → alert → role / department action → audit trail
+**Anticipate Bottlenecks. Accelerate Infrastructure.**
+
+Land Acquisition Intelligence · Delay-Risk Prediction · Decision Support — for infrastructure projects
+across India, from central ministries to district offices. Built by **RootStack**.
+
+National hierarchy → data integration layer → project-type authorities & dependencies → stage / case status →
+land-acquisition issue profile → ML risk → explanation → recommendation → intervention → alert → role action → audit trail
 
 > **SYNTHETIC DEMO DATA**
 >
@@ -23,15 +28,18 @@ npm run data        # one-time: generate → train → store → PDF (~10 min, n
 npm run dev         # API (5179) + Vite (5178): http://localhost:5178
 ```
 
-Sign in by choosing a **demo profile** (national, Karnataka, Uttar Pradesh, NHAI, legal, revenue, field and
-read-only roles). Profiles carry real permissions and jurisdiction that the API enforces.
+Sign in with a **directory profile** (national coordination cell, MoRTH, DoLR, MoEFCC, NHAI, Southern Railway,
+POWERGRID, and state / district officers in Karnataka, Maharashtra, Uttar Pradesh, Tamil Nadu and Bihar) or
+**configure a position** anywhere in the national hierarchy — any ministry or central organisation, any of the
+28 States and 8 Union Territories, any department or agency, division and district. The position decides
+jurisdiction; the role decides permissions; the API enforces both.
 
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | API + Vite dev server (the API is pinned to 5179 even if `PORT` is set) |
 | `npm run build` | type-check + production bundle |
 | `npm start` | single process: API + built front end on `PORT` (default 5179) |
-| `npm run test:smoke` | 110 end-to-end functional tests against an isolated API instance |
+| `npm run test:smoke` | 147 end-to-end functional tests against an isolated API instance |
 | `npm run data:verify` | 40 checks across corpus, model, store and deliverables |
 | `npm run data` | full data pipeline |
 | `npm run data:geo` | rebuild boundary layers from source (downloads ~100 MB, uses mapshaper via npx) |
@@ -45,7 +53,9 @@ Python 3.10+ with `numpy`, `pandas`, `scikit-learn`, `shap` is needed for traini
 
 | Route | Screen |
 | --- | --- |
-| `/login` | Department profile selection |
+| `/login` | Directory profiles by authority level, or a progressive position builder (authority → organisation → jurisdiction → role) |
+| `/hierarchy` | National Portfolio drill-down: India → sector ministry → State / UT → district → project, with oversight lenses (DoLR, MoEFCC) |
+| `/data-sources` | Data provenance, the integration architecture and every provider contract with its active adapter |
 | `/dashboard` | KPIs (total, High, Critical, delayed, immediate action, mean delay probability) and analytics: risk, state, district, type, stage, delay drivers, compensation, legal, R&R, timeline, department bottlenecks — every chart clicks through |
 | `/projects`, `/projects/:id` | Registry with state/district/type/stage/status filters; project intelligence page: overview, authority network, AI risk, SHAP explanation, stage timeline with case backlog, next milestone, recommendations, interventions, alerts, GIS, cases, documents, audit |
 | `/projects/new`, `/projects/:id/edit` | Validated create / edit; *Record milestone achieved* advances the lifecycle |
@@ -57,7 +67,7 @@ Python 3.10+ with `numpy`, `pandas`, `scikit-learn`, `shap` is needed for traini
 | `/documents` | Document repository (upload from project / case pages; versions, review, download) |
 | `/registry` | Authority & dependency registry explorer, frameworks, rule thresholds |
 | `/admin` | CSV upload & validation, retraining job, model metrics, consistency validation, deleted-project restore |
-| `/audit`, `/profile` | Audit trail; role, jurisdiction, assignments, notifications |
+| `/audit`, `/profile` | Audit trail; administrative position (hierarchy ladder), scope, portfolio KPIs, role, official information, assignments |
 | `/risk`, `/analytics`, `/reports`, `/data`, `/about` | Model decomposition, analytics, MIS reports, model card, methodology |
 
 ---
@@ -66,13 +76,20 @@ Python 3.10+ with `numpy`, `pandas`, `scikit-learn`, `shap` is needed for traini
 
 ```
 server/
-├─ index.mjs                 dependency-free HTTP API: auth, role scoping, all endpoints, static host
+├─ index.mjs                 dependency-free HTTP API: auth, position scoping, all endpoints, static host
+├─ integration/              data integration layer (see below)
+│  ├─ contracts.mjs          provider contracts, data modes, response envelopes
+│  ├─ adapters.mjs           adapter registry; synthetic adapters for every contract
+│  └─ index.mjs              adapter selection (LANDPULSE_PROVIDER_*), parcel / project data views
 ├─ domain/                   configuration and deterministic business rules (one place each)
-│  ├─ registry.mjs           frameworks, project types, state profiles, authority eligibility, dependency networks
+│  ├─ india.mjs              all 28 States + 8 UTs, zonal councils, grid regions, configured revenue divisions
+│  ├─ hierarchy.mjs          administrative levels, hierarchy templates, sectors, organisation catalogue, positions
+│  ├─ issues.mjs             land-acquisition issue taxonomy, project-type exposure, issue profiles
+│  ├─ registry.mjs           frameworks, project types, declarative dependency rules, state profiles, networks
 │  ├─ geography.mjs          districts, sub-districts, polygons, point-in-polygon
 │  ├─ lifecycle.mjs          stage status vs case backlog vs parcel status
 │  ├─ rules.mjs              triggers → recommendations, interventions, alerts; case-level rules
-│  ├─ roles.mjs              roles, permissions, scope, focus areas, demo directory
+│  ├─ roles.mjs              roles, permissions, focus areas, positions → scope, demo directory
 │  └─ validation.mjs         field validation shared by form, edit and CSV upload
 └─ lib/
    ├─ store.mjs, query.mjs   columnar case store and query engine
@@ -81,6 +98,7 @@ server/
    ├─ workflow.mjs           interventions & alerts with persisted status
    ├─ scenario.mjs           scenario scoring through the registry
    ├─ dashboard.mjs          scoped dashboard aggregation
+   ├─ portfolio.mjs          national drill-down and position portfolio statistics
    ├─ documents.mjs          file repository with versions and review
    ├─ upload.mjs             CSV parse / validate / commit
    ├─ jobs.mjs               retraining job (train.py → build-store → hot reload)
@@ -108,11 +126,75 @@ project notification) or **project** (named by the record).
 - **State profiles** set district head (Deputy Commissioner in Karnataka, District Magistrate in UP),
   acquisition officer (SLAO / ADM (LA)), sub-district label (Taluk / Tehsil / Mandal) and land records
   (SSLR with Bhoomi in Karnataka — shown as a land-record dependency, never as the acquiring authority; UP
-  Revenue land records with Bhulekh). Karnataka and UP are detailed; 22 more states use a compact profile;
+  Revenue land records with Bhulekh). Karnataka and UP are detailed; 23 more states use a compact profile;
   any other state falls back to generic designations rather than invented ones.
 - **Flags** pull in forest clearance, railway / highway crossing approvals and UP consolidation.
 
-Adding a state is a registry entry; adding a project type is a `PROJECT_TYPES` entry.
+Adding a state profile is a registry entry; adding a project type is a `PROJECT_TYPES` entry. Which dependencies a
+type pulls in is **data**, not branches: `BASE_DEPENDENCY_RULES` plus each type's `dependencies` override, as
+any-of / all-of conditions (`always`, `linear`, `flag:forestLand`, `subtype:Reservoir submergence`, `mode:ownership`,
+…). The refactor from conditionals to rules was verified output-identical across 8,528 networks (every State/UT ×
+type × subtype × flag combination and all 312 corpus projects). The Registry screen shows the resulting
+type × dependency matrix.
+
+### National administrative hierarchy
+
+Government bodies do not share one shape, so the hierarchy is configuration (`server/domain/hierarchy.mjs`):
+
+| Template | Levels |
+| --- | --- |
+| National authority | Country → State → District → Project |
+| Central ministry | Country → Ministry → State → District → Project |
+| Central ministry with zones | Country → Ministry → Zone → State → District → Project (e.g. Ministry of Railways → Southern Railway) |
+| Central organisation | Country → Ministry → Organisation → State → District → Project (e.g. MoRTH → NHAI) |
+| Central organisation with regions | … → Organisation → Region → State → … (e.g. POWERGRID → Western Region) |
+| State government / department / agency | Country → State → Department → Division → District → Project |
+
+- **States & UTs**: the complete list (28 + 8) with codes, type and zonal council; LGD codes are an empty slot
+  filled by the future LGD adapter, never typed by hand.
+- **Organisations**: Government of India, an illustrative central coordination cell, 14 ministries / departments
+  (MoRTH, Railways, Power, MNRE, MoHUA, Jal Shakti, Commerce & Industry, Petroleum, Civil Aviation, Ports, Coal,
+  Defence, DoLR, MoEFCC) and central organisations (NHAI, DFCCIL, NHSRCL, POWERGRID, SECI, AAI, CWC, NICDC, GAIL,
+  IOCL). For **every** State / UT the catalogue generates its government, nine departments (revenue, land records,
+  law, roads, urban, water, industries, energy, forest) and the agencies the authority registry names.
+- **Portfolio matchers** decide what an organisation is concerned with: project types (sector ministries), frameworks
+  (DoLR → RFCTLARR proceedings), named authorities (NHAI), dependency codes (MoEFCC → forest clearance) or all.
+- **Positions**: a user holds an organisation plus the units chosen under it (zone, state, division, district).
+  `resolvePosition` returns the display ladder, the tier (national / region / state / division / district) and
+  the concrete scope. `inScope` = geography ∩ portfolio. No separate code path exists for any state.
+- **Sectors** (Roads, Railways, Urban, Water, Power, Renewables, Industry, Petroleum, Aviation; Ports, Coal, Defence
+  registered without project types yet) group projects under exactly one sector ministry for the national drill-down.
+
+### Land-acquisition issue taxonomy
+
+`server/domain/issues.mjs` names 19 recurring causes of delay — ownership disputes, compensation, documentation,
+administrative approvals, litigation, notifications, objections, R&R, forest & environment clearances, utility
+shifting, encroachments & encumbrances, mutation / record-of-rights, survey, multiple authorities, slow processes,
+coordination, right of way / user, interface approvals and municipal processes — and reads each from evidence the
+platform holds: dependency nodes and pending actions, model-vocabulary signals, framework and stage. Thresholds
+come from `RULE_THRESHOLDS`, so an issue agrees with the recommendation engine. Issues that cannot arise in a context
+are excluded with a reason (a highway never shows right-of-way; a transmission line never shows municipal processes).
+Where no signal exists (encumbrances) the profile says *not captured* and names the integration that would supply it.
+Profiles appear on project pages, in Scenario Scoring and as a type × issue matrix in the Registry.
+
+### Data integration layer
+
+```
+Frontend → LandPulse AI API → Data Integration Layer → Government / external sources (future)
+```
+
+Nine provider contracts — land records, registration & encumbrance, court cases, compensation, notifications,
+project status, clearances, GIS and administrative units — each with methods, return shapes and the kind of official
+system that would sit behind it (e.g. DILRMP-era record-of-rights systems, NGDRS, eCourts / NJDG, PFMS, e-Gazette and
+Bhoomi Rashi, PARIVESH, PM Gati Shakti, LGD). **None is connected.** Every slot runs a synthetic adapter over the demo
+corpus, and every response carries a provenance envelope (`mode: synthetic`). To connect a source: implement the
+contract, register the adapter in `server/integration/adapters.mjs`, start the API with
+`LANDPULSE_PROVIDER_<KIND>=<adapter id>`. Nothing above the layer changes.
+
+### Data provenance
+
+Four modes are shown where they matter — **Synthetic demo data**, **User-entered**, **Model-generated** and
+**Integration-ready (not connected)**. An *Official source* mode exists in the contract; no adapter produces it.
 
 ### Lifecycle: stage status ≠ case status
 
@@ -140,7 +222,8 @@ location is verified to fall inside its state.
 
 | Role | Scope | Can |
 | --- | --- | --- |
-| National Administrator | All India | everything, including retraining and deletion |
+| National Administrator | national position | everything, including retraining and deletion |
+| Ministry / Organisation Nodal Officer | national, zone or state position, narrowed by the organisation's portfolio | assign / update interventions, review documents, audit |
 | State Administrator | state | create/edit projects, CSV upload, assign interventions, review documents |
 | District Administrator | district | edit, advance stages, assign interventions, review documents |
 | Land Acquisition Officer | district | advance stages, update interventions / cases, file awards & compensation documents |
@@ -150,7 +233,9 @@ location is verified to fall inside its state.
 | Field Verification Officer | district | field interventions, case status, survey / R&R documents |
 | Policy Viewer | All India | read-only |
 
-Scope filters every data endpoint server-side; focus areas route alerts and "my actions".
+Scope comes from the **position**, not the role (the table shows where each role is normally held), and filters every
+data endpoint server-side; focus areas route alerts and "my actions". Configured positions refuse roles not held at
+that tier (a Land Acquisition Officer cannot be national).
 
 ---
 
@@ -197,7 +282,7 @@ Everything is seeded and byte-identical on every run.
 
 ```bash
 npm run data:verify   # 40 corpus / model / store / deliverable checks
-npm run test:smoke    # 110 functional checks: scenarios A–J, roles, CRUD, CSV, documents, workflow, audit, consistency
+npm run test:smoke    # 147 functional checks: hierarchy & positions, drill-down, issues, integration, roles, CRUD, CSV, documents, workflow, audit, consistency
 ```
 
 The Administration screen runs the same 14 consistency checks live (case counts equal the store, no
@@ -208,3 +293,7 @@ stage-status order, residual backlog explained, risk bands on cut-offs, workflow
 
 React 18 · TypeScript · Vite 5 · Tailwind CSS 3 · Recharts · Lucide · React Router 6 · Node HTTP API with
 **zero runtime dependencies** · Python (scikit-learn, SHAP) offline pipeline.
+
+---
+
+**LandPulse AI** · Anticipate Bottlenecks. Accelerate Infrastructure. · Built by **RootStack**

@@ -357,6 +357,7 @@ export interface AuditList {
 
 export type RoleId =
   | 'NATIONAL_ADMIN'
+  | 'SECTOR_NODAL_OFFICER'
   | 'STATE_ADMIN'
   | 'DISTRICT_ADMIN'
   | 'LAND_ACQUISITION_OFFICER'
@@ -375,12 +376,13 @@ export interface User {
   roleLabel: string;
   state: string | null;
   district: string | null;
-  authority?: string;
-  scope: 'national' | 'state' | 'district' | 'authority';
+  scope: AuthorityTier;
   scopeLabel: string;
+  position: Position;
   permissions: string[];
   focus: string[];
   roleSummary: string;
+  configured: boolean;
   demo: boolean;
 }
 
@@ -398,6 +400,8 @@ export interface Profile {
   assignedInterventions: number;
   assignedCases: string[];
   recentActivity: AuditEntry[];
+  portfolio: PositionPortfolio;
+  official: { directory: string; identity: string };
 }
 
 /* -------------------------------------------------------------- projects */
@@ -567,6 +571,8 @@ export interface ProjectDetailResponse {
   documents: DocumentList;
   activity: AuditEntry[];
   scenarioSeed: ScenarioSeed;
+  issues: IssueProfile;
+  provenance: { record: DataMode; risk: DataMode; riskBasis: RiskBasis; note: string };
   permissions: {
     edit: boolean;
     delete: boolean;
@@ -882,6 +888,7 @@ export interface ScenarioResponse {
   baseline: PredictionResult | null;
   delta: { probability: number; riskScore: number; predictedDelayDays: number; dependencyCount: number; addedDependencies: string[]; removedDependencies: string[] } | null;
   recommendations: Recommendation[];
+  issues: IssueProfile;
   seedProject: { id: string; name: string; riskScore: number; riskBasis: RiskBasis } | null;
 }
 
@@ -1048,6 +1055,7 @@ export interface PortfolioSummary {
 export interface Facets {
   states: string[];
   projectTypes: ProjectType[];
+  sectors: Array<{ id: string; label: string; projectTypes: ProjectType[] }>;
   subtypes: Record<string, string[]>;
   authorities: string[];
   priorities: string[];
@@ -1201,6 +1209,224 @@ export interface RegistryOverview {
   projectTypes: Array<{ name: ProjectType; subtypes: string[]; linear: boolean; central: string | null }>;
   dependencies: Record<string, { label: string; category: string; stages: StageName[]; gate: boolean; pendingAction: string }>;
   profiledStates: string[];
+  statesAndUts: Array<{ name: string; code: string; type: string; profiled: boolean }>;
+  dependencyMatrix: Array<{ projectType: ProjectType; sector: string; dependencies: Array<{ code: string; label: string; applicability: 'always' | 'conditional' | 'never'; when: string[] }> }>;
+  issueMatrix: Array<{ projectType: ProjectType; sector: string; typicalDependencies: string | null; issues: Array<{ id: string; label: string; exposure: 'core' | 'possible' | 'never' }> }>;
+  issues: Array<{ id: string; label: string; group: string; description: string; owners: string[]; conditional: boolean }>;
+  sectors: Sector[];
   lifecycleRules: Record<string, number>;
   ruleThresholds: Record<string, number>;
+}
+
+
+/* ------------------------------------------------ administrative hierarchy */
+
+export type AuthorityTier = 'national' | 'region' | 'state' | 'division' | 'district';
+
+export type AdminLevelId = 'country' | 'ministry' | 'organisation' | 'region' | 'state' | 'department' | 'division' | 'district' | 'project';
+
+export type OrganisationKind = 'government' | 'coordinating_authority' | 'ministry' | 'central_organisation' | 'state_government' | 'state_department' | 'state_agency';
+
+export interface Sector {
+  id: string;
+  label: string;
+  ministryId: string;
+  ministry?: string | null;
+  projectTypes: ProjectType[];
+}
+
+export interface OrganisationSummary {
+  id: string;
+  name: string;
+  short: string;
+  kind: OrganisationKind;
+  kindLabel: string;
+  parentId: string | null;
+  template: string;
+  state: string | null;
+  sector: string | null;
+  lens: 'sector' | 'oversight';
+  regions: { provider: string; label: string; basis: string } | null;
+  portfolio: string;
+  illustrative: boolean;
+  description: string | null;
+}
+
+export interface HierarchyConfig {
+  levels: Array<{ id: AdminLevelId; label: string; geographic: boolean; optional?: boolean }>;
+  templates: Array<{ id: string; label: string; levels: AdminLevelId[] }>;
+  tiers: Array<{ id: AuthorityTier; label: string; description: string }>;
+  sectors: Sector[];
+  states: Array<{ id: string; label: string; code: string; type: string; zonalCouncil: string; officialName: string; government: string; profile: 'configured' | 'generic'; divisions: number; lgdCode: string | null }>;
+  organisations: OrganisationSummary[];
+  note: string;
+}
+
+export interface PositionChainRow {
+  level: AdminLevelId;
+  label: string;
+  value: string;
+  orgId?: string;
+  all?: boolean;
+  fixed?: boolean;
+  code?: string | null;
+}
+
+export interface Position {
+  organisation: { id: string; name: string; short: string; kind: OrganisationKind; kindLabel: string; illustrative: boolean; description: string | null; lens: 'sector' | 'oversight' };
+  lineage: Array<{ id: string; name: string; short: string; kind: OrganisationKind }>;
+  template: { id: string; label: string; levels: AdminLevelId[] };
+  governmentLevel: 'central' | 'state';
+  tier: AuthorityTier;
+  tierLabel: string;
+  units: { region: string | null; state: string | null; division: string | null; district: string | null };
+  chain: PositionChainRow[];
+  scope: { states: string[] | null; districtKeys: string[] | null };
+  portfolio: { restricted: boolean; label: string };
+  place: string;
+  label: string;
+}
+
+export interface HierarchyOption {
+  id: string;
+  label: string;
+  detail?: string;
+  code?: string;
+  type?: string;
+  projects: number;
+}
+
+export interface HierarchyOptionsResponse {
+  organisation: Position['organisation'];
+  levels: AdminLevelId[];
+  options: Partial<Record<'region' | 'state' | 'division' | 'district', HierarchyOption[]>>;
+  projectsInPosition: number;
+  position: Position;
+  roles: Array<{ id: RoleId; label: string; summary: string; permissions: number }>;
+}
+
+export interface PortfolioStats {
+  projects: number;
+  active: number;
+  delayed: number;
+  blocked: number;
+  highRisk: number;
+  critical: number;
+  avgRisk: number | null;
+  openCases: number;
+  affectedFamilies: number;
+  landRequirementHa: number;
+  topDriver: { group: string; projects: number } | null;
+}
+
+export interface PositionPortfolio {
+  totals: PortfolioStats;
+  bySector: Array<PortfolioStats & { key: string; label: string }>;
+  byState: Array<PortfolioStats & { key: string; label: string }>;
+  byStage: Array<PortfolioStats & { key: string; label: string }>;
+}
+
+export interface PortfolioNode {
+  id: string;
+  label: string;
+  detail: string | null;
+  stats: PortfolioStats;
+  query?: Record<string, string>;
+  onboarded?: boolean;
+  projectTypes?: ProjectType[];
+  projectId?: string;
+  riskScore?: number;
+  riskBand?: RiskLevel;
+  stage?: StageName;
+  stageStatus?: StageStatus;
+  predictedDelayDays?: number | null;
+  topDriver?: string | null;
+  source?: string;
+  description?: string | null;
+}
+
+export interface PortfolioDrilldown {
+  level: 'sector' | 'state' | 'district' | 'project';
+  path: Array<{ level: string; label: string; query: Record<string, string> }>;
+  totals: PortfolioStats;
+  riskMix: Array<{ band: RiskLevel; projects: number }>;
+  children: PortfolioNode[];
+  oversight: PortfolioNode[];
+  note: string | null;
+  scope: { projectsInScope: number };
+  engine: string;
+  dataMode: string;
+}
+
+/* ----------------------------------------------------------------- issues */
+
+export type IssueStatus = 'active' | 'watch' | 'clear' | 'not_captured';
+
+export interface IssueItem {
+  id: string;
+  label: string;
+  group: string;
+  description: string;
+  core: boolean;
+  status: IssueStatus;
+  statusLabel: string;
+  evidence: string[];
+  owners: Array<{ code: string; name: string; pending: boolean }>;
+}
+
+export interface IssueProfile {
+  projectType: ProjectType;
+  typicalDependencies: string | null;
+  summary: { active: number; watch: number; clear: number; notCaptured: number; excluded: number };
+  issues: IssueItem[];
+  excluded: Array<{ id: string; label: string; reason: string }>;
+  basis: string;
+}
+
+/* ------------------------------------------------------------ integration */
+
+export type DataMode = 'synthetic' | 'user' | 'model' | 'integration' | 'official';
+
+export interface Provenance {
+  kind: string;
+  adapter: string;
+  mode: DataMode;
+  label: string;
+  source: string;
+  retrievedAt: string;
+}
+
+export interface Envelope<T> {
+  data: T | null;
+  provenance: Provenance | null;
+  error?: string;
+}
+
+export interface IntegrationStatus {
+  architecture: string[];
+  connectedOfficialSources: number;
+  providers: Array<{
+    kind: string;
+    label: string;
+    description: string;
+    methods: Array<{ name: string; input: string; returns: string }>;
+    adapter: { id: string; label: string; mode: DataMode; modeLabel: string };
+    registeredAdapters: string[];
+    envVariable: string;
+    connected: boolean;
+    futureSources: string[];
+  }>;
+  dataModes: Array<{ id: DataMode; label: string; description: string }>;
+  statement: string;
+}
+
+export interface ParcelDataView {
+  caseId: string;
+  sections: {
+    landRecords: Envelope<Record<string, string | number | null>>;
+    registration: Envelope<Record<string, unknown>>;
+    courtCases: Envelope<Record<string, string | number | boolean | null>>;
+    compensation: Envelope<Record<string, string | number | null>>;
+    gis: Envelope<{ point: [number, number]; boundaryKey: string; geometry: string }>;
+  };
 }

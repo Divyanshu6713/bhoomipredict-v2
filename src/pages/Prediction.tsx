@@ -11,6 +11,8 @@ import { RiskGauge } from '@/components/charts';
 import { RISK_HEX } from '@/lib/risk';
 import { useApi } from '@/hooks';
 import { fetchPredictionSpec, fetchScenarioOptions, fetchScenarioSeed, scoreScenario } from '@/api/client';
+import { useAuth } from '@/auth/AuthContext';
+import { IssueProfilePanel } from '@/components/issues/IssueProfilePanel';
 import { LIFECYCLE_STAGES, type ProjectType, type ScenarioContext, type ScenarioResponse, type StageName } from '@/data/types';
 
 type Signals = Record<string, string | number>;
@@ -64,11 +66,23 @@ function Slider({ label, value, min, max, step, unit, baseline, onChange }: { la
   );
 }
 
-const DEFAULT_CONTEXT: ScenarioContext = { state: 'Karnataka', district: 'Mandya', projectType: 'Irrigation', stage: 'Compensation', affectedFamilies: 120, flags: {} };
+/**
+ * A neutral starting context, placed inside the user's own jurisdiction when
+ * they have one. An unset district is resolved to the first valid district
+ * once the state's district list arrives.
+ */
+const NATIONAL_DEFAULT: ScenarioContext = { state: 'Maharashtra', district: 'Nagpur', projectType: 'National Highway', stage: 'Compensation', affectedFamilies: 120, flags: {} };
+
+function defaultContext(scope: { state: string | null; district: string | null } | null): ScenarioContext {
+  if (!scope?.state) return NATIONAL_DEFAULT;
+  return { ...NATIONAL_DEFAULT, state: scope.state, district: scope.district ?? '' };
+}
 
 export default function Prediction() {
   const [params] = useSearchParams();
   const projectId = params.get('project');
+  const { user } = useAuth();
+  const DEFAULT_CONTEXT = useMemo(() => defaultContext(user ? { state: user.state, district: user.district } : null), [user]);
 
   const spec = useApi((signal) => fetchPredictionSpec(signal), []);
   const seed = useApi((signal) => (projectId ? fetchScenarioSeed(projectId, signal) : Promise.resolve(null)), [projectId]);
@@ -100,7 +114,7 @@ export default function Prediction() {
       setSignals(base);
       setBaseline({ context: DEFAULT_CONTEXT, pending: [], signals: base });
     }
-  }, [spec.data, seed.data, projectId]);
+  }, [spec.data, seed.data, projectId, DEFAULT_CONTEXT]);
 
   const options = useApi(
     (signal) => (context ? fetchScenarioOptions({ state: context.state, district: context.district, projectType: context.projectType, subtype: context.subtype }, signal) : Promise.resolve(null)),
@@ -171,7 +185,7 @@ export default function Prediction() {
               </div>
               <h2 className="mt-3 font-display text-[23px] font-extrabold tracking-tight text-white sm:text-[28px]">Which authorities hold this acquisition, and what would change if they acted?</h2>
               <p className="mt-2 text-[13.5px] leading-relaxed text-white/55">
-                Choose the state, district and project type: the registry builds the dependency network for that context — framework, acquiring body, district offices, land records and clearances. Mark which department actions are pending, adjust the signals, and the model re-scores.
+                Choose any State or UT, district and project type: the registry builds the dependency network for that context — framework, acquiring body, district offices, land records and clearances. Mark which department actions are pending, adjust the signals, and the model re-scores.
               </p>
             </div>
             {spec.data && (
@@ -370,6 +384,8 @@ export default function Prediction() {
               </div>
             </Card>
           )}
+
+          {result?.issues && <IssueProfilePanel className="animate-fade-up" profile={result.issues} subtitle={`Delay causes that apply to this ${context.projectType.toLowerCase()} scenario at ${context.stage} — updates as you toggle pending actions and signals`} />}
 
           {result && r && (
             <div className="grid gap-4 lg:grid-cols-2">

@@ -10,6 +10,7 @@ import { allInterventions } from './workflow.mjs';
 import { inScope } from '../domain/roles.mjs';
 import { LIFECYCLE_STAGES } from '../domain/registry.mjs';
 import { severityRank } from '../domain/rules.mjs';
+import { sectorById } from '../domain/hierarchy.mjs';
 
 const BANDS = ['Low', 'Medium', 'High', 'Critical'];
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -21,6 +22,7 @@ export function scopedProjects(user, f = {}) {
     if (f.state && p.state !== f.state) return false;
     if (f.district && !p.districts.includes(f.district)) return false;
     if (f.projectType && p.type !== f.projectType) return false;
+    if (f.sector && f.sector !== 'all' && !(sectorById(f.sector)?.projectTypes ?? []).includes(p.type)) return false;
     return true;
   });
 }

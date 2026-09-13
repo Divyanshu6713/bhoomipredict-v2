@@ -23,6 +23,8 @@
  *   'project'     the body is named by the project record itself
  */
 
+import { stateCode } from './india.mjs';
+
 export const LIFECYCLE_STAGES = [
   'Land Identification',
   'Survey & Verification',
@@ -351,6 +353,8 @@ export const DEPENDENCY_META = {
 export const PROJECT_TYPES = {
   'National Highway': {
     key: 'national_highway',
+    sector: 'roads',
+    dependencies: { HIGHWAY_INTERFACE: [] },
     linear: true,
     subtypes: ['Four-laning', 'Six-laning', 'Bypass', 'Greenfield corridor'],
     framework: () => 'NH_ACT',
@@ -359,6 +363,8 @@ export const PROJECT_TYPES = {
   },
   Expressway: {
     key: 'expressway',
+    sector: 'roads',
+    dependencies: { HIGHWAY_INTERFACE: [] },
     linear: true,
     subtypes: ['Greenfield expressway', 'Access-controlled upgrade'],
     framework: ({ primary }) => (/NHAI/.test(primary) ? 'NH_ACT' : 'RFCTLARR'),
@@ -367,6 +373,8 @@ export const PROJECT_TYPES = {
   },
   Railway: {
     key: 'railway',
+    sector: 'railways',
+    dependencies: { RAILWAY_INTERFACE: [] },
     linear: true,
     subtypes: ['New line', 'Doubling / tripling', 'Dedicated freight corridor', 'High-speed rail', 'Suburban rail'],
     framework: ({ subtype }) => (subtype === 'Suburban rail' ? 'RFCTLARR' : 'RAILWAYS_ACT'),
@@ -375,6 +383,9 @@ export const PROJECT_TYPES = {
   },
   'Metro Rail': {
     key: 'metro',
+    sector: 'urban',
+    valuationDepartment: 'Public Works',
+    dependencies: { URBAN_LOCAL_BODY: ['always'] },
     linear: true,
     subtypes: ['Elevated corridor', 'Underground corridor', 'Depot & stabling land'],
     framework: () => 'RFCTLARR',
@@ -383,6 +394,9 @@ export const PROJECT_TYPES = {
   },
   'Urban Infrastructure': {
     key: 'urban',
+    sector: 'urban',
+    valuationDepartment: 'Public Works',
+    dependencies: { UTILITIES: ['always'], URBAN_LOCAL_BODY: ['always'] },
     linear: false,
     subtypes: ['Ring road', 'Planned layout / township', 'Water supply & sewerage', 'Flyover & grade separator'],
     framework: () => 'RFCTLARR',
@@ -391,6 +405,7 @@ export const PROJECT_TYPES = {
   },
   Industrial: {
     key: 'industrial',
+    sector: 'industry',
     linear: false,
     subtypes: ['Industrial park', 'Industrial corridor node', 'Logistics park'],
     framework: ({ state }) => (state === 'Karnataka' ? 'KIAD_ACT' : state === 'Maharashtra' ? 'MID_ACT' : 'RFCTLARR'),
@@ -399,6 +414,8 @@ export const PROJECT_TYPES = {
   },
   Irrigation: {
     key: 'irrigation',
+    sector: 'water',
+    dependencies: { FOREST: ['flag:forestLand', 'subtype:Reservoir submergence'] },
     linear: false,
     subtypes: ['Canal network', 'Lift irrigation scheme', 'Reservoir submergence', 'Command area development'],
     framework: () => 'RFCTLARR',
@@ -407,6 +424,7 @@ export const PROJECT_TYPES = {
   },
   'Power Transmission': {
     key: 'transmission',
+    sector: 'power',
     linear: true,
     subtypes: ['400 kV line', '765 kV line', 'Substation'],
     framework: ({ subtype }) => (subtype === 'Substation' ? 'RFCTLARR' : 'ELECTRICITY_ROW'),
@@ -415,6 +433,7 @@ export const PROJECT_TYPES = {
   },
   'Renewable Energy': {
     key: 'renewable',
+    sector: 'renewables',
     linear: false,
     subtypes: ['Solar park', 'Wind farm', 'Hybrid park'],
     framework: () => 'RFCTLARR',
@@ -423,6 +442,7 @@ export const PROJECT_TYPES = {
   },
   Pipeline: {
     key: 'pipeline',
+    sector: 'petroleum',
     linear: true,
     subtypes: ['Natural gas trunk line', 'Petroleum product pipeline'],
     framework: () => 'PMP_ACT',
@@ -431,6 +451,8 @@ export const PROJECT_TYPES = {
   },
   Airport: {
     key: 'airport',
+    sector: 'aviation',
+    dependencies: { UTILITIES: ['always'], AVIATION: ['always'] },
     linear: false,
     subtypes: ['Greenfield airport', 'Runway extension', 'Terminal & apron expansion'],
     framework: () => 'RFCTLARR',
@@ -440,6 +462,138 @@ export const PROJECT_TYPES = {
 };
 
 export const PROJECT_TYPE_NAMES = Object.keys(PROJECT_TYPES);
+
+/* ================================================ dependency applicability */
+
+/**
+ * Which dependencies a project type pulls in, as data rather than branches.
+ *
+ * A rule is a list of alternatives (any may hold); each alternative is a
+ * '+'-joined set of conditions that must all hold. An empty list means the
+ * dependency never applies to that type. Project types override the base
+ * rules in their own `dependencies` entry, so adding a type — or changing
+ * what a type depends on — is a configuration change.
+ *
+ * Conditions:
+ *   always                    unconditional
+ *   centralSanction           the type's central approval applies (type.central / centralWhen)
+ *   siaRequired               the framework requires a Social Impact Assessment
+ *   mode:<mode>               framework acquisition mode (ownership, right_of_way, right_of_user)
+ *   linear                    linear alignment (roads, rail, lines, pipelines)
+ *   families                  affected families are recorded
+ *   agricultural              agricultural land is involved
+ *   flag:<name>               project flag (forestLand, crossesRailway, crossesHighway, consolidationOpen)
+ *   subtype:<name>            project subtype
+ *   profile:<key>             the state profile carries that department (e.g. consolidation)
+ */
+export const BASE_DEPENDENCY_RULES = {
+  PRIMARY: ['always'],
+  CENTRAL_SANCTION: ['centralSanction'],
+  DISTRICT_HEAD: ['always'],
+  LA_OFFICER: ['always'],
+  LAND_RECORDS: ['always'],
+  SUB_DIVISION: ['always'],
+  SIA_UNIT: ['siaRequired'],
+  FOREST: ['flag:forestLand'],
+  RR_ADMIN: ['families+mode:ownership'],
+  DISPUTE_FORUM: ['always'],
+  TREASURY: ['always'],
+  REGISTRATION: ['mode:ownership'],
+  VALUATION_SUPPORT: ['agricultural'],
+  UTILITIES: ['linear'],
+  AVIATION: [],
+  RAILWAY_INTERFACE: ['flag:crossesRailway+linear'],
+  HIGHWAY_INTERFACE: ['flag:crossesHighway+linear'],
+  CONSOLIDATION: ['flag:consolidationOpen+profile:consolidation'],
+  URBAN_LOCAL_BODY: [],
+};
+
+/** The effective rule for one dependency on one project type. */
+export const dependencyRule = (projectType, code) => PROJECT_TYPES[projectType]?.dependencies?.[code] ?? BASE_DEPENDENCY_RULES[code] ?? [];
+
+const splitCondition = (cond) => {
+  const i = cond.indexOf(':');
+  return i < 0 ? [cond, null] : [cond.slice(0, i), cond.slice(i + 1)];
+};
+
+function conditionHolds(cond, ctx) {
+  const [kind, arg] = splitCondition(cond);
+  switch (kind) {
+    case 'always':
+      return true;
+    case 'centralSanction':
+      return Boolean(ctx.type.central && ctx.type.centralWhen({ subtype: ctx.subtype, frameworkId: ctx.frameworkId }));
+    case 'siaRequired':
+      return Boolean(ctx.framework.siaRequired);
+    case 'mode':
+      return ctx.framework.mode === arg;
+    case 'linear':
+      return Boolean(ctx.type.linear);
+    case 'families':
+      return ctx.affectedFamilies > 0;
+    case 'agricultural':
+      return Boolean(ctx.agriculturalLand);
+    case 'flag':
+      return Boolean(ctx.flags[arg]);
+    case 'subtype':
+      return ctx.subtype === arg;
+    case 'profile':
+      return Boolean(ctx.profile[arg]);
+    default:
+      throw new Error(`Unknown dependency condition "${cond}"`);
+  }
+}
+
+export function dependencyApplies(projectType, code, ctx) {
+  return dependencyRule(projectType, code).some((alt) => alt.split('+').every((c) => conditionHolds(c, ctx)));
+}
+
+const CONDITION_LABEL = {
+  always: 'always',
+  centralSanction: 'where central approval applies',
+  siaRequired: 'where the framework requires SIA',
+  linear: 'linear alignments',
+  families: 'affected families recorded',
+  agricultural: 'agricultural land',
+};
+
+const FLAG_LABEL = {
+  forestLand: 'forest land on the alignment',
+  crossesRailway: 'crosses a railway',
+  crossesHighway: 'crosses a national highway',
+  consolidationOpen: 'consolidation proceedings open',
+};
+
+function describeCondition(cond) {
+  if (CONDITION_LABEL[cond]) return CONDITION_LABEL[cond];
+  const [kind, arg] = splitCondition(cond);
+  if (kind === 'mode') return `${arg.replace(/_/g, ' ')} acquisition`;
+  if (kind === 'flag') return FLAG_LABEL[arg] ?? arg;
+  if (kind === 'subtype') return `subtype: ${arg}`;
+  if (kind === 'profile') return `state has a ${arg} department`;
+  return cond;
+}
+
+/**
+ * Project type x dependency matrix for the registry screen: for each type,
+ * whether each dependency is always, conditionally or never part of its network.
+ */
+export function dependencyMatrix() {
+  return Object.keys(PROJECT_TYPES).map((name) => ({
+    projectType: name,
+    sector: PROJECT_TYPES[name].sector,
+    dependencies: DEPENDENCY_CODES.map((code) => {
+      const rule = dependencyRule(name, code);
+      const applicability = rule.length === 0 ? 'never' : rule.includes('always') ? 'always' : 'conditional';
+      return {
+        code,
+        label: DEPENDENCY_META[code].label,
+        applicability,
+        when: applicability === 'conditional' ? rule.map((alt) => alt.split('+').map(describeCondition).join(' and ')) : [],
+      };
+    }),
+  }));
+}
 
 /* ============================================================ state profiles */
 
@@ -640,7 +794,7 @@ function compactProfile(state) {
 /** Used when a state has no entry at all — designations stay generic rather than invented. */
 function genericProfile(state) {
   return {
-    code: state.slice(0, 2).toUpperCase(),
+    code: stateCode(state) ?? state.slice(0, 2).toUpperCase(),
     subDistrictLabel: 'Tehsil',
     districtHead: 'District Collector',
     laOfficer: 'Land Acquisition Officer',
@@ -750,6 +904,9 @@ export function buildDependencyNetwork(ctx) {
   const subLabel = profile.subDistrictLabel;
   const nodes = [];
 
+  const ruleCtx = { type, subtype, frameworkId, framework, flags, profile, affectedFamilies, agriculturalLand };
+  const applies = (code) => dependencyApplies(projectType, code, ruleCtx);
+
   const add = (code, fields) => {
     const meta = DEPENDENCY_META[code];
     nodes.push({
@@ -764,7 +921,7 @@ export function buildDependencyNetwork(ctx) {
     });
   };
 
-  add('PRIMARY', {
+  if (applies('PRIMARY')) add('PRIMARY', {
     name: primary,
     level: /Ministry|Authority of India|NHAI|POWERGRID|DFCCIL|NHSRCL|GAIL|IOCL|BPCL|HPCL|SECI|MoRTH/.test(primary) ? 'central' : 'state',
     why:
@@ -774,7 +931,7 @@ export function buildDependencyNetwork(ctx) {
     basis: 'project',
   });
 
-  if (type.central && type.centralWhen({ subtype, frameworkId })) {
+  if (applies('CENTRAL_SANCTION')) {
     const statutory = frameworkId === 'NH_ACT' || frameworkId === 'RAILWAYS_ACT' || frameworkId === 'PMP_ACT';
     add('CENTRAL_SANCTION', {
       name: type.central,
@@ -786,7 +943,7 @@ export function buildDependencyNetwork(ctx) {
     });
   }
 
-  add('DISTRICT_HEAD', {
+  if (applies('DISTRICT_HEAD')) add('DISTRICT_HEAD', {
     name: withDistrict(profile.districtHead, district),
     level: 'district',
     why: `Heads district administration for the acquisition: approves notification drafts, awards and possession orders in ${district ?? 'the district'}.`,
@@ -806,7 +963,7 @@ export function buildDependencyNetwork(ctx) {
               : frameworkId === 'MID_ACT'
                 ? 'Special Land Acquisition Officer, MIDC'
                 : withDistrict(profile.laOfficer, district);
-  add('LA_OFFICER', {
+  if (applies('LA_OFFICER')) add('LA_OFFICER', {
     name: laName,
     level: 'district',
     why:
@@ -818,13 +975,13 @@ export function buildDependencyNetwork(ctx) {
     basis: frameworkId === 'RFCTLARR' ? 'configured' : 'statute',
   });
 
-  add('LAND_RECORDS', {
+  if (applies('LAND_RECORDS')) add('LAND_RECORDS', {
     name: `${profile.landRecords.name}${district ? ` — ${profile.landRecords.districtOffice}, ${district}` : ''}`,
     level: 'state',
     why: `Land-record and survey dependency, not the acquiring authority: ${profile.landRecords.work} (${profile.landRecords.portal}) must reconcile before the schedule is notified and before mutation at closure.`,
   });
 
-  add('SUB_DIVISION', {
+  if (applies('SUB_DIVISION')) add('SUB_DIVISION', {
     name: subDistrict
       ? `${profile.subDivisionOfficer} and ${profile.tehsilOfficer}, ${subDistrict} ${subLabel}`
       : `${profile.subDivisionOfficer} and ${profile.tehsilOfficer}`,
@@ -832,7 +989,7 @@ export function buildDependencyNetwork(ctx) {
     why: `Field verification of titles, notices to interested persons${profile.fieldRecords ? ` (through the ${profile.fieldRecords})` : ''} and mutation entries at ${subLabel.toLowerCase()} level.`,
   });
 
-  if (framework.siaRequired) {
+  if (applies('SIA_UNIT')) {
     add('SIA_UNIT', {
       name: `State Social Impact Assessment Unit, ${state}`,
       level: 'state',
@@ -841,7 +998,7 @@ export function buildDependencyNetwork(ctx) {
     });
   }
 
-  if (flags.forestLand || (projectType === 'Irrigation' && subtype === 'Reservoir submergence')) {
+  if (applies('FOREST')) {
     add('FOREST', {
       name: `${profile.forest} / Ministry of Environment, Forest & Climate Change`,
       level: 'state',
@@ -850,7 +1007,7 @@ export function buildDependencyNetwork(ctx) {
     });
   }
 
-  if (affectedFamilies > 0 && framework.mode === 'ownership') {
+  if (applies('RR_ADMIN')) {
     add('RR_ADMIN', {
       name: `Administrator for Rehabilitation & Resettlement${district ? `, ${district}` : ''}`,
       level: 'district',
@@ -859,14 +1016,14 @@ export function buildDependencyNetwork(ctx) {
     });
   }
 
-  add('DISPUTE_FORUM', {
+  if (applies('DISPUTE_FORUM')) add('DISPUTE_FORUM', {
     name: framework.disputeForum,
     level: frameworkId === 'RFCTLARR' ? 'state' : 'district',
     why: `Forum for references on objections and compensation under the ${framework.short}.`,
     basis: 'statute',
   });
 
-  add('TREASURY', {
+  if (applies('TREASURY')) add('TREASURY', {
     name: `${profile.treasury} / requiring-body deposit`,
     level: 'state',
     why:
@@ -875,7 +1032,7 @@ export function buildDependencyNetwork(ctx) {
         : 'Right-of-way / right-of-user compensation is released from funds deposited by the project entity.',
   });
 
-  if (framework.mode === 'ownership') {
+  if (applies('REGISTRATION')) {
     add('REGISTRATION', {
       name: profile.registration,
       level: 'state',
@@ -883,15 +1040,15 @@ export function buildDependencyNetwork(ctx) {
     });
   }
 
-  if (agriculturalLand) {
+  if (applies('VALUATION_SUPPORT')) {
     add('VALUATION_SUPPORT', {
-      name: `Agriculture, Horticulture & ${projectType === 'Urban Infrastructure' || projectType === 'Metro Rail' ? 'Public Works' : 'Forest'} departments (valuation)`,
+      name: `Agriculture, Horticulture & ${type.valuationDepartment ?? 'Forest'} departments (valuation)`,
       level: 'district',
       why: 'Crops, trees and structures on the parcels are valued by line departments before the award.',
     });
   }
 
-  if (type.linear || projectType === 'Urban Infrastructure' || projectType === 'Airport') {
+  if (applies('UTILITIES')) {
     add('UTILITIES', {
       name: `Utility owners — electricity distribution company, water board, telecom (${district ?? state})`,
       level: 'district',
@@ -899,7 +1056,7 @@ export function buildDependencyNetwork(ctx) {
     });
   }
 
-  if (projectType === 'Airport') {
+  if (applies('AVIATION')) {
     add('AVIATION', {
       name:
         subtype === 'Greenfield airport'
@@ -914,7 +1071,7 @@ export function buildDependencyNetwork(ctx) {
     });
   }
 
-  if (flags.crossesRailway && projectType !== 'Railway' && type.linear) {
+  if (applies('RAILWAY_INTERFACE')) {
     add('RAILWAY_INTERFACE', {
       name: `${profile.railwayZone({ district })} — bridge / crossing approval`,
       level: 'central',
@@ -922,7 +1079,7 @@ export function buildDependencyNetwork(ctx) {
     });
   }
 
-  if (flags.crossesHighway && projectType !== 'National Highway' && projectType !== 'Expressway' && type.linear) {
+  if (applies('HIGHWAY_INTERFACE')) {
     add('HIGHWAY_INTERFACE', {
       name: 'National Highways Authority of India — crossing permission',
       level: 'central',
@@ -930,7 +1087,7 @@ export function buildDependencyNetwork(ctx) {
     });
   }
 
-  if (flags.consolidationOpen && profile.consolidation) {
+  if (applies('CONSOLIDATION')) {
     add('CONSOLIDATION', {
       name: profile.consolidation,
       level: 'state',
@@ -938,7 +1095,7 @@ export function buildDependencyNetwork(ctx) {
     });
   }
 
-  if (projectType === 'Metro Rail' || projectType === 'Urban Infrastructure') {
+  if (applies('URBAN_LOCAL_BODY')) {
     add('URBAN_LOCAL_BODY', {
       name: `${district ?? state} municipal corporation / urban local body`,
       level: 'district',

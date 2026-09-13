@@ -132,7 +132,7 @@ function downloadCsv(rows: string[][], filename: string, today: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `bhoomipredict-${filename}-${today}.csv`;
+  a.download = `landpulse-${filename}-${today}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }

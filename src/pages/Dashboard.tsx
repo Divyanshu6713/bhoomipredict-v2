@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Bar, BarChart, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AlertOctagon, Building2, Clock, Gauge, Gavel, Layers, Network, Percent, ShieldAlert, TrendingUp, TriangleAlert, Users, BadgeIndianRupee, CalendarClock } from 'lucide-react';
 import { Card, CardHeader, Select, SkeletonCard } from '@/components/ui';
@@ -18,12 +18,12 @@ const tick = { fill: 'rgb(var(--c-ink-3))', fontSize: 11 };
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { values, set } = useFilters({ state: 'all', projectType: 'all' });
+  const { values, set } = useFilters({ sector: 'all', state: 'all', projectType: 'all' });
   const facets = useApi((signal) => fetchFacets(signal), []);
-  const summary = useApi((signal) => fetchDashboard({ state: values.state, projectType: values.projectType }, signal), [values.state, values.projectType]);
+  const summary = useApi((signal) => fetchDashboard({ sector: values.sector, state: values.state, projectType: values.projectType }, signal), [values.sector, values.state, values.projectType]);
   const s = summary.data;
 
-  const go = (params: Record<string, string>) => navigate(`/projects?${new URLSearchParams({ ...(values.state !== 'all' ? { state: values.state } : {}), ...(values.projectType !== 'all' ? { projectType: values.projectType } : {}), ...params }).toString()}`);
+  const go = (params: Record<string, string>) => navigate(`/projects?${new URLSearchParams({ ...(values.sector !== 'all' ? { sector: values.sector } : {}), ...(values.state !== 'all' ? { state: values.state } : {}), ...(values.projectType !== 'all' ? { projectType: values.projectType } : {}), ...params }).toString()}`);
 
   if (summary.error) return <ErrorState error={summary.error} onRetry={summary.reload} />;
   if (!s) {
@@ -40,15 +40,22 @@ export default function Dashboard() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="label-xs">Scope</p>
+        <div className="min-w-0">
+          <p className="label-xs">Administrative scope</p>
           <p className="text-[13px] font-semibold text-ink">
-            {user?.scopeLabel} · {formatNumber(s.scope.projects)} projects
+            {user?.position.organisation.name} · {user?.position.tierLabel}
+          </p>
+          <p className="text-[12px] text-ink-3">
+            {user?.scopeLabel} · {formatNumber(s.scope.projects)} projects in view ·{' '}
+            <Link to={`/hierarchy${values.sector !== 'all' ? `?sector=${values.sector}` : ''}`} className="font-semibold text-brand hover:underline">
+              Drill down India → sector → state → district
+            </Link>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Select className="w-[190px]" label="Sector" value={values.sector} onChange={(v) => set({ sector: v, projectType: 'all' })} options={[{ label: 'All sectors', value: 'all' }, ...(facets.data?.sectors ?? []).filter((x) => x.projectTypes.length).map((x) => ({ label: x.label, value: x.id }))]} />
           <Select className="w-[190px]" label="State" value={values.state} onChange={(v) => set({ state: v })} options={[{ label: 'All in scope', value: 'all' }, ...(facets.data?.states ?? []).map((x) => ({ label: x, value: x }))]} />
-          <Select className="w-[190px]" label="Project type" value={values.projectType} onChange={(v) => set({ projectType: v })} options={[{ label: 'All types', value: 'all' }, ...(facets.data?.projectTypes ?? []).map((x) => ({ label: x, value: x }))]} />
+          <Select className="w-[190px]" label="Project type" value={values.projectType} onChange={(v) => set({ projectType: v })} options={[{ label: 'All types', value: 'all' }, ...(facets.data?.projectTypes ?? []).filter((x) => values.sector === 'all' || facets.data?.sectors.find((sec) => sec.id === values.sector)?.projectTypes.includes(x)).map((x) => ({ label: x, value: x }))]} />
         </div>
       </div>
 

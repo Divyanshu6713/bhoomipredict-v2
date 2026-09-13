@@ -14,6 +14,7 @@ import {
   Globe2,
   History,
   Info,
+  Layers3,
   LayoutDashboard,
   ListChecks,
   Loader2,
@@ -22,6 +23,7 @@ import {
   Menu,
   Moon,
   Network,
+  PlugZap,
   Search,
   Settings2,
   ShieldAlert,
@@ -39,6 +41,8 @@ import { fetchAlerts, fetchCases, fetchHealth, fetchNotifications, fetchProjects
 import { RISK_CLASS } from '@/lib/risk';
 import { SEVERITY_CLASS } from '@/lib/status';
 import { formatDate } from '@/lib/format';
+import { BRAND } from '@/lib/brand';
+import { PositionBreadcrumb } from '@/components/hierarchy/AdministrativeChain';
 
 interface NavItem {
   to: string;
@@ -50,6 +54,7 @@ interface NavItem {
 
 const TRACK_NAV: NavItem[] = [
   { to: '/dashboard', label: 'Command Centre', icon: LayoutDashboard },
+  { to: '/hierarchy', label: 'National Portfolio', icon: Layers3 },
   { to: '/projects', label: 'Projects', icon: Gauge },
   { to: '/cases', label: 'Cases & Parcels', icon: Map },
   { to: '/map', label: 'GIS Risk Map', icon: Globe2 },
@@ -67,6 +72,7 @@ const REVIEW_NAV: NavItem[] = [
   { to: '/reports', label: 'Reports', icon: FileBarChart },
   { to: '/documents', label: 'Documents', icon: FileStack },
   { to: '/registry', label: 'Authority Registry', icon: Network },
+  { to: '/data-sources', label: 'Data Sources', icon: PlugZap },
   { to: '/data', label: 'Data & Model', icon: Database },
   { to: '/about', label: 'Methodology', icon: Info },
 ];
@@ -77,7 +83,9 @@ const ADMIN_NAV: NavItem[] = [
 ];
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
-  '/dashboard': { title: 'Acquisition Command Centre', subtitle: 'Portfolio position, predicted milestone risk and where to intervene first — scoped to your jurisdiction' },
+  '/dashboard': { title: 'Acquisition Command Centre', subtitle: 'Land-acquisition bottlenecks, predicted milestone risk and where to intervene first — scoped to your jurisdiction' },
+  '/hierarchy': { title: 'National Portfolio', subtitle: 'India → sector ministry → State / UT → district → project, on the same prediction engine' },
+  '/data-sources': { title: 'Data Sources & Integration', subtitle: 'Data provenance, provider contracts and the path to official government sources' },
   '/projects': { title: 'Acquisition Projects', subtitle: 'Registry across the nine-stage statutory lifecycle' },
   '/projects/new': { title: 'New Project', subtitle: 'Validated against the authority registry, geography and lifecycle rules' },
   '/cases': { title: 'Cases & Parcels', subtitle: 'Parcel-level acquisition cases with predicted milestone risk' },
@@ -90,10 +98,10 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/data': { title: 'Data & Model', subtitle: 'Corpus composition, data quality, model card and exports' },
   '/reports': { title: 'Reports', subtitle: 'MIS review packs and dataset exports' },
   '/documents': { title: 'Document Repository', subtitle: 'Notifications, awards, land records and survey documents by project, stage and case' },
-  '/registry': { title: 'Authority & Dependency Registry', subtitle: 'Frameworks, project types and state profiles that decide who owns each step' },
+  '/registry': { title: 'Authority & Dependency Registry', subtitle: 'Frameworks, project-type dependencies, issues and state profiles that decide who owns each step' },
   '/admin': { title: 'Administration', subtitle: 'Projects, CSV upload, retraining, model metrics and data consistency' },
   '/audit': { title: 'Audit Trail', subtitle: 'Every recorded change, with user, role, before and after' },
-  '/profile': { title: 'My Profile', subtitle: 'Role, jurisdiction, assignments and notifications' },
+  '/profile': { title: 'My Profile', subtitle: 'Administrative position, scope, portfolio and assignments' },
   '/about': { title: 'Methodology', subtitle: 'How the platform produces, explains and bounds its forecasts' },
 };
 
@@ -289,6 +297,7 @@ function UserMenu() {
             <p className="text-[13px] font-semibold text-ink">{user.name}</p>
             <p className="text-[11px] leading-snug text-ink-3">{user.designation}</p>
             <p className="text-[11px] leading-snug text-ink-3">{user.department}</p>
+            <PositionBreadcrumb position={user.position} className="mt-1 text-[10.5px]" />
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Badge className="border-brand/25 bg-brand/10 text-brand">{user.roleLabel}</Badge>
               <Badge>{user.scopeLabel}</Badge>
@@ -350,7 +359,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         ? { title: 'Project Intelligence', subtitle: 'Authorities, lifecycle, case backlog, risk, explanation and actions' }
         : pathname.startsWith('/cases/')
           ? { title: 'Case Intelligence', subtitle: 'One acquisition case, its blockers, predicted milestone risk and why' }
-          : { title: 'BhoomiPredict', subtitle: '' });
+          : { title: BRAND.product, subtitle: BRAND.descriptor });
 
   const sidebar = (
     <div className="flex h-full flex-col bg-navy-900 grid-lines">
@@ -445,9 +454,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex flex-wrap items-center justify-between gap-3 text-[11px] text-ink-3">
             <p className="flex items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-              SYNTHETIC DEMO DATA — not an official acquisition record; project locations are not real project sites.
+              SYNTHETIC DEMO DATA — not an official acquisition record; no government system is connected.{' '}
+              <Link to="/data-sources" className="font-semibold text-brand hover:underline">
+                Data sources
+              </Link>
             </p>
-            <p>BhoomiPredict · AI decision support for land acquisition · v2.1</p>
+            <p>
+              <span className="font-semibold text-ink-2">{BRAND.product}</span> · {BRAND.tagline} · {BRAND.version} · {BRAND.attribution}
+            </p>
           </div>
         </footer>
       </div>

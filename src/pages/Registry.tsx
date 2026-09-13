@@ -7,6 +7,8 @@ import { useApi } from '@/hooks';
 import { fetchRegistry, fetchScenarioOptions, scoreScenario } from '@/api/client';
 import { humanise } from '@/lib/status';
 import type { ProjectType } from '@/data/types';
+import { useAuth } from '@/auth/AuthContext';
+import { DependencyMatrix, IssueMatrix } from '@/components/issues/TypeMatrices';
 
 /**
  * Read-only view of the authority registry: which framework, bodies and
@@ -14,9 +16,10 @@ import type { ProjectType } from '@/data/types';
  */
 export default function Registry() {
   const registry = useApi((signal) => fetchRegistry(signal), []);
-  const [state, setState] = useState('Karnataka');
-  const [district, setDistrict] = useState('Mandya');
-  const [type, setType] = useState<ProjectType>('Irrigation');
+  const { user } = useAuth();
+  const [state, setState] = useState(user?.state ?? 'Maharashtra');
+  const [district, setDistrict] = useState(user?.state ? user.district ?? '' : 'Nagpur');
+  const [type, setType] = useState<ProjectType>('National Highway');
   const [subtype, setSubtype] = useState('');
   const options = useApi((signal) => fetchScenarioOptions({ state, district, projectType: type, subtype }, signal), [state, district, type, subtype]);
   const validDistrict = options.data?.districts?.some((d) => d.district === district);
@@ -36,7 +39,7 @@ export default function Registry() {
         <p className="font-semibold text-ink">About this registry</p>
         <p className="mt-1">{r.note}</p>
         <p className="mt-1">
-          States with detailed or compact profiles: {r.profiledStates.join(', ')}. Any other state falls back to generic designations rather than invented ones.
+          All {r.statesAndUts.length} States and Union Territories are supported. {r.statesAndUts.filter((s) => s.profiled).length} carry a configured state profile (designations, land-records system, agencies); the other {r.statesAndUts.filter((s) => !s.profiled).length} use generic designations rather than invented ones until their profile is configured: {r.statesAndUts.filter((s) => !s.profiled).map((s) => s.name).join(', ')}.
         </p>
       </Card>
 
@@ -72,6 +75,9 @@ export default function Registry() {
           </div>
         </Card>
       </section>
+
+      <DependencyMatrix matrix={r.dependencyMatrix} />
+      <IssueMatrix matrix={r.issueMatrix} />
 
       <Card>
         <CardHeader title="Acquisition frameworks" subtitle="Milestones, dispute forums and whether land is acquired or only a right of use / way" icon={<Gavel className="h-4 w-4" />} />
