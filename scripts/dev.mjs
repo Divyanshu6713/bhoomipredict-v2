@@ -35,8 +35,8 @@ const children = [];
  * `shell` is opt-in per process: npx needs it on Windows, but running the API
  * through a shell would break on the spaces in Node's own install path.
  */
-const start = (label, command, args, color, { shell = false } = {}) => {
-  const child = spawn(command, args, { cwd: ROOT, shell, stdio: ['ignore', 'pipe', 'pipe'] });
+const start = (label, command, args, color, { shell = false, env = process.env } = {}) => {
+  const child = spawn(command, args, { cwd: ROOT, shell, env, stdio: ['ignore', 'pipe', 'pipe'] });
   const write = (stream, chunk) => {
     for (const line of String(chunk).split(/\r?\n/)) {
       if (line.trim()) stream.write(`\x1b[${color}m${label}\x1b[0m ${line}\n`);
@@ -70,5 +70,9 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-start('[api] ', process.execPath, [path.join(ROOT, 'server', 'index.mjs')], '36');
+// Pin the API to its own port. Hosting tools often export PORT for the web
+// server; without this the API would claim it and push Vite elsewhere, and the
+// browser would silently get the stale production bundle instead of Vite.
+const API_PORT = process.env.BP_API_PORT ?? '5179';
+start('[api] ', process.execPath, [path.join(ROOT, 'server', 'index.mjs')], '36', { env: { ...process.env, BP_API_PORT: API_PORT } });
 start('[web] ', 'npx', ['vite'], '35', { shell: process.platform === 'win32' });

@@ -1,0 +1,94 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { fetchProfile, getToken, login as apiLogin, logout as apiLogout, onUnauthorized, setToken } from '@/api/client';
+import type { Profile, User } from '@/data/types';
+
+interface AuthState {
+  user: User | null;
+  profile: Profile | null;
+  loading: boolean;
+  signIn: (userId: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  refresh: () => void;
+  can: (permission: string) => boolean;
+}
+
+const AuthContext = createContext<AuthState | null>(null);
+
+/**
+ * Session state. The profile comes from the API, so role, scope and
+ * permissions shown in the UI are exactly the ones the server enforces.
+ */
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(Boolean(getToken()));
+  const [nonce, setNonce] = useState(0);
+
+  useEffect(() => {
+    if (!getToken()) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setLoading(true);
+    fetchProfile(controller.signal)
+      .then(setProfile)
+      .catch((err: Error) => {
+        if (err.name === 'AbortError') return;
+        setToken(null);
+        setProfile(null);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [nonce]);
+
+  useEffect(() => {
+    const off = onUnauthorized(() => {
+      setToken(null);
+      setProfile(null);
+    });
+    return () => {
+      off();
+    };
+  }, []);
+
+  const signIn = useCallback(async (userId: string) => {
+    const { token } = await apiLogin(userId);
+    setToken(token);
+    setNonce((n) => n + 1);
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      await apiLogout();
+    } finally {
+      setToken(null);
+      setProfile(null);
+    }
+  }, []);
+
+  const refresh = useCallback(() => setNonce((n) => n + 1), []);
+
+  const value = useMemo<AuthState>(
+    () => ({
+      user: profile?.user ?? null,
+      profile,
+      loading,
+      signIn,
+      signOut,
+      refresh,
+      can: (permission: string) => Boolean(profile?.user.permissions.includes(permission)),
+    }),
+    [profile, loading, signIn, signOut, refresh],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  return ctx;
+}

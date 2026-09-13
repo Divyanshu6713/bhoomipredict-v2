@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -10,7 +11,18 @@ import {
   Sparkles,
   TrendingUp,
   Users,
+  Network,
+  FileStack,
+  History,
 } from 'lucide-react';
+import { RecommendationList } from '@/components/workflow';
+import { AuditTimeline } from '@/components/workflow/AuditTimeline';
+import { DocumentPanel } from '@/components/documents/DocumentPanel';
+import { Modal, Field, inputClass } from '@/components/ui/Modal';
+import { Select, DemoDataBadge } from '@/components/ui';
+import { STAGE_STATUS_CLASS, STAGE_STATUS_LABEL, humanise } from '@/lib/status';
+import { fetchDocuments, updateCaseStatus } from '@/api/client';
+import { useAuth } from '@/auth/AuthContext';
 import { cn } from '@/lib/cn';
 import { Badge, Card, CardHeader, Button, SkeletonCard, InfoDot } from '@/components/ui';
 import { ErrorState, KeyValue, QualityBadge, RiskMeter } from '@/components/ui/primitives';
@@ -25,11 +37,33 @@ export default function CaseDetail() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const detail = useApi((signal) => fetchCase(id, signal), [id]);
+  const { can } = useAuth();
+  const caseDocs = useApi((signal) => fetchDocuments({ caseId: id }, signal), [id]);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [nextStatus, setNextStatus] = useState('UNDER_REVIEW');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   if (detail.error) return <ErrorState error={detail.error} onRetry={detail.reload} title="Could not load this case" />;
   if (detail.loading || !detail.data) return <SkeletonCard lines={10} />;
 
-  const { case: c, intervention, explanation } = detail.data;
+  const { case: c, explanation, recommendations, network, stage, project, permissions } = detail.data;
+  const pendingNodes = network.nodes.filter((n) => c.pendingDependencies.includes(n.code));
+  const saveStatus = async () => {
+    setBusy(true);
+    setStatusError(null);
+    try {
+      await updateCaseStatus(c.caseId, { status: nextStatus, note });
+      setStatusOpen(false);
+      setNote('');
+      detail.reload();
+    } catch (err) {
+      setStatusError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
   const overdue = c.daysToMilestone < 0;
 
   return (
@@ -48,12 +82,14 @@ export default function CaseDetail() {
                 <span className="font-mono text-[11.5px] font-semibold text-white/45">{c.caseId}</span>
                 <Badge className="border-white/15 bg-white/10 text-white/70">Parcel {c.parcelId}</Badge>
                 <Badge className="border-white/15 bg-white/10 text-white/70">Survey {c.surveyNumber}</Badge>
+                <Badge className="border-white/15 bg-white/10 text-white/80">Case status: {humanise(c.caseStatus ?? 'OPEN')}</Badge>
+                <DemoDataBadge />
                 <Badge className={OUTCOME_CLASS[c.outcome]}>
                   {c.labelObserved ? `Outcome: ${c.outcome}` : 'Milestone open'}
                 </Badge>
               </div>
               <h2 className="mt-2 font-display text-[21px] font-extrabold leading-tight tracking-tight text-white sm:text-[25px]">
-                {c.village}, {c.tehsil}
+                {c.village}, {c.tehsil} {c.subDistrictLabel}
               </h2>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-white/50">
                 <span className="flex items-center gap-1.5">
@@ -149,17 +185,22 @@ export default function CaseDetail() {
         </Card>
 
         <Card className="animate-fade-up" style={{ animationDelay: '120ms' }}>
-          <CardHeader title="Recommended intervention" subtitle="Prompted by the leading contributor" icon={<ClipboardCheck className="h-4 w-4" />} />
+          <CardHeader title="What is holding this case" subtitle="Case-level rules and pending department actions, with owners" icon={<ClipboardCheck className="h-4 w-4" />} />
           <div className="space-y-3 px-5 pb-5">
-            <div className="rounded-xl border border-brand/25 bg-brand/[0.06] p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-brand">Action for review</p>
-              <p className="mt-1.5 text-[13.5px] font-bold leading-snug text-ink">{intervention.action}</p>
-              {intervention.detail && <p className="mt-2 text-[12px] leading-relaxed text-ink-2">{intervention.detail}</p>}
-              <p className="mt-2.5 text-[11px] text-ink-3">Owner: {intervention.owner}</p>
+            <RecommendationList items={recommendations} max={6} emptyText="No case-level trigger holds." />
+            <div className="rounded-xl border border-line bg-surface-2 p-3">
+              <p className="label-xs">Case status</p>
+              <p className="mt-1 text-[13px] font-bold text-ink">{humanise(c.caseStatus ?? 'OPEN')}</p>
+              {c.caseStatusNote && <p className="mt-0.5 text-[11.5px] text-ink-2">“{c.caseStatusNote}” — {c.caseStatusUpdatedBy}</p>}
+              {permissions.updateCase && can('case.update') && (
+                <Button size="sm" variant="outline" className="mt-2" onClick={() => setStatusOpen(true)}>
+                  Update case status
+                </Button>
+              )}
             </div>
-            <Link to={`/predict?case=${c.caseId}`} className="block">
+            <Link to={`/predict?project=${c.projectId}`} className="block">
               <Button className="w-full gap-2">
-                <TrendingUp className="h-4 w-4" /> Run a what-if on this case
+                <TrendingUp className="h-4 w-4" /> Scenario scoring for this project
               </Button>
             </Link>
             <Link to={`/projects/${c.projectId}`} className="block">
@@ -167,6 +208,56 @@ export default function CaseDetail() {
                 Open project intelligence
               </Button>
             </Link>
+          </div>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <Card className="animate-fade-up">
+          <CardHeader title="Stage vs case" subtitle="The project's statutory stage status is separate from this case's resolution" icon={<CalendarClock className="h-4 w-4" />} />
+          <div className="space-y-3 px-5 pb-5">
+            <div className="flex flex-wrap gap-2">
+              <Badge className={STAGE_STATUS_CLASS[stage.status]}>
+                Project stage "{stage.name}": {STAGE_STATUS_LABEL[stage.status]}
+              </Badge>
+              <Badge>Case: {humanise(c.caseStatus ?? 'OPEN')}</Badge>
+              <Badge>Parcel possession: {c.possessionStatus}</Badge>
+            </div>
+            <p className="text-[12.5px] leading-relaxed text-ink-2">{stage.explanation}</p>
+            {stage.status === 'COMPLETED' && !c.labelObserved && (
+              <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[12px] text-ink-2">
+                This is one of the {formatNumber(stage.openCases)} residual cases still open in a stage the project has already completed.
+              </p>
+            )}
+            <p className="text-[11px] text-ink-3">
+              Project: <Link to={`/projects/${project.id}`} className="font-semibold text-brand hover:underline">{project.name}</Link> · {project.framework} · primary authority {project.primaryAuthority}
+            </p>
+          </div>
+        </Card>
+        <Card className="animate-fade-up">
+          <CardHeader title="Pending department actions" subtitle={`${c.pendingDependencies.length} of ${c.dependencyCount ?? network.dependencyCount} dependencies have an action pending on this parcel${c.approvalDelayDays ? ` · approvals outstanding ${c.approvalDelayDays} days` : ''}`} icon={<Network className="h-4 w-4" />} />
+          <div className="divide-y divide-line border-t border-line">
+            {pendingNodes.map((n) => (
+              <div key={n.code} className="px-5 py-2.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-ink-3">{n.role}{n.gate ? ' · gates stage' : ''}</p>
+                <p className="text-[12.5px] font-semibold text-ink">{n.name}</p>
+                <p className="text-[11.5px] text-ink-2">{n.pendingActionText}</p>
+              </div>
+            ))}
+            {pendingNodes.length === 0 && <p className="px-5 py-6 text-center text-[12px] text-ink-3">No department action is pending on this parcel.</p>}
+          </div>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <Card className="animate-fade-up">
+          <CardHeader title="Case documents" icon={<FileStack className="h-4 w-4" />} />
+          {caseDocs.data ? <DocumentPanel projectId={c.projectId} caseId={c.caseId} stages={[c.stage]} initial={caseDocs.data} canUpload={can('document.upload')} canReview={can('document.review')} onChanged={detail.reload} /> : <p className="px-5 pb-5 text-[12px] text-ink-3">Loading documents…</p>}
+        </Card>
+        <Card className="animate-fade-up">
+          <CardHeader title="Case activity" icon={<History className="h-4 w-4" />} />
+          <div className="px-5 pb-5">
+            <AuditTimeline entries={detail.data.activity} empty="No recorded activity on this case." />
           </div>
         </Card>
       </section>
@@ -279,6 +370,26 @@ export default function CaseDetail() {
           )}
         </div>
       </Card>
+      <Modal
+        open={statusOpen}
+        onClose={() => setStatusOpen(false)}
+        title="Update case status"
+        subtitle={c.caseId}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setStatusOpen(false)}>Cancel</Button>
+            <Button onClick={saveStatus} disabled={busy || note.trim().length < 5}>{busy ? 'Saving…' : 'Save'}</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <Select label="Status" value={nextStatus} onChange={setNextStatus} options={['OPEN', 'UNDER_REVIEW', 'ESCALATED', 'ON_HOLD', 'RESOLVED_PENDING_RESCORE'].map((v) => ({ label: humanise(v), value: v }))} />
+          <Field label="Note (required)" hint="Recorded in the audit trail. Model scores for the case refresh at the next retraining.">
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className={cn(inputClass, 'h-auto py-2')} />
+          </Field>
+          {statusError && <p className="text-[12px] font-medium text-rose-600">{statusError}</p>}
+        </div>
+      </Modal>
     </div>
   );
 }

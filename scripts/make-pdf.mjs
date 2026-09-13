@@ -53,13 +53,15 @@ const FIELDS = [
   ['parcel_id', 'string', 'Parcel reference, coded state-district-sequence.'],
   ['state', 'category', 'State administering the acquisition.'],
   ['district', 'category', 'Revenue district.'],
-  ['tehsil', 'category', 'Tehsil / taluka within the district.'],
+  ['tehsil', 'category', 'Taluk / tehsil / mandal within the district (real sub-district name).'],
   ['village', 'category', 'Revenue village.'],
-  ['latitude', 'float', 'Schematic parcel latitude (district centroid plus jitter).'],
-  ['longitude', 'float', 'Schematic parcel longitude (district centroid plus jitter).'],
+  ['latitude', 'float', 'Synthetic parcel latitude, sampled inside the real district boundary.'],
+  ['longitude', 'float', 'Synthetic parcel longitude, sampled inside the real district boundary.'],
   ['project_name', 'string', 'Name of the corridor or scheme.'],
   ['project_type', 'category', 'Infrastructure category of the project.'],
-  ['authority', 'category', 'Implementing authority.'],
+  ['project_subtype', 'category', 'Subtype within the project type (e.g. Six-laning, Lift irrigation scheme).'],
+  ['acquisition_framework', 'category', 'Statute the acquisition proceeds under (RFCTLARR, NH_ACT, RAILWAYS_ACT, PMP_ACT, ELECTRICITY_ROW, KIAD_ACT, MID_ACT).'],
+  ['authority', 'category', 'Primary acquiring / requiring body, eligible for the type, state and district.'],
   ['project_priority', 'category', 'Routine / Important / Critical sanction priority.'],
   ['project_land_requirement_ha', 'float', 'Land requirement fixed at sanction, hectares.'],
   ['project_start_date', 'date', 'Project sanction / commencement date.'],
@@ -94,6 +96,11 @@ const FIELDS = [
   ['inactivity_days', 'int', 'Days since the last recorded action on the file.'],
   ['possession_status', 'category', 'Not Initiated / Notice Issued / Partial / Complete.'],
   ['rr_status', 'category', 'Not Applicable / Not Started / In Progress / Complete.'],
+  ['authority_dependency_count', 'int', 'Authorities the acquisition depends on, from the authority registry.'],
+  ['pending_dependency_actions', 'int', 'Dependencies gating this stage with an action pending on the parcel.'],
+  ['pending_dependency_codes', 'string', 'Semicolon-separated codes of those pending dependencies (e.g. LAND_RECORDS;TREASURY).'],
+  ['approval_delay_days', 'int', 'Days an approval or clearance has been pending on the parcel.'],
+  ['department_coordination_score', 'int', 'Inter-department coordination score for the project, 0-100 (higher is better).'],
   ['historical_stage_delay_rate', 'float', 'Historical slip rate of this stage, 0-1.'],
   ['district_historical_delay_rate', 'float', 'Historical delay rate of the district, 0-1.'],
   ['authority_historical_delay_rate', 'float', 'Historical delay rate of the authority, 0-1.'],
@@ -598,6 +605,30 @@ function dataPages(pdf, header, rows, part, columns) {
 
 /* ------------------------------------------------------------------- main */
 
+/** Quote-aware split: authority and project names can contain commas. */
+function splitCsv(line) {
+  const out = [];
+  let field = '';
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else quoted = false;
+      } else field += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ',') {
+      out.push(field);
+      field = '';
+    } else field += ch;
+  }
+  out.push(field);
+  return out;
+}
+
 async function readSample() {
   const step = FULL ? 1 : Math.max(1, Math.floor(meta.records / SAMPLE_ROWS));
   const rl = readline.createInterface({
@@ -612,13 +643,7 @@ async function readSample() {
       header = line.split(',');
       continue;
     }
-    if (i % step === 0) {
-      rows.push(
-        line
-          .split(',')
-          .map((v) => (v.charCodeAt(0) === 34 ? v.slice(1, -1) : v)),
-      );
-    }
+    if (i % step === 0) rows.push(splitCsv(line));
     i++;
   }
   return { header, rows, step };

@@ -604,7 +604,7 @@ function FinalCta() {
 function Footer() {
   const cols = [
     { title: 'Track', links: [['Command Centre', '/dashboard'], ['Projects', '/projects'], ['Cases & Parcels', '/cases'], ['GIS Risk Map', '/map']] },
-    { title: 'Predict', links: [['AI Risk', '/risk'], ['Scenario Scoring', '/predict'], ['Intervention Queue', '/queue'], ['Early Warnings', '/alerts']] },
+    { title: 'Predict', links: [['AI Risk', '/risk'], ['Scenario Scoring', '/predict'], ['Intervention Queue', '/queue'], ['Alert Centre', '/alerts']] },
     { title: 'Review', links: [['Analytics', '/analytics'], ['Data & Model', '/data'], ['Reports', '/reports'], ['Methodology', '/about']] },
   ];
 

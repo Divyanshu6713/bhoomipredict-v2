@@ -1,4 +1,4 @@
-import type { RiskLevel, StageStatus } from '@/data/types';
+import type { RiskLevel } from '@/data/types';
 
 /**
  * Risk banding.
@@ -60,12 +60,8 @@ export const RISK_CLASS: Record<RiskLevel, { chip: string; dot: string; bar: str
   },
 };
 
-export const STAGE_STATUS_CLASS: Record<StageStatus, string> = {
-  Completed: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25',
-  'In Progress': 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/25',
-  Delayed: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25',
-  Pending: 'bg-slate-500/10 text-ink-3 border-line-strong',
-};
+/** Stage status colours live with the other workflow statuses. */
+export { STAGE_STATUS_CLASS } from './status';
 
 export const OUTCOME_CLASS: Record<string, string> = {
   Delayed: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25',

@@ -4,402 +4,420 @@
    "feature": "legal_case_count",
    "group": "Legal disputes",
    "label": "Open legal cases",
-   "aucDrop": 0.03981
+   "aucDrop": 0.03211
   },
   {
    "feature": "schedule_consumed",
    "group": "Stage schedule pressure",
    "label": "Stage time consumed vs allowed",
-   "aucDrop": 0.03888
+   "aucDrop": 0.03015
   },
   {
    "feature": "inactivity_days",
    "group": "Inactivity",
    "label": "Days since last recorded action",
-   "aucDrop": 0.03414
+   "aucDrop": 0.02577
   },
   {
    "feature": "document_completeness",
    "group": "Documentation & verification",
    "label": "Document completeness %",
-   "aucDrop": 0.0238
-  },
-  {
-   "feature": "ownership_complexity=Single",
-   "group": "Ownership complexity",
-   "label": "Ownership complexity: Single",
-   "aucDrop": 0.01687
+   "aucDrop": 0.02535
   },
   {
    "feature": "compensation_pending_days",
    "group": "Compensation",
    "label": "Days compensation pending",
-   "aucDrop": 0.01665
+   "aucDrop": 0.01242
+  },
+  {
+   "feature": "pending_dependency_actions",
+   "group": "Pending department actions",
+   "label": "Department actions pending on the case",
+   "aucDrop": 0.00974
   },
   {
    "feature": "verification_status=Pending",
    "group": "Documentation & verification",
    "label": "Verification status: Pending",
-   "aucDrop": 0.00901
+   "aucDrop": 0.00841
   },
   {
-   "feature": "approval_status=Submitted",
-   "group": "Documentation & verification",
-   "label": "Approval status: Submitted",
-   "aucDrop": 0.00777
+   "feature": "approval_delay_days",
+   "group": "Approval delay",
+   "label": "Days an approval / clearance has been pending",
+   "aucDrop": 0.00807
   },
   {
    "feature": "project_priority=Routine",
    "group": "Parcel & project attributes",
    "label": "Project priority: Routine",
-   "aucDrop": 0.0072
+   "aucDrop": 0.00681
   },
   {
-   "feature": "district_historical_delay_rate",
-   "group": "District performance history",
-   "label": "District historical delay rate",
-   "aucDrop": 0.00694
-  },
-  {
-   "feature": "affected_families",
-   "group": "Affected families",
-   "label": "Affected families",
-   "aucDrop": 0.00682
-  },
-  {
-   "feature": "historical_stage_delay_rate",
-   "group": "Historical stage performance",
-   "label": "Historical slip rate of this stage",
-   "aucDrop": 0.00666
-  },
-  {
-   "feature": "ownership_complexity=Joint",
+   "feature": "ownership_complexity=Single",
    "group": "Ownership complexity",
-   "label": "Ownership complexity: Joint",
-   "aucDrop": 0.00628
-  },
-  {
-   "feature": "authority_historical_delay_rate",
-   "group": "Authority performance history",
-   "label": "Authority historical delay rate",
-   "aucDrop": 0.0057
-  },
-  {
-   "feature": "department_response_days",
-   "group": "Administrative response time",
-   "label": "Departmental response time",
-   "aucDrop": 0.00491
-  },
-  {
-   "feature": "elapsed_stage_days",
-   "group": "Stage schedule pressure",
-   "label": "Days elapsed in current stage",
-   "aucDrop": 0.00404
-  },
-  {
-   "feature": "stakeholder_responsiveness=Low",
-   "group": "Stakeholder responsiveness",
-   "label": "Stakeholder responsiveness: Low",
-   "aucDrop": 0.00376
-  },
-  {
-   "feature": "verification_status=Verified",
-   "group": "Documentation & verification",
-   "label": "Verification status: Verified",
-   "aucDrop": 0.00354
-  },
-  {
-   "feature": "approval_status=Not Submitted",
-   "group": "Documentation & verification",
-   "label": "Approval status: Not Submitted",
-   "aucDrop": 0.00329
-  },
-  {
-   "feature": "compensation_completion_percentage",
-   "group": "Compensation",
-   "label": "Compensation completion %",
-   "aucDrop": 0.00328
-  },
-  {
-   "feature": "approval_status=Under Review",
-   "group": "Documentation & verification",
-   "label": "Approval status: Under Review",
-   "aucDrop": 0.00319
-  },
-  {
-   "feature": "land_type=Residential",
-   "group": "Parcel & project attributes",
-   "label": "Land type: Residential",
-   "aucDrop": 0.00309
-  },
-  {
-   "feature": "stakeholder_responsiveness=High",
-   "group": "Stakeholder responsiveness",
-   "label": "Stakeholder responsiveness: High",
-   "aucDrop": 0.00255
-  },
-  {
-   "feature": "land_type=Irrigated Agricultural",
-   "group": "Parcel & project attributes",
-   "label": "Land type: Irrigated Agricultural",
-   "aucDrop": 0.00247
-  },
-  {
-   "feature": "current_stage=Objection / Claims",
-   "group": "Stage schedule pressure",
-   "label": "Current stage: Objection / Claims",
-   "aucDrop": 0.00234
-  },
-  {
-   "feature": "land_type=Orchard/Plantation",
-   "group": "Parcel & project attributes",
-   "label": "Land type: Orchard/Plantation",
-   "aucDrop": 0.00212
-  },
-  {
-   "feature": "compensation_status=Awarded",
-   "group": "Compensation",
-   "label": "Compensation status: Awarded",
-   "aucDrop": 0.00211
-  },
-  {
-   "feature": "rr_progress_percentage",
-   "group": "Rehabilitation & resettlement",
-   "label": "R&R progress %",
-   "aucDrop": 0.00194
-  },
-  {
-   "feature": "project_priority=Important",
-   "group": "Parcel & project attributes",
-   "label": "Project priority: Important",
-   "aucDrop": 0.00193
-  },
-  {
-   "feature": "current_stage=Valuation",
-   "group": "Stage schedule pressure",
-   "label": "Current stage: Valuation",
-   "aucDrop": 0.00185
-  },
-  {
-   "feature": "ownership_complexity=Fragmented",
-   "group": "Ownership complexity",
-   "label": "Ownership complexity: Fragmented",
-   "aucDrop": 0.00135
+   "label": "Ownership complexity: Single",
+   "aucDrop": 0.00667
   },
   {
    "feature": "number_of_owners",
    "group": "Ownership complexity",
    "label": "Number of recorded owners",
-   "aucDrop": 0.00133
+   "aucDrop": 0.0066
+  },
+  {
+   "feature": "district_historical_delay_rate",
+   "group": "District performance history",
+   "label": "District historical delay rate",
+   "aucDrop": 0.0064
+  },
+  {
+   "feature": "land_type=Residential",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Residential",
+   "aucDrop": 0.0051
+  },
+  {
+   "feature": "current_stage=Objection / Claims",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Objection / Claims",
+   "aucDrop": 0.00476
+  },
+  {
+   "feature": "elapsed_stage_days",
+   "group": "Stage schedule pressure",
+   "label": "Days elapsed in current stage",
+   "aucDrop": 0.00451
+  },
+  {
+   "feature": "approval_status=Submitted",
+   "group": "Documentation & verification",
+   "label": "Approval status: Submitted",
+   "aucDrop": 0.00447
+  },
+  {
+   "feature": "affected_families",
+   "group": "Affected families",
+   "label": "Affected families",
+   "aucDrop": 0.00386
+  },
+  {
+   "feature": "ownership_complexity=Joint",
+   "group": "Ownership complexity",
+   "label": "Ownership complexity: Joint",
+   "aucDrop": 0.00366
+  },
+  {
+   "feature": "historical_stage_delay_rate",
+   "group": "Historical stage performance",
+   "label": "Historical slip rate of this stage",
+   "aucDrop": 0.00318
+  },
+  {
+   "feature": "approval_status=Not Submitted",
+   "group": "Documentation & verification",
+   "label": "Approval status: Not Submitted",
+   "aucDrop": 0.00291
+  },
+  {
+   "feature": "department_coordination_score",
+   "group": "Inter-department coordination",
+   "label": "Inter-department coordination score",
+   "aucDrop": 0.00271
+  },
+  {
+   "feature": "project_priority=Important",
+   "group": "Parcel & project attributes",
+   "label": "Project priority: Important",
+   "aucDrop": 0.00264
+  },
+  {
+   "feature": "current_stage=Valuation",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Valuation",
+   "aucDrop": 0.0025
+  },
+  {
+   "feature": "compensation_completion_percentage",
+   "group": "Compensation",
+   "label": "Compensation completion %",
+   "aucDrop": 0.00241
+  },
+  {
+   "feature": "stakeholder_responsiveness=High",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: High",
+   "aucDrop": 0.00207
+  },
+  {
+   "feature": "ownership_complexity=Fragmented",
+   "group": "Ownership complexity",
+   "label": "Ownership complexity: Fragmented",
+   "aucDrop": 0.00194
+  },
+  {
+   "feature": "approval_status=Under Review",
+   "group": "Documentation & verification",
+   "label": "Approval status: Under Review",
+   "aucDrop": 0.00168
+  },
+  {
+   "feature": "verification_status=Verified",
+   "group": "Documentation & verification",
+   "label": "Verification status: Verified",
+   "aucDrop": 0.00153
+  },
+  {
+   "feature": "stakeholder_responsiveness=Low",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: Low",
+   "aucDrop": 0.00143
+  },
+  {
+   "feature": "rr_pending_frac",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R entitlement still pending",
+   "aucDrop": 0.00116
+  },
+  {
+   "feature": "rr_progress_percentage",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R progress %",
+   "aucDrop": 0.00099
+  },
+  {
+   "feature": "land_type=Irrigated Agricultural",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Irrigated Agricultural",
+   "aucDrop": 0.00086
+  },
+  {
+   "feature": "authority_historical_delay_rate",
+   "group": "Authority performance history",
+   "label": "Authority historical delay rate",
+   "aucDrop": 0.00083
+  },
+  {
+   "feature": "compensation_status=Awarded",
+   "group": "Compensation",
+   "label": "Compensation status: Awarded",
+   "aucDrop": 0.0008
   },
   {
    "feature": "land_type=Commercial",
    "group": "Parcel & project attributes",
    "label": "Land type: Commercial",
-   "aucDrop": 0.00049
+   "aucDrop": 0.0007
   },
   {
-   "feature": "current_stage=Compensation",
+   "feature": "department_response_days",
+   "group": "Administrative response time",
+   "label": "Departmental response time",
+   "aucDrop": 0.00061
+  },
+  {
+   "feature": "land_type=Dry Agricultural",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Dry Agricultural",
+   "aucDrop": 0.00042
+  },
+  {
+   "feature": "current_stage=Rehabilitation & Resettlement",
    "group": "Stage schedule pressure",
-   "label": "Current stage: Compensation",
+   "label": "Current stage: Rehabilitation & Resettlement",
    "aucDrop": 0.00038
   },
   {
-   "feature": "land_type=Grazing/Common",
+   "feature": "land_type=Orchard/Plantation",
    "group": "Parcel & project attributes",
-   "label": "Land type: Grazing/Common",
-   "aucDrop": 0.00035
+   "label": "Land type: Orchard/Plantation",
+   "aucDrop": 0.00037
   },
   {
    "feature": "doc_gap_frac",
    "group": "Documentation & verification",
    "label": "Documentation still to be verified",
-   "aucDrop": 0.0003
+   "aucDrop": 0.00021
   },
   {
-   "feature": "possession_status=Not Initiated",
-   "group": "Possession",
-   "label": "Possession status: Not Initiated",
-   "aucDrop": 0.0003
-  },
-  {
-   "feature": "expected_stage_days",
+   "feature": "current_stage=Compensation",
    "group": "Stage schedule pressure",
-   "label": "Allowed days for current stage",
-   "aucDrop": 0.00028
+   "label": "Current stage: Compensation",
+   "aucDrop": 0.00018
   },
   {
-   "feature": "latitude",
-   "group": "Geography",
-   "label": "Latitude",
-   "aucDrop": 0.0002
+   "feature": "comp_pending_frac",
+   "group": "Compensation",
+   "label": "Share of compensation still unpaid",
+   "aucDrop": 0.00014
   },
   {
    "feature": "compensation_status=Partially Paid",
    "group": "Compensation",
    "label": "Compensation status: Partially Paid",
+   "aucDrop": 0.00014
+  },
+  {
+   "feature": "authority_dependency_count",
+   "group": "Authority dependencies",
+   "label": "Authorities the acquisition depends on",
+   "aucDrop": 0.0001
+  },
+  {
+   "feature": "land_type=Grazing/Common",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Grazing/Common",
+   "aucDrop": 0.0001
+  },
+  {
+   "feature": "project_type=Metro Rail",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Metro Rail",
    "aucDrop": 9e-05
   },
   {
-   "feature": "project_type=Power Transmission",
-   "group": "Parcel & project attributes",
-   "label": "Project type: Power Transmission",
-   "aucDrop": 8e-05
-  },
-  {
-   "feature": "authority=NICDC",
+   "feature": "authority=Water Resources Department, Madhya Pradesh",
    "group": "Other",
-   "label": "Authority: NICDC",
+   "label": "Authority: Water Resources Department, Madhya Pradesh",
    "aucDrop": 7e-05
   },
   {
    "feature": "land_area_ha",
    "group": "Parcel & project attributes",
    "label": "Parcel area (ha)",
-   "aucDrop": 6e-05
-  },
-  {
-   "feature": "possession_status=Notice Issued",
-   "group": "Possession",
-   "label": "Possession status: Notice Issued",
    "aucDrop": 5e-05
   },
   {
-   "feature": "state=Himachal Pradesh",
-   "group": "Geography",
-   "label": "State: Himachal Pradesh",
-   "aucDrop": 4e-05
-  },
-  {
-   "feature": "state=Jharkhand",
-   "group": "Geography",
-   "label": "State: Jharkhand",
-   "aucDrop": 4e-05
-  },
-  {
-   "feature": "current_stage=Rehabilitation & Resettlement",
-   "group": "Stage schedule pressure",
-   "label": "Current stage: Rehabilitation & Resettlement",
-   "aucDrop": 4e-05
-  },
-  {
-   "feature": "state=Maharashtra",
-   "group": "Geography",
-   "label": "State: Maharashtra",
-   "aucDrop": 3e-05
-  },
-  {
-   "feature": "state=Punjab",
-   "group": "Geography",
-   "label": "State: Punjab",
-   "aucDrop": 3e-05
-  },
-  {
-   "feature": "state=Rajasthan",
-   "group": "Geography",
-   "label": "State: Rajasthan",
-   "aucDrop": 3e-05
-  },
-  {
-   "feature": "current_stage=Notification",
-   "group": "Stage schedule pressure",
-   "label": "Current stage: Notification",
-   "aucDrop": 3e-05
-  },
-  {
-   "feature": "rehabilitation_cases",
-   "group": "Rehabilitation & resettlement",
-   "label": "R&R cases attached",
-   "aucDrop": 2e-05
-  },
-  {
-   "feature": "dispute_complexity=Moderate",
-   "group": "Legal disputes",
-   "label": "Dispute complexity: Moderate",
-   "aucDrop": 2e-05
-  },
-  {
-   "feature": "longitude",
-   "group": "Geography",
-   "label": "Longitude",
-   "aucDrop": 1e-05
-  },
-  {
-   "feature": "state=Kerala",
-   "group": "Geography",
-   "label": "State: Kerala",
-   "aucDrop": 1e-05
-  },
-  {
-   "feature": "state=Madhya Pradesh",
-   "group": "Geography",
-   "label": "State: Madhya Pradesh",
-   "aucDrop": 1e-05
-  },
-  {
-   "feature": "state=Telangana",
-   "group": "Geography",
-   "label": "State: Telangana",
-   "aucDrop": 1e-05
-  },
-  {
-   "feature": "state=Tripura",
-   "group": "Geography",
-   "label": "State: Tripura",
-   "aucDrop": 1e-05
-  },
-  {
-   "feature": "state=Uttar Pradesh",
-   "group": "Geography",
-   "label": "State: Uttar Pradesh",
-   "aucDrop": 1e-05
-  },
-  {
-   "feature": "project_type=Metro Rail",
+   "feature": "project_land_requirement_ha",
    "group": "Parcel & project attributes",
-   "label": "Project type: Metro Rail",
-   "aucDrop": 1e-05
+   "label": "Project land requirement (ha)",
+   "aucDrop": 5e-05
   },
   {
-   "feature": "authority=Command Area Development Authority",
-   "group": "Other",
-   "label": "Authority: Command Area Development Authority",
-   "aucDrop": 1e-05
+   "feature": "possession_status=Not Initiated",
+   "group": "Possession",
+   "label": "Possession status: Not Initiated",
+   "aucDrop": 5e-05
   },
   {
-   "feature": "authority=Metro Rail Corporation",
-   "group": "Other",
-   "label": "Authority: Metro Rail Corporation",
-   "aucDrop": 1e-05
+   "feature": "latitude",
+   "group": "Geography",
+   "label": "Latitude",
+   "aucDrop": 4e-05
   },
   {
-   "feature": "authority=MoRTH \u2014 Regional Office",
-   "group": "Other",
-   "label": "Authority: MoRTH \u2014 Regional Office",
-   "aucDrop": 1e-05
+   "feature": "state=Chhattisgarh",
+   "group": "Geography",
+   "label": "State: Chhattisgarh",
+   "aucDrop": 4e-05
   },
   {
-   "feature": "authority=NHSRCL",
-   "group": "Other",
-   "label": "Authority: NHSRCL",
-   "aucDrop": 1e-05
-  },
-  {
-   "feature": "authority=POWERGRID",
-   "group": "Other",
-   "label": "Authority: POWERGRID",
-   "aucDrop": 1e-05
+   "feature": "project_type=Railway",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Railway",
+   "aucDrop": 4e-05
   },
   {
    "feature": "current_stage=Possession",
    "group": "Stage schedule pressure",
    "label": "Current stage: Possession",
+   "aucDrop": 4e-05
+  },
+  {
+   "feature": "compensation_status=Not Initiated",
+   "group": "Compensation",
+   "label": "Compensation status: Not Initiated",
+   "aucDrop": 4e-05
+  },
+  {
+   "feature": "state=Karnataka",
+   "group": "Geography",
+   "label": "State: Karnataka",
+   "aucDrop": 3e-05
+  },
+  {
+   "feature": "authority=Hindustan Petroleum Corporation Ltd (HPCL)",
+   "group": "Other",
+   "label": "Authority: Hindustan Petroleum Corporation Ltd (HPCL)",
+   "aucDrop": 3e-05
+  },
+  {
+   "feature": "authority=Hyderabad Metro Rail Ltd (HMRL)",
+   "group": "Other",
+   "label": "Authority: Hyderabad Metro Rail Ltd (HMRL)",
+   "aucDrop": 3e-05
+  },
+  {
+   "feature": "authority=Indian Oil Corporation Ltd (IOCL)",
+   "group": "Other",
+   "label": "Authority: Indian Oil Corporation Ltd (IOCL)",
+   "aucDrop": 3e-05
+  },
+  {
+   "feature": "current_stage=Land Identification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Land Identification",
+   "aucDrop": 3e-05
+  },
+  {
+   "feature": "state=Uttar Pradesh",
+   "group": "Geography",
+   "label": "State: Uttar Pradesh",
+   "aucDrop": 2e-05
+  },
+  {
+   "feature": "state=Gujarat",
+   "group": "Geography",
+   "label": "State: Gujarat",
    "aucDrop": 1e-05
   },
   {
-   "feature": "rr_status=In Progress",
-   "group": "Rehabilitation & resettlement",
-   "label": "Rr status: In Progress",
+   "feature": "state=Himachal Pradesh",
+   "group": "Geography",
+   "label": "State: Himachal Pradesh",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "state=Rajasthan",
+   "group": "Geography",
+   "label": "State: Rajasthan",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "project_type=Power Transmission",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Power Transmission",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "authority=Industrial Infrastructure Development Corporation (IDCO)",
+   "group": "Other",
+   "label": "Authority: Industrial Infrastructure Development Corporation (IDCO)",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "authority=Kasaragod Development Authority",
+   "group": "Other",
+   "label": "Authority: Kasaragod Development Authority",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "authority=MoRTH Regional Office",
+   "group": "Other",
+   "label": "Authority: MoRTH Regional Office",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "authority=Water Resources Department, Chhattisgarh",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Chhattisgarh",
+   "aucDrop": 1e-05
+  },
+  {
+   "feature": "stakeholder_responsiveness=Moderate",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: Moderate",
    "aucDrop": 1e-05
   },
   {
@@ -433,6 +451,12 @@
    "aucDrop": 0.0
   },
   {
+   "feature": "log_approval_delay_days",
+   "group": "Approval delay",
+   "label": "Days an approval / clearance has been pending",
+   "aucDrop": 0.0
+  },
+  {
    "feature": "legal_dispute",
    "group": "Legal disputes",
    "label": "Legal dispute",
@@ -451,81 +475,771 @@
    "aucDrop": 0.0
   },
   {
-   "feature": "state=Chhattisgarh",
-   "group": "Geography",
-   "label": "State: Chhattisgarh",
-   "aucDrop": 0.0
-  },
-  {
-   "feature": "state=Delhi NCR",
-   "group": "Geography",
-   "label": "State: Delhi NCR",
-   "aucDrop": 0.0
-  },
-  {
    "feature": "state=Goa",
    "group": "Geography",
    "label": "State: Goa",
    "aucDrop": 0.0
   },
   {
-   "feature": "state=Gujarat",
+   "feature": "state=Haryana",
    "group": "Geography",
-   "label": "State: Gujarat",
+   "label": "State: Haryana",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Jammu & Kashmir",
+   "group": "Geography",
+   "label": "State: Jammu & Kashmir",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Madhya Pradesh",
+   "group": "Geography",
+   "label": "State: Madhya Pradesh",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Meghalaya",
+   "group": "Geography",
+   "label": "State: Meghalaya",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Odisha",
+   "group": "Geography",
+   "label": "State: Odisha",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Punjab",
+   "group": "Geography",
+   "label": "State: Punjab",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Tamil Nadu",
+   "group": "Geography",
+   "label": "State: Tamil Nadu",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Tripura",
+   "group": "Geography",
+   "label": "State: Tripura",
    "aucDrop": 0.0
   },
   {
    "feature": "state=Uttarakhand",
    "group": "Geography",
    "label": "State: Uttarakhand",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "project_type=Renewable Energy",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Renewable Energy",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "project_type=Urban Infrastructure",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Urban Infrastructure",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Andhra Pradesh Industrial Infrastructure Corporation (APIIC)",
+   "group": "Other",
+   "label": "Authority: Andhra Pradesh Industrial Infrastructure Corporation (APIIC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Arwal Development Authority",
+   "group": "Other",
+   "label": "Authority: Arwal Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Assam Electricity Grid Corporation Ltd (AEGCL)",
+   "group": "Other",
+   "label": "Authority: Assam Electricity Grid Corporation Ltd (AEGCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Assam Industrial Development Corporation (AIDC)",
+   "group": "Other",
+   "label": "Authority: Assam Industrial Development Corporation (AIDC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Balasore Municipal Corporation",
+   "group": "Other",
+   "label": "Authority: Balasore Municipal Corporation",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Bangalore Metro Rail Corporation Ltd (BMRCL)",
+   "group": "Other",
+   "label": "Authority: Bangalore Metro Rail Corporation Ltd (BMRCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Begusarai Municipal Corporation",
+   "group": "Other",
+   "label": "Authority: Begusarai Municipal Corporation",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Belagavi City Municipal Council",
+   "group": "Other",
+   "label": "Authority: Belagavi City Municipal Council",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Bhavnagar Development Authority",
+   "group": "Other",
+   "label": "Authority: Bhavnagar Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Bihar Industrial Area Development Authority (BIADA)",
+   "group": "Other",
+   "label": "Authority: Bihar Industrial Area Development Authority (BIADA)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Bihar State Power Transmission Company Ltd (BSPTCL)",
+   "group": "Other",
+   "label": "Authority: Bihar State Power Transmission Company Ltd (BSPTCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Bihar State Road Development Corporation (BSRDC) (NH wing)",
+   "group": "Other",
+   "label": "Authority: Bihar State Road Development Corporation (BSRDC) (NH wing)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Chennai Metro Rail Ltd (CMRL)",
+   "group": "Other",
+   "label": "Authority: Chennai Metro Rail Ltd (CMRL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Chhattisgarh State Industrial Development Corporation (CSIDC)",
+   "group": "Other",
+   "label": "Authority: Chhattisgarh State Industrial Development Corporation (CSIDC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Civil Aviation Department, Andhra Pradesh",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Andhra Pradesh",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Civil Aviation Department, Chhattisgarh",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Chhattisgarh",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Civil Aviation Department, Haryana",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Haryana",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Civil Aviation Department, Maharashtra",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Maharashtra",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Civil Aviation Department, Telangana",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Telangana",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Dedicated Freight Corridor Corporation of India Ltd (DFCCIL)",
+   "group": "Other",
+   "label": "Authority: Dedicated Freight Corridor Corporation of India Ltd (DFCCIL)",
    "aucDrop": -0.0
   },
   {
-   "feature": "state=West Bengal",
-   "group": "Geography",
-   "label": "State: West Bengal",
-   "aucDrop": 0.0
-  },
-  {
-   "feature": "authority=DFCCIL",
+   "feature": "authority=Durg Development Authority",
    "group": "Other",
-   "label": "Authority: DFCCIL",
-   "aucDrop": 0.0
-  },
-  {
-   "feature": "authority=Ministry of Railways",
-   "group": "Other",
-   "label": "Authority: Ministry of Railways",
-   "aucDrop": 0.0
-  },
-  {
-   "feature": "authority=State Civil Aviation Department",
-   "group": "Other",
-   "label": "Authority: State Civil Aviation Department",
-   "aucDrop": 0.0
-  },
-  {
-   "feature": "authority=State Road Development Corporation",
-   "group": "Other",
-   "label": "Authority: State Road Development Corporation",
+   "label": "Authority: Durg Development Authority",
    "aucDrop": -0.0
   },
   {
-   "feature": "authority=State Transmission Utility",
+   "feature": "authority=Erode Development Authority",
    "group": "Other",
-   "label": "Authority: State Transmission Utility",
+   "label": "Authority: Erode Development Authority",
    "aucDrop": 0.0
   },
   {
-   "feature": "authority=State Water Resources Department",
+   "feature": "authority=GAIL (India) Ltd",
    "group": "Other",
-   "label": "Authority: State Water Resources Department",
+   "label": "Authority: GAIL (India) Ltd",
    "aucDrop": 0.0
   },
   {
-   "feature": "current_stage=Land Identification",
+   "feature": "authority=Gujarat Industrial Development Corporation (GIDC)",
+   "group": "Other",
+   "label": "Authority: Gujarat Industrial Development Corporation (GIDC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Gujarat Metro Rail Corporation (GMRC)",
+   "group": "Other",
+   "label": "Authority: Gujarat Metro Rail Corporation (GMRC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Gurugram Development Authority",
+   "group": "Other",
+   "label": "Authority: Gurugram Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Hapur Development Authority",
+   "group": "Other",
+   "label": "Authority: Hapur Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Haryana Mass Rapid Transport Corporation (HMRTC)",
+   "group": "Other",
+   "label": "Authority: Haryana Mass Rapid Transport Corporation (HMRTC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Haryana State Industrial & Infrastructure Development Corporation (HSIIDC)",
+   "group": "Other",
+   "label": "Authority: Haryana State Industrial & Infrastructure Development Corporation (HSIIDC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Haryana Vidyut Prasaran Nigam Ltd (HVPNL)",
+   "group": "Other",
+   "label": "Authority: Haryana Vidyut Prasaran Nigam Ltd (HVPNL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Highways Department, Tamil Nadu",
+   "group": "Other",
+   "label": "Authority: Highways Department, Tamil Nadu",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Hisar Development Authority",
+   "group": "Other",
+   "label": "Authority: Hisar Development Authority",
+   "aucDrop": -0.0
+  },
+  {
+   "feature": "authority=Irrigation & CAD Department, Telangana",
+   "group": "Other",
+   "label": "Authority: Irrigation & CAD Department, Telangana",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Irrigation & Water Resources Department, Haryana",
+   "group": "Other",
+   "label": "Authority: Irrigation & Water Resources Department, Haryana",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Irrigation and Water Resources Department, Uttar Pradesh",
+   "group": "Other",
+   "label": "Authority: Irrigation and Water Resources Department, Uttar Pradesh",
+   "aucDrop": -0.0
+  },
+  {
+   "feature": "authority=Jalgaon Development Authority",
+   "group": "Other",
+   "label": "Authority: Jalgaon Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Jharkhand Industrial Area Development Authority (JIADA)",
+   "group": "Other",
+   "label": "Authority: Jharkhand Industrial Area Development Authority (JIADA)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Jhunjhunun Development Authority",
+   "group": "Other",
+   "label": "Authority: Jhunjhunun Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Karimnagar Development Authority",
+   "group": "Other",
+   "label": "Authority: Karimnagar Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Karnataka Industrial Areas Development Board (KIADB)",
+   "group": "Other",
+   "label": "Authority: Karnataka Industrial Areas Development Board (KIADB)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Karnataka Neeravari Nigam Ltd (KNNL)",
+   "group": "Other",
+   "label": "Authority: Karnataka Neeravari Nigam Ltd (KNNL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Karnataka Power Transmission Corporation Ltd (KPTCL)",
+   "group": "Other",
+   "label": "Authority: Karnataka Power Transmission Corporation Ltd (KPTCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Karnataka Solar Power Development Corporation Ltd (KSPDCL)",
+   "group": "Other",
+   "label": "Authority: Karnataka Solar Power Development Corporation Ltd (KSPDCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Karnataka State Industrial and Infrastructure Development Corporation (KSIIDC)",
+   "group": "Other",
+   "label": "Authority: Karnataka State Industrial and Infrastructure Development Corporation (KSIIDC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Kerala State Industrial Development Corporation (KSIDC)",
+   "group": "Other",
+   "label": "Authority: Kerala State Industrial Development Corporation (KSIDC)",
+   "aucDrop": -0.0
+  },
+  {
+   "feature": "authority=Lucknow Development Authority (LDA)",
+   "group": "Other",
+   "label": "Authority: Lucknow Development Authority (LDA)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=MP Industrial Development Corporation (MPIDC)",
+   "group": "Other",
+   "label": "Authority: MP Industrial Development Corporation (MPIDC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=MP Power Transmission Company Ltd (MPPTCL)",
+   "group": "Other",
+   "label": "Authority: MP Power Transmission Company Ltd (MPPTCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Madhya Pradesh Metro Rail Corporation Ltd (MPMRCL)",
+   "group": "Other",
+   "label": "Authority: Madhya Pradesh Metro Rail Corporation Ltd (MPMRCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Maharashtra Industrial Development Corporation (MIDC)",
+   "group": "Other",
+   "label": "Authority: Maharashtra Industrial Development Corporation (MIDC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Maharashtra Metro Rail Corporation Ltd (MahaMetro)",
+   "group": "Other",
+   "label": "Authority: Maharashtra Metro Rail Corporation Ltd (MahaMetro)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Maharashtra State Electricity Transmission Co. Ltd (MSETCL)",
+   "group": "Other",
+   "label": "Authority: Maharashtra State Electricity Transmission Co. Ltd (MSETCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Maharashtra State Road Development Corporation (MSRDC)",
+   "group": "Other",
+   "label": "Authority: Maharashtra State Road Development Corporation (MSRDC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Maharashtra State Road Development Corporation (MSRDC) (NH wing)",
+   "group": "Other",
+   "label": "Authority: Maharashtra State Road Development Corporation (MSRDC) (NH wing)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Meghalaya Power Transmission Corporation Ltd (MePTCL)",
+   "group": "Other",
+   "label": "Authority: Meghalaya Power Transmission Corporation Ltd (MePTCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Central Railway",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 East Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 East Central Railway",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 East Coast Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 East Coast Railway",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Konkan Railway Corporation Ltd",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Konkan Railway Corporation Ltd",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 North Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 North Central Railway",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 North Western Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 North Western Railway",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Northeast Frontier Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Northeast Frontier Railway",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Northern Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Northern Railway",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 South Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 South Central Railway",
+   "aucDrop": -0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Southern Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Southern Railway",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 West Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 West Central Railway",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Western Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Western Railway",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=MoRTH Regional Office, Bengaluru",
+   "group": "Other",
+   "label": "Authority: MoRTH Regional Office, Bengaluru",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=MoRTH Regional Office, Lucknow",
+   "group": "Other",
+   "label": "Authority: MoRTH Regional Office, Lucknow",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Nagaur Development Authority",
+   "group": "Other",
+   "label": "Authority: Nagaur Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=National High Speed Rail Corporation Ltd (NHSRCL)",
+   "group": "Other",
+   "label": "Authority: National High Speed Rail Corporation Ltd (NHSRCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=New & Renewable Energy Development Corporation of AP (NREDCAP)",
+   "group": "Other",
+   "label": "Authority: New & Renewable Energy Development Corporation of AP (NREDCAP)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=North Twenty-Four Parganas Development Authority",
+   "group": "Other",
+   "label": "Authority: North Twenty-Four Parganas Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Pathankot Development Authority",
+   "group": "Other",
+   "label": "Authority: Pathankot Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Patna Metro Rail Corporation (PMRC)",
+   "group": "Other",
+   "label": "Authority: Patna Metro Rail Corporation (PMRC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Power Grid Corporation of India Ltd (POWERGRID)",
+   "group": "Other",
+   "label": "Authority: Power Grid Corporation of India Ltd (POWERGRID)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Power Transmission Corporation of Uttarakhand Ltd (PTCUL)",
+   "group": "Other",
+   "label": "Authority: Power Transmission Corporation of Uttarakhand Ltd (PTCUL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Public Works Department (B&R), Punjab (NH wing)",
+   "group": "Other",
+   "label": "Authority: Public Works Department (B&R), Punjab (NH wing)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Public Works Department (Roads), Meghalaya (NH wing)",
+   "group": "Other",
+   "label": "Authority: Public Works Department (Roads), Meghalaya (NH wing)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Public Works Department, Chhattisgarh",
+   "group": "Other",
+   "label": "Authority: Public Works Department, Chhattisgarh",
+   "aucDrop": -0.0
+  },
+  {
+   "feature": "authority=Public Works Department, Uttarakhand",
+   "group": "Other",
+   "label": "Authority: Public Works Department, Uttarakhand",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Public Works Department, West Bengal",
+   "group": "Other",
+   "label": "Authority: Public Works Department, West Bengal",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Punjab Small Industries & Export Corporation (PSIEC)",
+   "group": "Other",
+   "label": "Authority: Punjab Small Industries & Export Corporation (PSIEC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Rail Infrastructure Development Company (Karnataka) Ltd (K-RIDE)",
+   "group": "Other",
+   "label": "Authority: Rail Infrastructure Development Company (Karnataka) Ltd (K-RIDE)",
+   "aucDrop": -0.0
+  },
+  {
+   "feature": "authority=Rajasthan Rajya Vidyut Prasaran Nigam Ltd (RVPN)",
+   "group": "Other",
+   "label": "Authority: Rajasthan Rajya Vidyut Prasaran Nigam Ltd (RVPN)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Rajasthan Renewable Energy Corporation Ltd (RRECL)",
+   "group": "Other",
+   "label": "Authority: Rajasthan Renewable Energy Corporation Ltd (RRECL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Rajasthan State Industrial Development & Investment Corporation (RIICO)",
+   "group": "Other",
+   "label": "Authority: Rajasthan State Industrial Development & Investment Corporation (RIICO)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Rajkot Development Authority",
+   "group": "Other",
+   "label": "Authority: Rajkot Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Roads & Buildings Department, Andhra Pradesh (NH wing)",
+   "group": "Other",
+   "label": "Authority: Roads & Buildings Department, Andhra Pradesh (NH wing)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Roads & Buildings Department, Gujarat (NH wing)",
+   "group": "Other",
+   "label": "Authority: Roads & Buildings Department, Gujarat (NH wing)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Rohtas Municipal Corporation",
+   "group": "Other",
+   "label": "Authority: Rohtas Municipal Corporation",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Sardar Sarovar Narmada Nigam Ltd (SSNNL)",
+   "group": "Other",
+   "label": "Authority: Sardar Sarovar Narmada Nigam Ltd (SSNNL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Sonipat Municipal Corporation",
+   "group": "Other",
+   "label": "Authority: Sonipat Municipal Corporation",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=State Industries Promotion Corporation of Tamil Nadu (SIPCOT)",
+   "group": "Other",
+   "label": "Authority: State Industries Promotion Corporation of Tamil Nadu (SIPCOT)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Telangana State Industrial Infrastructure Corporation (TGIIC)",
+   "group": "Other",
+   "label": "Authority: Telangana State Industrial Infrastructure Corporation (TGIIC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Transmission Corporation of Andhra Pradesh Ltd (APTRANSCO)",
+   "group": "Other",
+   "label": "Authority: Transmission Corporation of Andhra Pradesh Ltd (APTRANSCO)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Ujjain Development Authority",
+   "group": "Other",
+   "label": "Authority: Ujjain Development Authority",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Uttar Pradesh Expressways Industrial Development Authority (UPEIDA)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh Expressways Industrial Development Authority (UPEIDA)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Uttar Pradesh Metro Rail Corporation (UPMRC)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh Metro Rail Corporation (UPMRC)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Uttar Pradesh New and Renewable Energy Development Agency (UPNEDA)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh New and Renewable Energy Development Agency (UPNEDA)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Uttar Pradesh Power Transmission Corporation Ltd (UPPTCL)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh Power Transmission Corporation Ltd (UPPTCL)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Uttar Pradesh State Industrial Development Authority (UPSIDA)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh State Industrial Development Authority (UPSIDA)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Andhra Pradesh",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Andhra Pradesh",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Assam",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Assam",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Bihar",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Bihar",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Goa",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Goa",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Jharkhand",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Jharkhand",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Karnataka",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Karnataka",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Maharashtra",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Maharashtra",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Meghalaya",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Meghalaya",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Punjab",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Punjab",
+   "aucDrop": -0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Rajasthan",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Rajasthan",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Tamil Nadu",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Tamil Nadu",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Works Department, Odisha (NH wing)",
+   "group": "Other",
+   "label": "Authority: Works Department, Odisha (NH wing)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "authority=Yamuna Expressway Industrial Development Authority (YEIDA)",
+   "group": "Other",
+   "label": "Authority: Yamuna Expressway Industrial Development Authority (YEIDA)",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "current_stage=Survey & Verification",
    "group": "Stage schedule pressure",
-   "label": "Current stage: Land Identification",
+   "label": "Current stage: Survey & Verification",
    "aucDrop": 0.0
   },
   {
@@ -541,9 +1255,21 @@
    "aucDrop": 0.0
   },
   {
-   "feature": "stakeholder_responsiveness=Moderate",
-   "group": "Stakeholder responsiveness",
-   "label": "Stakeholder responsiveness: Moderate",
+   "feature": "dispute_complexity=Low",
+   "group": "Legal disputes",
+   "label": "Dispute complexity: Low",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "possession_status=Partial",
+   "group": "Possession",
+   "label": "Possession status: Partial",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "rr_status=In Progress",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr status: In Progress",
    "aucDrop": 0.0
   },
   {
@@ -553,27 +1279,39 @@
    "aucDrop": 0.0
   },
   {
-   "feature": "comp_pending_frac",
-   "group": "Compensation",
-   "label": "Share of compensation still unpaid",
+   "feature": "rr_status=Not Started",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr status: Not Started",
+   "aucDrop": 0.0
+  },
+  {
+   "feature": "state=Bihar",
+   "group": "Geography",
+   "label": "State: Bihar",
    "aucDrop": -1e-05
   },
   {
-   "feature": "state=Karnataka",
+   "feature": "state=Delhi",
    "group": "Geography",
-   "label": "State: Karnataka",
+   "label": "State: Delhi",
    "aucDrop": -1e-05
   },
   {
-   "feature": "state=Odisha",
+   "feature": "state=Jharkhand",
    "group": "Geography",
-   "label": "State: Odisha",
+   "label": "State: Jharkhand",
    "aucDrop": -1e-05
   },
   {
-   "feature": "state=Tamil Nadu",
+   "feature": "state=Kerala",
    "group": "Geography",
-   "label": "State: Tamil Nadu",
+   "label": "State: Kerala",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "state=Maharashtra",
+   "group": "Geography",
+   "label": "State: Maharashtra",
    "aucDrop": -1e-05
   },
   {
@@ -583,118 +1321,118 @@
    "aucDrop": -1e-05
   },
   {
-   "feature": "project_type=Industrial Corridor",
+   "feature": "project_type=Industrial",
    "group": "Parcel & project attributes",
-   "label": "Project type: Industrial Corridor",
+   "label": "Project type: Industrial",
    "aucDrop": -1e-05
+  },
+  {
+   "feature": "authority=National Highways Authority of India (NHAI)",
+   "group": "Other",
+   "label": "Authority: National Highways Authority of India (NHAI)",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "authority=Visvesvaraya Jala Nigam Ltd (VJNL)",
+   "group": "Other",
+   "label": "Authority: Visvesvaraya Jala Nigam Ltd (VJNL)",
+   "aucDrop": -1e-05
+  },
+  {
+   "feature": "rehabilitation_cases",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R cases attached",
+   "aucDrop": -2e-05
+  },
+  {
+   "feature": "state=West Bengal",
+   "group": "Geography",
+   "label": "State: West Bengal",
+   "aucDrop": -2e-05
   },
   {
    "feature": "project_type=Irrigation",
    "group": "Parcel & project attributes",
    "label": "Project type: Irrigation",
-   "aucDrop": -1e-05
+   "aucDrop": -2e-05
   },
   {
-   "feature": "authority=NHAI",
+   "feature": "authority=Cauvery Neeravari Nigam Ltd (CNNL)",
    "group": "Other",
-   "label": "Authority: NHAI",
-   "aucDrop": -1e-05
+   "label": "Authority: Cauvery Neeravari Nigam Ltd (CNNL)",
+   "aucDrop": -2e-05
   },
   {
-   "feature": "dispute_complexity=Low",
+   "feature": "authority=Ministry of Railways \u2014 South East Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 South East Central Railway",
+   "aucDrop": -2e-05
+  },
+  {
+   "feature": "dispute_complexity=Moderate",
    "group": "Legal disputes",
-   "label": "Dispute complexity: Low",
-   "aucDrop": -1e-05
-  },
-  {
-   "feature": "authority=State Industrial Development Corporation",
-   "group": "Other",
-   "label": "Authority: State Industrial Development Corporation",
+   "label": "Dispute complexity: Moderate",
    "aucDrop": -2e-05
   },
   {
-   "feature": "authority=State PWD (NH Wing)",
-   "group": "Other",
-   "label": "Authority: State PWD (NH Wing)",
-   "aucDrop": -2e-05
-  },
-  {
-   "feature": "current_stage=Survey & Verification",
-   "group": "Stage schedule pressure",
-   "label": "Current stage: Survey & Verification",
-   "aucDrop": -2e-05
-  },
-  {
-   "feature": "authority=Urban Development Authority",
-   "group": "Other",
-   "label": "Authority: Urban Development Authority",
-   "aucDrop": -3e-05
-  },
-  {
-   "feature": "land_type=Dry Agricultural",
-   "group": "Parcel & project attributes",
-   "label": "Land type: Dry Agricultural",
-   "aucDrop": -3e-05
-  },
-  {
-   "feature": "rr_status=Not Started",
-   "group": "Rehabilitation & resettlement",
-   "label": "Rr status: Not Started",
-   "aucDrop": -3e-05
-  },
-  {
-   "feature": "state=Meghalaya",
+   "feature": "state=Telangana",
    "group": "Geography",
-   "label": "State: Meghalaya",
-   "aucDrop": -4e-05
-  },
-  {
-   "feature": "project_type=Railway Corridor",
-   "group": "Parcel & project attributes",
-   "label": "Project type: Railway Corridor",
-   "aucDrop": -4e-05
+   "label": "State: Telangana",
+   "aucDrop": -3e-05
   },
   {
    "feature": "project_type=National Highway",
    "group": "Parcel & project attributes",
    "label": "Project type: National Highway",
-   "aucDrop": -5e-05
+   "aucDrop": -3e-05
   },
   {
-   "feature": "state=Haryana",
-   "group": "Geography",
-   "label": "State: Haryana",
-   "aucDrop": -6e-05
-  },
-  {
-   "feature": "project_land_requirement_ha",
+   "feature": "project_type=Pipeline",
    "group": "Parcel & project attributes",
-   "label": "Project land requirement (ha)",
+   "label": "Project type: Pipeline",
+   "aucDrop": -3e-05
+  },
+  {
+   "feature": "authority=Public Works Department, Uttar Pradesh (NH wing)",
+   "group": "Other",
+   "label": "Authority: Public Works Department, Uttar Pradesh (NH wing)",
+   "aucDrop": -3e-05
+  },
+  {
+   "feature": "authority=Telangana Renewable Energy Development Corporation (TGREDCO)",
+   "group": "Other",
+   "label": "Authority: Telangana Renewable Energy Development Corporation (TGREDCO)",
+   "aucDrop": -3e-05
+  },
+  {
+   "feature": "current_stage=Notification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Notification",
+   "aucDrop": -3e-05
+  },
+  {
+   "feature": "authority=Bharat Petroleum Corporation Ltd (BPCL)",
+   "group": "Other",
+   "label": "Authority: Bharat Petroleum Corporation Ltd (BPCL)",
+   "aucDrop": -4e-05
+  },
+  {
+   "feature": "possession_status=Notice Issued",
+   "group": "Possession",
+   "label": "Possession status: Notice Issued",
    "aucDrop": -7e-05
   },
   {
-   "feature": "possession_status=Partial",
-   "group": "Possession",
-   "label": "Possession status: Partial",
-   "aucDrop": -9e-05
+   "feature": "expected_stage_days",
+   "group": "Stage schedule pressure",
+   "label": "Allowed days for current stage",
+   "aucDrop": -0.00011
   },
   {
-   "feature": "compensation_status=Not Initiated",
-   "group": "Compensation",
-   "label": "Compensation status: Not Initiated",
-   "aucDrop": -0.00018
-  },
-  {
-   "feature": "state=Bihar",
+   "feature": "longitude",
    "group": "Geography",
-   "label": "State: Bihar",
-   "aucDrop": -0.00024
-  },
-  {
-   "feature": "rr_pending_frac",
-   "group": "Rehabilitation & resettlement",
-   "label": "R&R entitlement still pending",
-   "aucDrop": -0.00038
+   "label": "Longitude",
+   "aucDrop": -0.00015
   }
  ],
  "shap": [
@@ -702,595 +1440,709 @@
    "feature": "inactivity_days",
    "group": "Inactivity",
    "label": "Days since last recorded action",
-   "meanAbsShap": 0.405004
-  },
-  {
-   "feature": "legal_case_count",
-   "group": "Legal disputes",
-   "label": "Open legal cases",
-   "meanAbsShap": 0.387538
+   "meanAbsShap": 0.342018
   },
   {
    "feature": "schedule_consumed",
    "group": "Stage schedule pressure",
    "label": "Stage time consumed vs allowed",
-   "meanAbsShap": 0.380905
+   "meanAbsShap": 0.33233
+  },
+  {
+   "feature": "legal_case_count",
+   "group": "Legal disputes",
+   "label": "Open legal cases",
+   "meanAbsShap": 0.329275
   },
   {
    "feature": "document_completeness",
    "group": "Documentation & verification",
    "label": "Document completeness %",
-   "meanAbsShap": 0.337537
+   "meanAbsShap": 0.311818
+  },
+  {
+   "feature": "pending_dependency_actions",
+   "group": "Pending department actions",
+   "label": "Department actions pending on the case",
+   "meanAbsShap": 0.273183
   },
   {
    "feature": "compensation_pending_days",
    "group": "Compensation",
    "label": "Days compensation pending",
-   "meanAbsShap": 0.262451
-  },
-  {
-   "feature": "ownership_complexity=Single",
-   "group": "Ownership complexity",
-   "label": "Ownership complexity: Single",
-   "meanAbsShap": 0.25035
-  },
-  {
-   "feature": "project_priority=Routine",
-   "group": "Parcel & project attributes",
-   "label": "Project priority: Routine",
-   "meanAbsShap": 0.207345
-  },
-  {
-   "feature": "verification_status=Pending",
-   "group": "Documentation & verification",
-   "label": "Verification status: Pending",
-   "meanAbsShap": 0.182977
-  },
-  {
-   "feature": "historical_stage_delay_rate",
-   "group": "Historical stage performance",
-   "label": "Historical slip rate of this stage",
-   "meanAbsShap": 0.178078
-  },
-  {
-   "feature": "affected_families",
-   "group": "Affected families",
-   "label": "Affected families",
-   "meanAbsShap": 0.170794
+   "meanAbsShap": 0.262546
   },
   {
    "feature": "district_historical_delay_rate",
    "group": "District performance history",
    "label": "District historical delay rate",
-   "meanAbsShap": 0.170675
+   "meanAbsShap": 0.19537
   },
   {
-   "feature": "stakeholder_responsiveness=Low",
-   "group": "Stakeholder responsiveness",
-   "label": "Stakeholder responsiveness: Low",
-   "meanAbsShap": 0.149812
+   "feature": "project_priority=Routine",
+   "group": "Parcel & project attributes",
+   "label": "Project priority: Routine",
+   "meanAbsShap": 0.178916
   },
   {
-   "feature": "authority_historical_delay_rate",
-   "group": "Authority performance history",
-   "label": "Authority historical delay rate",
-   "meanAbsShap": 0.14353
+   "feature": "approval_delay_days",
+   "group": "Approval delay",
+   "label": "Days an approval / clearance has been pending",
+   "meanAbsShap": 0.168539
   },
   {
-   "feature": "approval_status=Submitted",
-   "group": "Documentation & verification",
-   "label": "Approval status: Submitted",
-   "meanAbsShap": 0.140651
-  },
-  {
-   "feature": "stakeholder_responsiveness=High",
-   "group": "Stakeholder responsiveness",
-   "label": "Stakeholder responsiveness: High",
-   "meanAbsShap": 0.127
-  },
-  {
-   "feature": "ownership_complexity=Joint",
+   "feature": "ownership_complexity=Single",
    "group": "Ownership complexity",
-   "label": "Ownership complexity: Joint",
-   "meanAbsShap": 0.122482
+   "label": "Ownership complexity: Single",
+   "meanAbsShap": 0.163854
   },
   {
-   "feature": "department_response_days",
-   "group": "Administrative response time",
-   "label": "Departmental response time",
-   "meanAbsShap": 0.111993
-  },
-  {
-   "feature": "elapsed_stage_days",
-   "group": "Stage schedule pressure",
-   "label": "Days elapsed in current stage",
-   "meanAbsShap": 0.110238
-  },
-  {
-   "feature": "approval_status=Not Submitted",
+   "feature": "verification_status=Pending",
    "group": "Documentation & verification",
-   "label": "Approval status: Not Submitted",
-   "meanAbsShap": 0.101681
-  },
-  {
-   "feature": "verification_status=Verified",
-   "group": "Documentation & verification",
-   "label": "Verification status: Verified",
-   "meanAbsShap": 0.101267
+   "label": "Verification status: Pending",
+   "meanAbsShap": 0.157733
   },
   {
    "feature": "number_of_owners",
    "group": "Ownership complexity",
    "label": "Number of recorded owners",
-   "meanAbsShap": 0.100714
+   "meanAbsShap": 0.148912
+  },
+  {
+   "feature": "affected_families",
+   "group": "Affected families",
+   "label": "Affected families",
+   "meanAbsShap": 0.148687
+  },
+  {
+   "feature": "historical_stage_delay_rate",
+   "group": "Historical stage performance",
+   "label": "Historical slip rate of this stage",
+   "meanAbsShap": 0.129548
+  },
+  {
+   "feature": "stakeholder_responsiveness=Low",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: Low",
+   "meanAbsShap": 0.121228
+  },
+  {
+   "feature": "department_coordination_score",
+   "group": "Inter-department coordination",
+   "label": "Inter-department coordination score",
+   "meanAbsShap": 0.114229
   },
   {
    "feature": "land_type=Residential",
    "group": "Parcel & project attributes",
    "label": "Land type: Residential",
-   "meanAbsShap": 0.100334
+   "meanAbsShap": 0.112832
   },
   {
-   "feature": "rr_progress_percentage",
-   "group": "Rehabilitation & resettlement",
-   "label": "R&R progress %",
-   "meanAbsShap": 0.083875
-  },
-  {
-   "feature": "rr_pending_frac",
-   "group": "Rehabilitation & resettlement",
-   "label": "R&R entitlement still pending",
-   "meanAbsShap": 0.07268
-  },
-  {
-   "feature": "current_stage=Valuation",
+   "feature": "elapsed_stage_days",
    "group": "Stage schedule pressure",
-   "label": "Current stage: Valuation",
-   "meanAbsShap": 0.064555
+   "label": "Days elapsed in current stage",
+   "meanAbsShap": 0.109576
+  },
+  {
+   "feature": "stakeholder_responsiveness=High",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: High",
+   "meanAbsShap": 0.105583
+  },
+  {
+   "feature": "approval_status=Submitted",
+   "group": "Documentation & verification",
+   "label": "Approval status: Submitted",
+   "meanAbsShap": 0.105057
+  },
+  {
+   "feature": "department_response_days",
+   "group": "Administrative response time",
+   "label": "Departmental response time",
+   "meanAbsShap": 0.100282
+  },
+  {
+   "feature": "ownership_complexity=Joint",
+   "group": "Ownership complexity",
+   "label": "Ownership complexity: Joint",
+   "meanAbsShap": 0.09605
+  },
+  {
+   "feature": "approval_status=Not Submitted",
+   "group": "Documentation & verification",
+   "label": "Approval status: Not Submitted",
+   "meanAbsShap": 0.086706
+  },
+  {
+   "feature": "authority_historical_delay_rate",
+   "group": "Authority performance history",
+   "label": "Authority historical delay rate",
+   "meanAbsShap": 0.083974
   },
   {
    "feature": "project_priority=Important",
    "group": "Parcel & project attributes",
    "label": "Project priority: Important",
-   "meanAbsShap": 0.063016
+   "meanAbsShap": 0.081346
   },
   {
-   "feature": "land_type=Irrigated Agricultural",
-   "group": "Parcel & project attributes",
-   "label": "Land type: Irrigated Agricultural",
-   "meanAbsShap": 0.062213
+   "feature": "verification_status=Verified",
+   "group": "Documentation & verification",
+   "label": "Verification status: Verified",
+   "meanAbsShap": 0.080109
   },
   {
-   "feature": "current_stage=Objection / Claims",
-   "group": "Stage schedule pressure",
-   "label": "Current stage: Objection / Claims",
-   "meanAbsShap": 0.060547
+   "feature": "rr_pending_frac",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R entitlement still pending",
+   "meanAbsShap": 0.079114
+  },
+  {
+   "feature": "rr_progress_percentage",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R progress %",
+   "meanAbsShap": 0.061178
   },
   {
    "feature": "ownership_complexity=Fragmented",
    "group": "Ownership complexity",
    "label": "Ownership complexity: Fragmented",
-   "meanAbsShap": 0.058717
+   "meanAbsShap": 0.055081
   },
   {
-   "feature": "compensation_status=Awarded",
-   "group": "Compensation",
-   "label": "Compensation status: Awarded",
-   "meanAbsShap": 0.057919
+   "feature": "land_type=Irrigated Agricultural",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Irrigated Agricultural",
+   "meanAbsShap": 0.05362
   },
   {
    "feature": "compensation_completion_percentage",
    "group": "Compensation",
    "label": "Compensation completion %",
-   "meanAbsShap": 0.053784
-  },
-  {
-   "feature": "approval_status=Under Review",
-   "group": "Documentation & verification",
-   "label": "Approval status: Under Review",
-   "meanAbsShap": 0.047976
-  },
-  {
-   "feature": "land_type=Orchard/Plantation",
-   "group": "Parcel & project attributes",
-   "label": "Land type: Orchard/Plantation",
-   "meanAbsShap": 0.041901
+   "meanAbsShap": 0.052122
   },
   {
    "feature": "land_type=Commercial",
    "group": "Parcel & project attributes",
    "label": "Land type: Commercial",
-   "meanAbsShap": 0.035382
+   "meanAbsShap": 0.049434
   },
   {
-   "feature": "land_type=Dry Agricultural",
-   "group": "Parcel & project attributes",
-   "label": "Land type: Dry Agricultural",
-   "meanAbsShap": 0.034648
+   "feature": "current_stage=Valuation",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Valuation",
+   "meanAbsShap": 0.049047
+  },
+  {
+   "feature": "current_stage=Objection / Claims",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Objection / Claims",
+   "meanAbsShap": 0.047137
+  },
+  {
+   "feature": "compensation_status=Awarded",
+   "group": "Compensation",
+   "label": "Compensation status: Awarded",
+   "meanAbsShap": 0.044555
+  },
+  {
+   "feature": "approval_status=Under Review",
+   "group": "Documentation & verification",
+   "label": "Approval status: Under Review",
+   "meanAbsShap": 0.0357
   },
   {
    "feature": "doc_gap_frac",
    "group": "Documentation & verification",
    "label": "Documentation still to be verified",
-   "meanAbsShap": 0.0328
+   "meanAbsShap": 0.034997
   },
   {
-   "feature": "expected_stage_days",
-   "group": "Stage schedule pressure",
-   "label": "Allowed days for current stage",
-   "meanAbsShap": 0.025427
+   "feature": "land_type=Orchard/Plantation",
+   "group": "Parcel & project attributes",
+   "label": "Land type: Orchard/Plantation",
+   "meanAbsShap": 0.033247
   },
   {
    "feature": "land_type=Grazing/Common",
    "group": "Parcel & project attributes",
    "label": "Land type: Grazing/Common",
-   "meanAbsShap": 0.023979
+   "meanAbsShap": 0.021933
   },
   {
-   "feature": "project_land_requirement_ha",
+   "feature": "land_type=Dry Agricultural",
    "group": "Parcel & project attributes",
-   "label": "Project land requirement (ha)",
-   "meanAbsShap": 0.01404
+   "label": "Land type: Dry Agricultural",
+   "meanAbsShap": 0.017275
   },
   {
-   "feature": "land_area_ha",
-   "group": "Parcel & project attributes",
-   "label": "Parcel area (ha)",
-   "meanAbsShap": 0.012156
-  },
-  {
-   "feature": "latitude",
-   "group": "Geography",
-   "label": "Latitude",
-   "meanAbsShap": 0.011601
-  },
-  {
-   "feature": "possession_status=Notice Issued",
-   "group": "Possession",
-   "label": "Possession status: Notice Issued",
-   "meanAbsShap": 0.011238
-  },
-  {
-   "feature": "possession_status=Not Initiated",
-   "group": "Possession",
-   "label": "Possession status: Not Initiated",
-   "meanAbsShap": 0.010565
-  },
-  {
-   "feature": "rehabilitation_cases",
-   "group": "Rehabilitation & resettlement",
-   "label": "R&R cases attached",
-   "meanAbsShap": 0.010434
+   "feature": "expected_stage_days",
+   "group": "Stage schedule pressure",
+   "label": "Allowed days for current stage",
+   "meanAbsShap": 0.01446
   },
   {
    "feature": "longitude",
    "group": "Geography",
    "label": "Longitude",
-   "meanAbsShap": 0.009672
+   "meanAbsShap": 0.011804
   },
   {
-   "feature": "current_stage=Compensation",
-   "group": "Stage schedule pressure",
-   "label": "Current stage: Compensation",
-   "meanAbsShap": 0.009359
+   "feature": "land_area_ha",
+   "group": "Parcel & project attributes",
+   "label": "Parcel area (ha)",
+   "meanAbsShap": 0.011721
+  },
+  {
+   "feature": "project_land_requirement_ha",
+   "group": "Parcel & project attributes",
+   "label": "Project land requirement (ha)",
+   "meanAbsShap": 0.011254
+  },
+  {
+   "feature": "rehabilitation_cases",
+   "group": "Rehabilitation & resettlement",
+   "label": "R&R cases attached",
+   "meanAbsShap": 0.009707
   },
   {
    "feature": "comp_pending_frac",
    "group": "Compensation",
    "label": "Share of compensation still unpaid",
-   "meanAbsShap": 0.004922
+   "meanAbsShap": 0.008396
   },
   {
-   "feature": "dispute_complexity=Low",
-   "group": "Legal disputes",
-   "label": "Dispute complexity: Low",
-   "meanAbsShap": 0.004473
+   "feature": "authority_dependency_count",
+   "group": "Authority dependencies",
+   "label": "Authorities the acquisition depends on",
+   "meanAbsShap": 0.007509
   },
   {
-   "feature": "compensation_status=Not Initiated",
-   "group": "Compensation",
-   "label": "Compensation status: Not Initiated",
-   "meanAbsShap": 0.003978
-  },
-  {
-   "feature": "compensation_status=Partially Paid",
-   "group": "Compensation",
-   "label": "Compensation status: Partially Paid",
-   "meanAbsShap": 0.002052
-  },
-  {
-   "feature": "state=Bihar",
-   "group": "Geography",
-   "label": "State: Bihar",
-   "meanAbsShap": 0.002035
-  },
-  {
-   "feature": "authority=State PWD (NH Wing)",
-   "group": "Other",
-   "label": "Authority: State PWD (NH Wing)",
-   "meanAbsShap": 0.001794
-  },
-  {
-   "feature": "current_stage=Notification",
+   "feature": "current_stage=Compensation",
    "group": "Stage schedule pressure",
-   "label": "Current stage: Notification",
-   "meanAbsShap": 0.00174
+   "label": "Current stage: Compensation",
+   "meanAbsShap": 0.006939
   },
   {
-   "feature": "possession_status=Partial",
+   "feature": "possession_status=Notice Issued",
    "group": "Possession",
-   "label": "Possession status: Partial",
-   "meanAbsShap": 0.001655
+   "label": "Possession status: Notice Issued",
+   "meanAbsShap": 0.005512
   },
   {
-   "feature": "project_type=Power Transmission",
-   "group": "Parcel & project attributes",
-   "label": "Project type: Power Transmission",
-   "meanAbsShap": 0.001574
-  },
-  {
-   "feature": "project_type=Railway Corridor",
-   "group": "Parcel & project attributes",
-   "label": "Project type: Railway Corridor",
-   "meanAbsShap": 0.001466
-  },
-  {
-   "feature": "state=Haryana",
+   "feature": "latitude",
    "group": "Geography",
-   "label": "State: Haryana",
-   "meanAbsShap": 0.001252
-  },
-  {
-   "feature": "current_stage=Possession",
-   "group": "Stage schedule pressure",
-   "label": "Current stage: Possession",
-   "meanAbsShap": 0.000914
+   "label": "Latitude",
+   "meanAbsShap": 0.005012
   },
   {
    "feature": "current_stage=Rehabilitation & Resettlement",
    "group": "Stage schedule pressure",
    "label": "Current stage: Rehabilitation & Resettlement",
-   "meanAbsShap": 0.000894
+   "meanAbsShap": 0.003271
   },
   {
-   "feature": "rr_status=Not Started",
-   "group": "Rehabilitation & resettlement",
-   "label": "Rr status: Not Started",
-   "meanAbsShap": 0.000893
+   "feature": "current_stage=Land Identification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Land Identification",
+   "meanAbsShap": 0.002729
   },
   {
-   "feature": "authority=NHSRCL",
-   "group": "Other",
-   "label": "Authority: NHSRCL",
-   "meanAbsShap": 0.000855
+   "feature": "compensation_status=Partially Paid",
+   "group": "Compensation",
+   "label": "Compensation status: Partially Paid",
+   "meanAbsShap": 0.002603
   },
   {
    "feature": "project_type=National Highway",
    "group": "Parcel & project attributes",
    "label": "Project type: National Highway",
-   "meanAbsShap": 0.000833
+   "meanAbsShap": 0.002459
   },
   {
-   "feature": "state=Telangana",
-   "group": "Geography",
-   "label": "State: Telangana",
-   "meanAbsShap": 0.000826
+   "feature": "possession_status=Not Initiated",
+   "group": "Possession",
+   "label": "Possession status: Not Initiated",
+   "meanAbsShap": 0.001961
   },
   {
-   "feature": "state=Punjab",
-   "group": "Geography",
-   "label": "State: Punjab",
-   "meanAbsShap": 0.000819
+   "feature": "compensation_status=Not Initiated",
+   "group": "Compensation",
+   "label": "Compensation status: Not Initiated",
+   "meanAbsShap": 0.001765
   },
   {
-   "feature": "state=Karnataka",
-   "group": "Geography",
-   "label": "State: Karnataka",
-   "meanAbsShap": 0.000752
-  },
-  {
-   "feature": "authority=Urban Development Authority",
-   "group": "Other",
-   "label": "Authority: Urban Development Authority",
-   "meanAbsShap": 0.000745
-  },
-  {
-   "feature": "stakeholder_responsiveness=Moderate",
-   "group": "Stakeholder responsiveness",
-   "label": "Stakeholder responsiveness: Moderate",
-   "meanAbsShap": 0.000722
-  },
-  {
-   "feature": "current_stage=Survey & Verification",
+   "feature": "current_stage=Possession",
    "group": "Stage schedule pressure",
-   "label": "Current stage: Survey & Verification",
-   "meanAbsShap": 0.000689
+   "label": "Current stage: Possession",
+   "meanAbsShap": 0.00134
   },
   {
-   "feature": "authority=NICDC",
-   "group": "Other",
-   "label": "Authority: NICDC",
-   "meanAbsShap": 0.00061
+   "feature": "project_type=Railway",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Railway",
+   "meanAbsShap": 0.001312
   },
   {
-   "feature": "authority=Command Area Development Authority",
-   "group": "Other",
-   "label": "Authority: Command Area Development Authority",
-   "meanAbsShap": 0.000572
-  },
-  {
-   "feature": "state=Goa",
+   "feature": "state=Chhattisgarh",
    "group": "Geography",
-   "label": "State: Goa",
-   "meanAbsShap": 0.000433
-  },
-  {
-   "feature": "state=Rajasthan",
-   "group": "Geography",
-   "label": "State: Rajasthan",
-   "meanAbsShap": 0.000408
+   "label": "State: Chhattisgarh",
+   "meanAbsShap": 0.001276
   },
   {
    "feature": "project_type=Metro Rail",
    "group": "Parcel & project attributes",
    "label": "Project type: Metro Rail",
-   "meanAbsShap": 0.000379
+   "meanAbsShap": 0.001239
   },
   {
-   "feature": "project_type=Irrigation",
-   "group": "Parcel & project attributes",
-   "label": "Project type: Irrigation",
-   "meanAbsShap": 0.000377
-  },
-  {
-   "feature": "project_type=Industrial Corridor",
-   "group": "Parcel & project attributes",
-   "label": "Project type: Industrial Corridor",
-   "meanAbsShap": 0.000362
-  },
-  {
-   "feature": "state=Meghalaya",
-   "group": "Geography",
-   "label": "State: Meghalaya",
-   "meanAbsShap": 0.000361
-  },
-  {
-   "feature": "authority=POWERGRID",
+   "feature": "authority=Water Resources Department, Madhya Pradesh",
    "group": "Other",
-   "label": "Authority: POWERGRID",
-   "meanAbsShap": 0.00036
+   "label": "Authority: Water Resources Department, Madhya Pradesh",
+   "meanAbsShap": 0.001053
   },
   {
-   "feature": "authority=State Road Development Corporation",
-   "group": "Other",
-   "label": "Authority: State Road Development Corporation",
-   "meanAbsShap": 0.000352
+   "feature": "current_stage=Survey & Verification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Survey & Verification",
+   "meanAbsShap": 0.001039
   },
   {
    "feature": "state=Uttar Pradesh",
    "group": "Geography",
    "label": "State: Uttar Pradesh",
-   "meanAbsShap": 0.000337
-  },
-  {
-   "feature": "authority=MoRTH \u2014 Regional Office",
-   "group": "Other",
-   "label": "Authority: MoRTH \u2014 Regional Office",
-   "meanAbsShap": 0.000335
-  },
-  {
-   "feature": "state=Himachal Pradesh",
-   "group": "Geography",
-   "label": "State: Himachal Pradesh",
-   "meanAbsShap": 0.000316
-  },
-  {
-   "feature": "state=Kerala",
-   "group": "Geography",
-   "label": "State: Kerala",
-   "meanAbsShap": 0.000281
-  },
-  {
-   "feature": "dispute_complexity=Moderate",
-   "group": "Legal disputes",
-   "label": "Dispute complexity: Moderate",
-   "meanAbsShap": 0.000258
-  },
-  {
-   "feature": "project_type=Expressway",
-   "group": "Parcel & project attributes",
-   "label": "Project type: Expressway",
-   "meanAbsShap": 0.000205
-  },
-  {
-   "feature": "state=West Bengal",
-   "group": "Geography",
-   "label": "State: West Bengal",
-   "meanAbsShap": 0.000197
-  },
-  {
-   "feature": "state=Delhi NCR",
-   "group": "Geography",
-   "label": "State: Delhi NCR",
-   "meanAbsShap": 0.000168
-  },
-  {
-   "feature": "authority=State Industrial Development Corporation",
-   "group": "Other",
-   "label": "Authority: State Industrial Development Corporation",
-   "meanAbsShap": 0.000164
-  },
-  {
-   "feature": "state=Maharashtra",
-   "group": "Geography",
-   "label": "State: Maharashtra",
-   "meanAbsShap": 0.000161
-  },
-  {
-   "feature": "authority=DFCCIL",
-   "group": "Other",
-   "label": "Authority: DFCCIL",
-   "meanAbsShap": 0.000151
-  },
-  {
-   "feature": "state=Jharkhand",
-   "group": "Geography",
-   "label": "State: Jharkhand",
-   "meanAbsShap": 0.000146
-  },
-  {
-   "feature": "state=Uttarakhand",
-   "group": "Geography",
-   "label": "State: Uttarakhand",
-   "meanAbsShap": 0.000144
-  },
-  {
-   "feature": "state=Tripura",
-   "group": "Geography",
-   "label": "State: Tripura",
-   "meanAbsShap": 0.000139
-  },
-  {
-   "feature": "authority=NHAI",
-   "group": "Other",
-   "label": "Authority: NHAI",
-   "meanAbsShap": 0.000134
-  },
-  {
-   "feature": "state=Tamil Nadu",
-   "group": "Geography",
-   "label": "State: Tamil Nadu",
-   "meanAbsShap": 0.00013
+   "meanAbsShap": 0.000849
   },
   {
    "feature": "state=Odisha",
    "group": "Geography",
    "label": "State: Odisha",
-   "meanAbsShap": 0.000129
+   "meanAbsShap": 0.000767
   },
   {
-   "feature": "state=Madhya Pradesh",
-   "group": "Geography",
-   "label": "State: Madhya Pradesh",
-   "meanAbsShap": 9.4e-05
+   "feature": "current_stage=Notification",
+   "group": "Stage schedule pressure",
+   "label": "Current stage: Notification",
+   "meanAbsShap": 0.00064
   },
   {
-   "feature": "rr_status=In Progress",
-   "group": "Rehabilitation & resettlement",
-   "label": "Rr status: In Progress",
-   "meanAbsShap": 7.5e-05
+   "feature": "project_type=Pipeline",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Pipeline",
+   "meanAbsShap": 0.000444
   },
   {
-   "feature": "authority=Metro Rail Corporation",
+   "feature": "authority=Industrial Infrastructure Development Corporation (IDCO)",
    "group": "Other",
-   "label": "Authority: Metro Rail Corporation",
+   "label": "Authority: Industrial Infrastructure Development Corporation (IDCO)",
+   "meanAbsShap": 0.000421
+  },
+  {
+   "feature": "project_type=Expressway",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Expressway",
+   "meanAbsShap": 0.00037
+  },
+  {
+   "feature": "authority=Bharat Petroleum Corporation Ltd (BPCL)",
+   "group": "Other",
+   "label": "Authority: Bharat Petroleum Corporation Ltd (BPCL)",
+   "meanAbsShap": 0.000369
+  },
+  {
+   "feature": "authority=National Highways Authority of India (NHAI)",
+   "group": "Other",
+   "label": "Authority: National Highways Authority of India (NHAI)",
+   "meanAbsShap": 0.000354
+  },
+  {
+   "feature": "state=West Bengal",
+   "group": "Geography",
+   "label": "State: West Bengal",
+   "meanAbsShap": 0.000333
+  },
+  {
+   "feature": "state=Telangana",
+   "group": "Geography",
+   "label": "State: Telangana",
+   "meanAbsShap": 0.000329
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 South East Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 South East Central Railway",
+   "meanAbsShap": 0.000325
+  },
+  {
+   "feature": "stakeholder_responsiveness=Moderate",
+   "group": "Stakeholder responsiveness",
+   "label": "Stakeholder responsiveness: Moderate",
+   "meanAbsShap": 0.00032
+  },
+  {
+   "feature": "project_type=Irrigation",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Irrigation",
+   "meanAbsShap": 0.000275
+  },
+  {
+   "feature": "authority=Dedicated Freight Corridor Corporation of India Ltd (DFCCIL)",
+   "group": "Other",
+   "label": "Authority: Dedicated Freight Corridor Corporation of India Ltd (DFCCIL)",
+   "meanAbsShap": 0.000261
+  },
+  {
+   "feature": "dispute_complexity=Moderate",
+   "group": "Legal disputes",
+   "label": "Dispute complexity: Moderate",
+   "meanAbsShap": 0.000241
+  },
+  {
+   "feature": "authority=Works Department, Odisha (NH wing)",
+   "group": "Other",
+   "label": "Authority: Works Department, Odisha (NH wing)",
+   "meanAbsShap": 0.000232
+  },
+  {
+   "feature": "authority=Telangana Renewable Energy Development Corporation (TGREDCO)",
+   "group": "Other",
+   "label": "Authority: Telangana Renewable Energy Development Corporation (TGREDCO)",
+   "meanAbsShap": 0.000227
+  },
+  {
+   "feature": "authority=Indian Oil Corporation Ltd (IOCL)",
+   "group": "Other",
+   "label": "Authority: Indian Oil Corporation Ltd (IOCL)",
+   "meanAbsShap": 0.000223
+  },
+  {
+   "feature": "authority=Hyderabad Metro Rail Ltd (HMRL)",
+   "group": "Other",
+   "label": "Authority: Hyderabad Metro Rail Ltd (HMRL)",
+   "meanAbsShap": 0.000215
+  },
+  {
+   "feature": "authority=Uttar Pradesh Expressways Industrial Development Authority (UPEIDA)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh Expressways Industrial Development Authority (UPEIDA)",
+   "meanAbsShap": 0.000212
+  },
+  {
+   "feature": "authority=Kerala State Industrial Development Corporation (KSIDC)",
+   "group": "Other",
+   "label": "Authority: Kerala State Industrial Development Corporation (KSIDC)",
+   "meanAbsShap": 0.00021
+  },
+  {
+   "feature": "state=Gujarat",
+   "group": "Geography",
+   "label": "State: Gujarat",
+   "meanAbsShap": 0.000204
+  },
+  {
+   "feature": "authority=Public Works Department, Uttar Pradesh (NH wing)",
+   "group": "Other",
+   "label": "Authority: Public Works Department, Uttar Pradesh (NH wing)",
+   "meanAbsShap": 0.000204
+  },
+  {
+   "feature": "state=Bihar",
+   "group": "Geography",
+   "label": "State: Bihar",
+   "meanAbsShap": 0.000198
+  },
+  {
+   "feature": "authority=Durg Development Authority",
+   "group": "Other",
+   "label": "Authority: Durg Development Authority",
+   "meanAbsShap": 0.000191
+  },
+  {
+   "feature": "state=Karnataka",
+   "group": "Geography",
+   "label": "State: Karnataka",
+   "meanAbsShap": 0.000173
+  },
+  {
+   "feature": "state=Kerala",
+   "group": "Geography",
+   "label": "State: Kerala",
+   "meanAbsShap": 0.000157
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 North Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 North Central Railway",
+   "meanAbsShap": 0.00015
+  },
+  {
+   "feature": "rr_status=Not Started",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr status: Not Started",
+   "meanAbsShap": 0.000124
+  },
+  {
+   "feature": "authority=Water Resources Department, Jharkhand",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Jharkhand",
+   "meanAbsShap": 0.000118
+  },
+  {
+   "feature": "authority=Uttar Pradesh State Industrial Development Authority (UPSIDA)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh State Industrial Development Authority (UPSIDA)",
+   "meanAbsShap": 0.000117
+  },
+  {
+   "feature": "authority=Uttar Pradesh Power Transmission Corporation Ltd (UPPTCL)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh Power Transmission Corporation Ltd (UPPTCL)",
+   "meanAbsShap": 0.00011
+  },
+  {
+   "feature": "authority=Hindustan Petroleum Corporation Ltd (HPCL)",
+   "group": "Other",
+   "label": "Authority: Hindustan Petroleum Corporation Ltd (HPCL)",
+   "meanAbsShap": 0.000107
+  },
+  {
+   "feature": "authority=Water Resources Department, Chhattisgarh",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Chhattisgarh",
+   "meanAbsShap": 0.000105
+  },
+  {
+   "feature": "authority=Cauvery Neeravari Nigam Ltd (CNNL)",
+   "group": "Other",
+   "label": "Authority: Cauvery Neeravari Nigam Ltd (CNNL)",
+   "meanAbsShap": 0.000101
+  },
+  {
+   "feature": "authority=MoRTH Regional Office",
+   "group": "Other",
+   "label": "Authority: MoRTH Regional Office",
+   "meanAbsShap": 0.000101
+  },
+  {
+   "feature": "state=Delhi",
+   "group": "Geography",
+   "label": "State: Delhi",
+   "meanAbsShap": 9.8e-05
+  },
+  {
+   "feature": "state=Jharkhand",
+   "group": "Geography",
+   "label": "State: Jharkhand",
+   "meanAbsShap": 9.5e-05
+  },
+  {
+   "feature": "authority=Public Works Department, Chhattisgarh",
+   "group": "Other",
+   "label": "Authority: Public Works Department, Chhattisgarh",
+   "meanAbsShap": 8.8e-05
+  },
+  {
+   "feature": "state=Rajasthan",
+   "group": "Geography",
+   "label": "State: Rajasthan",
+   "meanAbsShap": 7.4e-05
+  },
+  {
+   "feature": "authority=Water Resources Department, Maharashtra",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Maharashtra",
+   "meanAbsShap": 7e-05
+  },
+  {
+   "feature": "state=Maharashtra",
+   "group": "Geography",
+   "label": "State: Maharashtra",
    "meanAbsShap": 6.6e-05
   },
   {
-   "feature": "state=Assam",
+   "feature": "authority=Rail Infrastructure Development Company (Karnataka) Ltd (K-RIDE)",
+   "group": "Other",
+   "label": "Authority: Rail Infrastructure Development Company (Karnataka) Ltd (K-RIDE)",
+   "meanAbsShap": 6.3e-05
+  },
+  {
+   "feature": "project_type=Power Transmission",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Power Transmission",
+   "meanAbsShap": 6.1e-05
+  },
+  {
+   "feature": "project_type=Industrial",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Industrial",
+   "meanAbsShap": 5.9e-05
+  },
+  {
+   "feature": "state=Himachal Pradesh",
    "group": "Geography",
-   "label": "State: Assam",
-   "meanAbsShap": 5.5e-05
+   "label": "State: Himachal Pradesh",
+   "meanAbsShap": 5.7e-05
+  },
+  {
+   "feature": "authority=Hisar Development Authority",
+   "group": "Other",
+   "label": "Authority: Hisar Development Authority",
+   "meanAbsShap": 5.4e-05
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Konkan Railway Corporation Ltd",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Konkan Railway Corporation Ltd",
+   "meanAbsShap": 5.4e-05
+  },
+  {
+   "feature": "authority=Water Resources Department, Punjab",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Punjab",
+   "meanAbsShap": 5.2e-05
+  },
+  {
+   "feature": "authority=Irrigation and Water Resources Department, Uttar Pradesh",
+   "group": "Other",
+   "label": "Authority: Irrigation and Water Resources Department, Uttar Pradesh",
+   "meanAbsShap": 5.1e-05
+  },
+  {
+   "feature": "authority=Irrigation & CAD Department, Telangana",
+   "group": "Other",
+   "label": "Authority: Irrigation & CAD Department, Telangana",
+   "meanAbsShap": 4.8e-05
+  },
+  {
+   "feature": "authority=Kasaragod Development Authority",
+   "group": "Other",
+   "label": "Authority: Kasaragod Development Authority",
+   "meanAbsShap": 4.8e-05
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 South Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 South Central Railway",
+   "meanAbsShap": 4.8e-05
+  },
+  {
+   "feature": "dispute_complexity=Low",
+   "group": "Legal disputes",
+   "label": "Dispute complexity: Low",
+   "meanAbsShap": 4.5e-05
+  },
+  {
+   "feature": "authority=Visvesvaraya Jala Nigam Ltd (VJNL)",
+   "group": "Other",
+   "label": "Authority: Visvesvaraya Jala Nigam Ltd (VJNL)",
+   "meanAbsShap": 3.7e-05
+  },
+  {
+   "feature": "authority=Public Works Department (Roads), Meghalaya (NH wing)",
+   "group": "Other",
+   "label": "Authority: Public Works Department (Roads), Meghalaya (NH wing)",
+   "meanAbsShap": 3.6e-05
   },
   {
    "feature": "log_inactivity_days",
@@ -1323,6 +2175,12 @@
    "meanAbsShap": 0.0
   },
   {
+   "feature": "log_approval_delay_days",
+   "group": "Approval delay",
+   "label": "Days an approval / clearance has been pending",
+   "meanAbsShap": 0.0
+  },
+  {
    "feature": "legal_dispute",
    "group": "Legal disputes",
    "label": "Legal dispute",
@@ -1335,45 +2193,651 @@
    "meanAbsShap": 0.0
   },
   {
-   "feature": "state=Chhattisgarh",
+   "feature": "state=Assam",
    "group": "Geography",
-   "label": "State: Chhattisgarh",
+   "label": "State: Assam",
    "meanAbsShap": 0.0
   },
   {
-   "feature": "state=Gujarat",
+   "feature": "state=Goa",
    "group": "Geography",
-   "label": "State: Gujarat",
+   "label": "State: Goa",
    "meanAbsShap": 0.0
   },
   {
-   "feature": "authority=Ministry of Railways",
+   "feature": "state=Haryana",
+   "group": "Geography",
+   "label": "State: Haryana",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "state=Jammu & Kashmir",
+   "group": "Geography",
+   "label": "State: Jammu & Kashmir",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "state=Madhya Pradesh",
+   "group": "Geography",
+   "label": "State: Madhya Pradesh",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "state=Meghalaya",
+   "group": "Geography",
+   "label": "State: Meghalaya",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "state=Punjab",
+   "group": "Geography",
+   "label": "State: Punjab",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "state=Tamil Nadu",
+   "group": "Geography",
+   "label": "State: Tamil Nadu",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "state=Tripura",
+   "group": "Geography",
+   "label": "State: Tripura",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "state=Uttarakhand",
+   "group": "Geography",
+   "label": "State: Uttarakhand",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "project_type=Renewable Energy",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Renewable Energy",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "project_type=Urban Infrastructure",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Urban Infrastructure",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Andhra Pradesh Industrial Infrastructure Corporation (APIIC)",
    "group": "Other",
-   "label": "Authority: Ministry of Railways",
+   "label": "Authority: Andhra Pradesh Industrial Infrastructure Corporation (APIIC)",
    "meanAbsShap": 0.0
   },
   {
-   "feature": "authority=State Civil Aviation Department",
+   "feature": "authority=Arwal Development Authority",
    "group": "Other",
-   "label": "Authority: State Civil Aviation Department",
+   "label": "Authority: Arwal Development Authority",
    "meanAbsShap": 0.0
   },
   {
-   "feature": "authority=State Transmission Utility",
+   "feature": "authority=Assam Electricity Grid Corporation Ltd (AEGCL)",
    "group": "Other",
-   "label": "Authority: State Transmission Utility",
+   "label": "Authority: Assam Electricity Grid Corporation Ltd (AEGCL)",
    "meanAbsShap": 0.0
   },
   {
-   "feature": "authority=State Water Resources Department",
+   "feature": "authority=Assam Industrial Development Corporation (AIDC)",
    "group": "Other",
-   "label": "Authority: State Water Resources Department",
+   "label": "Authority: Assam Industrial Development Corporation (AIDC)",
    "meanAbsShap": 0.0
   },
   {
-   "feature": "current_stage=Land Identification",
-   "group": "Stage schedule pressure",
-   "label": "Current stage: Land Identification",
+   "feature": "authority=Balasore Municipal Corporation",
+   "group": "Other",
+   "label": "Authority: Balasore Municipal Corporation",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Bangalore Metro Rail Corporation Ltd (BMRCL)",
+   "group": "Other",
+   "label": "Authority: Bangalore Metro Rail Corporation Ltd (BMRCL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Begusarai Municipal Corporation",
+   "group": "Other",
+   "label": "Authority: Begusarai Municipal Corporation",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Belagavi City Municipal Council",
+   "group": "Other",
+   "label": "Authority: Belagavi City Municipal Council",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Bhavnagar Development Authority",
+   "group": "Other",
+   "label": "Authority: Bhavnagar Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Bihar Industrial Area Development Authority (BIADA)",
+   "group": "Other",
+   "label": "Authority: Bihar Industrial Area Development Authority (BIADA)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Bihar State Power Transmission Company Ltd (BSPTCL)",
+   "group": "Other",
+   "label": "Authority: Bihar State Power Transmission Company Ltd (BSPTCL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Bihar State Road Development Corporation (BSRDC) (NH wing)",
+   "group": "Other",
+   "label": "Authority: Bihar State Road Development Corporation (BSRDC) (NH wing)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Chennai Metro Rail Ltd (CMRL)",
+   "group": "Other",
+   "label": "Authority: Chennai Metro Rail Ltd (CMRL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Chhattisgarh State Industrial Development Corporation (CSIDC)",
+   "group": "Other",
+   "label": "Authority: Chhattisgarh State Industrial Development Corporation (CSIDC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Civil Aviation Department, Andhra Pradesh",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Andhra Pradesh",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Civil Aviation Department, Chhattisgarh",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Chhattisgarh",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Civil Aviation Department, Haryana",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Haryana",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Civil Aviation Department, Maharashtra",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Maharashtra",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Civil Aviation Department, Telangana",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Telangana",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Erode Development Authority",
+   "group": "Other",
+   "label": "Authority: Erode Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=GAIL (India) Ltd",
+   "group": "Other",
+   "label": "Authority: GAIL (India) Ltd",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Gujarat Industrial Development Corporation (GIDC)",
+   "group": "Other",
+   "label": "Authority: Gujarat Industrial Development Corporation (GIDC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Gujarat Metro Rail Corporation (GMRC)",
+   "group": "Other",
+   "label": "Authority: Gujarat Metro Rail Corporation (GMRC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Gurugram Development Authority",
+   "group": "Other",
+   "label": "Authority: Gurugram Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Hapur Development Authority",
+   "group": "Other",
+   "label": "Authority: Hapur Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Haryana Mass Rapid Transport Corporation (HMRTC)",
+   "group": "Other",
+   "label": "Authority: Haryana Mass Rapid Transport Corporation (HMRTC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Haryana State Industrial & Infrastructure Development Corporation (HSIIDC)",
+   "group": "Other",
+   "label": "Authority: Haryana State Industrial & Infrastructure Development Corporation (HSIIDC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Haryana Vidyut Prasaran Nigam Ltd (HVPNL)",
+   "group": "Other",
+   "label": "Authority: Haryana Vidyut Prasaran Nigam Ltd (HVPNL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Highways Department, Tamil Nadu",
+   "group": "Other",
+   "label": "Authority: Highways Department, Tamil Nadu",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Irrigation & Water Resources Department, Haryana",
+   "group": "Other",
+   "label": "Authority: Irrigation & Water Resources Department, Haryana",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Jalgaon Development Authority",
+   "group": "Other",
+   "label": "Authority: Jalgaon Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Jharkhand Industrial Area Development Authority (JIADA)",
+   "group": "Other",
+   "label": "Authority: Jharkhand Industrial Area Development Authority (JIADA)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Jhunjhunun Development Authority",
+   "group": "Other",
+   "label": "Authority: Jhunjhunun Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Karimnagar Development Authority",
+   "group": "Other",
+   "label": "Authority: Karimnagar Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Karnataka Industrial Areas Development Board (KIADB)",
+   "group": "Other",
+   "label": "Authority: Karnataka Industrial Areas Development Board (KIADB)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Karnataka Neeravari Nigam Ltd (KNNL)",
+   "group": "Other",
+   "label": "Authority: Karnataka Neeravari Nigam Ltd (KNNL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Karnataka Power Transmission Corporation Ltd (KPTCL)",
+   "group": "Other",
+   "label": "Authority: Karnataka Power Transmission Corporation Ltd (KPTCL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Karnataka Solar Power Development Corporation Ltd (KSPDCL)",
+   "group": "Other",
+   "label": "Authority: Karnataka Solar Power Development Corporation Ltd (KSPDCL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Karnataka State Industrial and Infrastructure Development Corporation (KSIIDC)",
+   "group": "Other",
+   "label": "Authority: Karnataka State Industrial and Infrastructure Development Corporation (KSIIDC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Lucknow Development Authority (LDA)",
+   "group": "Other",
+   "label": "Authority: Lucknow Development Authority (LDA)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=MP Industrial Development Corporation (MPIDC)",
+   "group": "Other",
+   "label": "Authority: MP Industrial Development Corporation (MPIDC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=MP Power Transmission Company Ltd (MPPTCL)",
+   "group": "Other",
+   "label": "Authority: MP Power Transmission Company Ltd (MPPTCL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Madhya Pradesh Metro Rail Corporation Ltd (MPMRCL)",
+   "group": "Other",
+   "label": "Authority: Madhya Pradesh Metro Rail Corporation Ltd (MPMRCL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Maharashtra Industrial Development Corporation (MIDC)",
+   "group": "Other",
+   "label": "Authority: Maharashtra Industrial Development Corporation (MIDC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Maharashtra Metro Rail Corporation Ltd (MahaMetro)",
+   "group": "Other",
+   "label": "Authority: Maharashtra Metro Rail Corporation Ltd (MahaMetro)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Maharashtra State Electricity Transmission Co. Ltd (MSETCL)",
+   "group": "Other",
+   "label": "Authority: Maharashtra State Electricity Transmission Co. Ltd (MSETCL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Maharashtra State Road Development Corporation (MSRDC)",
+   "group": "Other",
+   "label": "Authority: Maharashtra State Road Development Corporation (MSRDC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Maharashtra State Road Development Corporation (MSRDC) (NH wing)",
+   "group": "Other",
+   "label": "Authority: Maharashtra State Road Development Corporation (MSRDC) (NH wing)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Meghalaya Power Transmission Corporation Ltd (MePTCL)",
+   "group": "Other",
+   "label": "Authority: Meghalaya Power Transmission Corporation Ltd (MePTCL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Central Railway",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 East Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 East Central Railway",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 East Coast Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 East Coast Railway",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 North Western Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 North Western Railway",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Northeast Frontier Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Northeast Frontier Railway",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Northern Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Northern Railway",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Southern Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Southern Railway",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 West Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 West Central Railway",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ministry of Railways \u2014 Western Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Western Railway",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=MoRTH Regional Office, Bengaluru",
+   "group": "Other",
+   "label": "Authority: MoRTH Regional Office, Bengaluru",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=MoRTH Regional Office, Lucknow",
+   "group": "Other",
+   "label": "Authority: MoRTH Regional Office, Lucknow",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Nagaur Development Authority",
+   "group": "Other",
+   "label": "Authority: Nagaur Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=National High Speed Rail Corporation Ltd (NHSRCL)",
+   "group": "Other",
+   "label": "Authority: National High Speed Rail Corporation Ltd (NHSRCL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=New & Renewable Energy Development Corporation of AP (NREDCAP)",
+   "group": "Other",
+   "label": "Authority: New & Renewable Energy Development Corporation of AP (NREDCAP)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=North Twenty-Four Parganas Development Authority",
+   "group": "Other",
+   "label": "Authority: North Twenty-Four Parganas Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Pathankot Development Authority",
+   "group": "Other",
+   "label": "Authority: Pathankot Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Patna Metro Rail Corporation (PMRC)",
+   "group": "Other",
+   "label": "Authority: Patna Metro Rail Corporation (PMRC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Power Grid Corporation of India Ltd (POWERGRID)",
+   "group": "Other",
+   "label": "Authority: Power Grid Corporation of India Ltd (POWERGRID)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Power Transmission Corporation of Uttarakhand Ltd (PTCUL)",
+   "group": "Other",
+   "label": "Authority: Power Transmission Corporation of Uttarakhand Ltd (PTCUL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Public Works Department (B&R), Punjab (NH wing)",
+   "group": "Other",
+   "label": "Authority: Public Works Department (B&R), Punjab (NH wing)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Public Works Department, Uttarakhand",
+   "group": "Other",
+   "label": "Authority: Public Works Department, Uttarakhand",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Public Works Department, West Bengal",
+   "group": "Other",
+   "label": "Authority: Public Works Department, West Bengal",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Punjab Small Industries & Export Corporation (PSIEC)",
+   "group": "Other",
+   "label": "Authority: Punjab Small Industries & Export Corporation (PSIEC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Rajasthan Rajya Vidyut Prasaran Nigam Ltd (RVPN)",
+   "group": "Other",
+   "label": "Authority: Rajasthan Rajya Vidyut Prasaran Nigam Ltd (RVPN)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Rajasthan Renewable Energy Corporation Ltd (RRECL)",
+   "group": "Other",
+   "label": "Authority: Rajasthan Renewable Energy Corporation Ltd (RRECL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Rajasthan State Industrial Development & Investment Corporation (RIICO)",
+   "group": "Other",
+   "label": "Authority: Rajasthan State Industrial Development & Investment Corporation (RIICO)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Rajkot Development Authority",
+   "group": "Other",
+   "label": "Authority: Rajkot Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Roads & Buildings Department, Andhra Pradesh (NH wing)",
+   "group": "Other",
+   "label": "Authority: Roads & Buildings Department, Andhra Pradesh (NH wing)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Roads & Buildings Department, Gujarat (NH wing)",
+   "group": "Other",
+   "label": "Authority: Roads & Buildings Department, Gujarat (NH wing)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Rohtas Municipal Corporation",
+   "group": "Other",
+   "label": "Authority: Rohtas Municipal Corporation",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Sardar Sarovar Narmada Nigam Ltd (SSNNL)",
+   "group": "Other",
+   "label": "Authority: Sardar Sarovar Narmada Nigam Ltd (SSNNL)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Sonipat Municipal Corporation",
+   "group": "Other",
+   "label": "Authority: Sonipat Municipal Corporation",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=State Industries Promotion Corporation of Tamil Nadu (SIPCOT)",
+   "group": "Other",
+   "label": "Authority: State Industries Promotion Corporation of Tamil Nadu (SIPCOT)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Telangana State Industrial Infrastructure Corporation (TGIIC)",
+   "group": "Other",
+   "label": "Authority: Telangana State Industrial Infrastructure Corporation (TGIIC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Transmission Corporation of Andhra Pradesh Ltd (APTRANSCO)",
+   "group": "Other",
+   "label": "Authority: Transmission Corporation of Andhra Pradesh Ltd (APTRANSCO)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Ujjain Development Authority",
+   "group": "Other",
+   "label": "Authority: Ujjain Development Authority",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Uttar Pradesh Metro Rail Corporation (UPMRC)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh Metro Rail Corporation (UPMRC)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Uttar Pradesh New and Renewable Energy Development Agency (UPNEDA)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh New and Renewable Energy Development Agency (UPNEDA)",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Andhra Pradesh",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Andhra Pradesh",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Assam",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Assam",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Bihar",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Bihar",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Goa",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Goa",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Karnataka",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Karnataka",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Meghalaya",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Meghalaya",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Rajasthan",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Rajasthan",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Water Resources Department, Tamil Nadu",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Tamil Nadu",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "authority=Yamuna Expressway Industrial Development Authority (YEIDA)",
+   "group": "Other",
+   "label": "Authority: Yamuna Expressway Industrial Development Authority (YEIDA)",
    "meanAbsShap": 0.0
   },
   {
@@ -1386,6 +2850,18 @@
    "feature": "dispute_complexity=High",
    "group": "Legal disputes",
    "label": "Dispute complexity: High",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "possession_status=Partial",
+   "group": "Possession",
+   "label": "Possession status: Partial",
+   "meanAbsShap": 0.0
+  },
+  {
+   "feature": "rr_status=In Progress",
+   "group": "Rehabilitation & resettlement",
+   "label": "Rr status: In Progress",
    "meanAbsShap": 0.0
   },
   {

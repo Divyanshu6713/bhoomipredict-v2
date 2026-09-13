@@ -113,6 +113,34 @@
    "label": "Authority historical delay rate"
   },
   {
+   "name": "authority_dependency_count",
+   "op": "identity",
+   "source": "authority_dependency_count",
+   "group": "Authority dependencies",
+   "label": "Authorities the acquisition depends on"
+  },
+  {
+   "name": "pending_dependency_actions",
+   "op": "identity",
+   "source": "pending_dependency_actions",
+   "group": "Pending department actions",
+   "label": "Department actions pending on the case"
+  },
+  {
+   "name": "approval_delay_days",
+   "op": "identity",
+   "source": "approval_delay_days",
+   "group": "Approval delay",
+   "label": "Days an approval / clearance has been pending"
+  },
+  {
+   "name": "department_coordination_score",
+   "op": "identity",
+   "source": "department_coordination_score",
+   "group": "Inter-department coordination",
+   "label": "Inter-department coordination score"
+  },
+  {
    "name": "project_land_requirement_ha",
    "op": "identity",
    "source": "project_land_requirement_ha",
@@ -167,6 +195,13 @@
    "source": "land_area_ha",
    "group": "Parcel & project attributes",
    "label": "Parcel area (ha)"
+  },
+  {
+   "name": "log_approval_delay_days",
+   "op": "log1p",
+   "source": "approval_delay_days",
+   "group": "Approval delay",
+   "label": "Days an approval / clearance has been pending"
   },
   {
    "name": "schedule_consumed",
@@ -237,12 +272,12 @@
    "label": "State: Chhattisgarh"
   },
   {
-   "name": "state=Delhi NCR",
+   "name": "state=Delhi",
    "op": "onehot",
    "source": "state",
-   "category": "Delhi NCR",
+   "category": "Delhi",
    "group": "Geography",
-   "label": "State: Delhi NCR"
+   "label": "State: Delhi"
   },
   {
    "name": "state=Goa",
@@ -275,6 +310,14 @@
    "category": "Himachal Pradesh",
    "group": "Geography",
    "label": "State: Himachal Pradesh"
+  },
+  {
+   "name": "state=Jammu & Kashmir",
+   "op": "onehot",
+   "source": "state",
+   "category": "Jammu & Kashmir",
+   "group": "Geography",
+   "label": "State: Jammu & Kashmir"
   },
   {
    "name": "state=Jharkhand",
@@ -405,12 +448,12 @@
    "label": "Project type: Expressway"
   },
   {
-   "name": "project_type=Industrial Corridor",
+   "name": "project_type=Industrial",
    "op": "onehot",
    "source": "project_type",
-   "category": "Industrial Corridor",
+   "category": "Industrial",
    "group": "Parcel & project attributes",
-   "label": "Project type: Industrial Corridor"
+   "label": "Project type: Industrial"
   },
   {
    "name": "project_type=Irrigation",
@@ -437,6 +480,14 @@
    "label": "Project type: National Highway"
   },
   {
+   "name": "project_type=Pipeline",
+   "op": "onehot",
+   "source": "project_type",
+   "category": "Pipeline",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Pipeline"
+  },
+  {
    "name": "project_type=Power Transmission",
    "op": "onehot",
    "source": "project_type",
@@ -445,140 +496,1068 @@
    "label": "Project type: Power Transmission"
   },
   {
-   "name": "project_type=Railway Corridor",
+   "name": "project_type=Railway",
    "op": "onehot",
    "source": "project_type",
-   "category": "Railway Corridor",
+   "category": "Railway",
    "group": "Parcel & project attributes",
-   "label": "Project type: Railway Corridor"
+   "label": "Project type: Railway"
   },
   {
-   "name": "authority=Command Area Development Authority",
+   "name": "project_type=Renewable Energy",
    "op": "onehot",
-   "source": "authority",
-   "category": "Command Area Development Authority",
-   "group": "Other",
-   "label": "Authority: Command Area Development Authority"
+   "source": "project_type",
+   "category": "Renewable Energy",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Renewable Energy"
   },
   {
-   "name": "authority=DFCCIL",
+   "name": "project_type=Urban Infrastructure",
    "op": "onehot",
-   "source": "authority",
-   "category": "DFCCIL",
-   "group": "Other",
-   "label": "Authority: DFCCIL"
+   "source": "project_type",
+   "category": "Urban Infrastructure",
+   "group": "Parcel & project attributes",
+   "label": "Project type: Urban Infrastructure"
   },
   {
-   "name": "authority=Metro Rail Corporation",
+   "name": "authority=Andhra Pradesh Industrial Infrastructure Corporation (APIIC)",
    "op": "onehot",
    "source": "authority",
-   "category": "Metro Rail Corporation",
+   "category": "Andhra Pradesh Industrial Infrastructure Corporation (APIIC)",
    "group": "Other",
-   "label": "Authority: Metro Rail Corporation"
+   "label": "Authority: Andhra Pradesh Industrial Infrastructure Corporation (APIIC)"
   },
   {
-   "name": "authority=Ministry of Railways",
+   "name": "authority=Arwal Development Authority",
    "op": "onehot",
    "source": "authority",
-   "category": "Ministry of Railways",
+   "category": "Arwal Development Authority",
    "group": "Other",
-   "label": "Authority: Ministry of Railways"
+   "label": "Authority: Arwal Development Authority"
   },
   {
-   "name": "authority=MoRTH \u2014 Regional Office",
+   "name": "authority=Assam Electricity Grid Corporation Ltd (AEGCL)",
    "op": "onehot",
    "source": "authority",
-   "category": "MoRTH \u2014 Regional Office",
+   "category": "Assam Electricity Grid Corporation Ltd (AEGCL)",
    "group": "Other",
-   "label": "Authority: MoRTH \u2014 Regional Office"
+   "label": "Authority: Assam Electricity Grid Corporation Ltd (AEGCL)"
   },
   {
-   "name": "authority=NHAI",
+   "name": "authority=Assam Industrial Development Corporation (AIDC)",
    "op": "onehot",
    "source": "authority",
-   "category": "NHAI",
+   "category": "Assam Industrial Development Corporation (AIDC)",
    "group": "Other",
-   "label": "Authority: NHAI"
+   "label": "Authority: Assam Industrial Development Corporation (AIDC)"
   },
   {
-   "name": "authority=NHSRCL",
+   "name": "authority=Balasore Municipal Corporation",
    "op": "onehot",
    "source": "authority",
-   "category": "NHSRCL",
+   "category": "Balasore Municipal Corporation",
    "group": "Other",
-   "label": "Authority: NHSRCL"
+   "label": "Authority: Balasore Municipal Corporation"
   },
   {
-   "name": "authority=NICDC",
+   "name": "authority=Bangalore Metro Rail Corporation Ltd (BMRCL)",
    "op": "onehot",
    "source": "authority",
-   "category": "NICDC",
+   "category": "Bangalore Metro Rail Corporation Ltd (BMRCL)",
    "group": "Other",
-   "label": "Authority: NICDC"
+   "label": "Authority: Bangalore Metro Rail Corporation Ltd (BMRCL)"
   },
   {
-   "name": "authority=POWERGRID",
+   "name": "authority=Begusarai Municipal Corporation",
    "op": "onehot",
    "source": "authority",
-   "category": "POWERGRID",
+   "category": "Begusarai Municipal Corporation",
    "group": "Other",
-   "label": "Authority: POWERGRID"
+   "label": "Authority: Begusarai Municipal Corporation"
   },
   {
-   "name": "authority=State Civil Aviation Department",
+   "name": "authority=Belagavi City Municipal Council",
    "op": "onehot",
    "source": "authority",
-   "category": "State Civil Aviation Department",
+   "category": "Belagavi City Municipal Council",
    "group": "Other",
-   "label": "Authority: State Civil Aviation Department"
+   "label": "Authority: Belagavi City Municipal Council"
   },
   {
-   "name": "authority=State Industrial Development Corporation",
+   "name": "authority=Bharat Petroleum Corporation Ltd (BPCL)",
    "op": "onehot",
    "source": "authority",
-   "category": "State Industrial Development Corporation",
+   "category": "Bharat Petroleum Corporation Ltd (BPCL)",
    "group": "Other",
-   "label": "Authority: State Industrial Development Corporation"
+   "label": "Authority: Bharat Petroleum Corporation Ltd (BPCL)"
   },
   {
-   "name": "authority=State PWD (NH Wing)",
+   "name": "authority=Bhavnagar Development Authority",
    "op": "onehot",
    "source": "authority",
-   "category": "State PWD (NH Wing)",
+   "category": "Bhavnagar Development Authority",
    "group": "Other",
-   "label": "Authority: State PWD (NH Wing)"
+   "label": "Authority: Bhavnagar Development Authority"
   },
   {
-   "name": "authority=State Road Development Corporation",
+   "name": "authority=Bihar Industrial Area Development Authority (BIADA)",
    "op": "onehot",
    "source": "authority",
-   "category": "State Road Development Corporation",
+   "category": "Bihar Industrial Area Development Authority (BIADA)",
    "group": "Other",
-   "label": "Authority: State Road Development Corporation"
+   "label": "Authority: Bihar Industrial Area Development Authority (BIADA)"
   },
   {
-   "name": "authority=State Transmission Utility",
+   "name": "authority=Bihar State Power Transmission Company Ltd (BSPTCL)",
    "op": "onehot",
    "source": "authority",
-   "category": "State Transmission Utility",
+   "category": "Bihar State Power Transmission Company Ltd (BSPTCL)",
    "group": "Other",
-   "label": "Authority: State Transmission Utility"
+   "label": "Authority: Bihar State Power Transmission Company Ltd (BSPTCL)"
   },
   {
-   "name": "authority=State Water Resources Department",
+   "name": "authority=Bihar State Road Development Corporation (BSRDC) (NH wing)",
    "op": "onehot",
    "source": "authority",
-   "category": "State Water Resources Department",
+   "category": "Bihar State Road Development Corporation (BSRDC) (NH wing)",
    "group": "Other",
-   "label": "Authority: State Water Resources Department"
+   "label": "Authority: Bihar State Road Development Corporation (BSRDC) (NH wing)"
   },
   {
-   "name": "authority=Urban Development Authority",
+   "name": "authority=Cauvery Neeravari Nigam Ltd (CNNL)",
    "op": "onehot",
    "source": "authority",
-   "category": "Urban Development Authority",
+   "category": "Cauvery Neeravari Nigam Ltd (CNNL)",
    "group": "Other",
-   "label": "Authority: Urban Development Authority"
+   "label": "Authority: Cauvery Neeravari Nigam Ltd (CNNL)"
+  },
+  {
+   "name": "authority=Chennai Metro Rail Ltd (CMRL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Chennai Metro Rail Ltd (CMRL)",
+   "group": "Other",
+   "label": "Authority: Chennai Metro Rail Ltd (CMRL)"
+  },
+  {
+   "name": "authority=Chhattisgarh State Industrial Development Corporation (CSIDC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Chhattisgarh State Industrial Development Corporation (CSIDC)",
+   "group": "Other",
+   "label": "Authority: Chhattisgarh State Industrial Development Corporation (CSIDC)"
+  },
+  {
+   "name": "authority=Civil Aviation Department, Andhra Pradesh",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Civil Aviation Department, Andhra Pradesh",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Andhra Pradesh"
+  },
+  {
+   "name": "authority=Civil Aviation Department, Chhattisgarh",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Civil Aviation Department, Chhattisgarh",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Chhattisgarh"
+  },
+  {
+   "name": "authority=Civil Aviation Department, Haryana",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Civil Aviation Department, Haryana",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Haryana"
+  },
+  {
+   "name": "authority=Civil Aviation Department, Maharashtra",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Civil Aviation Department, Maharashtra",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Maharashtra"
+  },
+  {
+   "name": "authority=Civil Aviation Department, Telangana",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Civil Aviation Department, Telangana",
+   "group": "Other",
+   "label": "Authority: Civil Aviation Department, Telangana"
+  },
+  {
+   "name": "authority=Dedicated Freight Corridor Corporation of India Ltd (DFCCIL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Dedicated Freight Corridor Corporation of India Ltd (DFCCIL)",
+   "group": "Other",
+   "label": "Authority: Dedicated Freight Corridor Corporation of India Ltd (DFCCIL)"
+  },
+  {
+   "name": "authority=Durg Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Durg Development Authority",
+   "group": "Other",
+   "label": "Authority: Durg Development Authority"
+  },
+  {
+   "name": "authority=Erode Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Erode Development Authority",
+   "group": "Other",
+   "label": "Authority: Erode Development Authority"
+  },
+  {
+   "name": "authority=GAIL (India) Ltd",
+   "op": "onehot",
+   "source": "authority",
+   "category": "GAIL (India) Ltd",
+   "group": "Other",
+   "label": "Authority: GAIL (India) Ltd"
+  },
+  {
+   "name": "authority=Gujarat Industrial Development Corporation (GIDC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Gujarat Industrial Development Corporation (GIDC)",
+   "group": "Other",
+   "label": "Authority: Gujarat Industrial Development Corporation (GIDC)"
+  },
+  {
+   "name": "authority=Gujarat Metro Rail Corporation (GMRC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Gujarat Metro Rail Corporation (GMRC)",
+   "group": "Other",
+   "label": "Authority: Gujarat Metro Rail Corporation (GMRC)"
+  },
+  {
+   "name": "authority=Gurugram Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Gurugram Development Authority",
+   "group": "Other",
+   "label": "Authority: Gurugram Development Authority"
+  },
+  {
+   "name": "authority=Hapur Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Hapur Development Authority",
+   "group": "Other",
+   "label": "Authority: Hapur Development Authority"
+  },
+  {
+   "name": "authority=Haryana Mass Rapid Transport Corporation (HMRTC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Haryana Mass Rapid Transport Corporation (HMRTC)",
+   "group": "Other",
+   "label": "Authority: Haryana Mass Rapid Transport Corporation (HMRTC)"
+  },
+  {
+   "name": "authority=Haryana State Industrial & Infrastructure Development Corporation (HSIIDC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Haryana State Industrial & Infrastructure Development Corporation (HSIIDC)",
+   "group": "Other",
+   "label": "Authority: Haryana State Industrial & Infrastructure Development Corporation (HSIIDC)"
+  },
+  {
+   "name": "authority=Haryana Vidyut Prasaran Nigam Ltd (HVPNL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Haryana Vidyut Prasaran Nigam Ltd (HVPNL)",
+   "group": "Other",
+   "label": "Authority: Haryana Vidyut Prasaran Nigam Ltd (HVPNL)"
+  },
+  {
+   "name": "authority=Highways Department, Tamil Nadu",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Highways Department, Tamil Nadu",
+   "group": "Other",
+   "label": "Authority: Highways Department, Tamil Nadu"
+  },
+  {
+   "name": "authority=Hindustan Petroleum Corporation Ltd (HPCL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Hindustan Petroleum Corporation Ltd (HPCL)",
+   "group": "Other",
+   "label": "Authority: Hindustan Petroleum Corporation Ltd (HPCL)"
+  },
+  {
+   "name": "authority=Hisar Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Hisar Development Authority",
+   "group": "Other",
+   "label": "Authority: Hisar Development Authority"
+  },
+  {
+   "name": "authority=Hyderabad Metro Rail Ltd (HMRL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Hyderabad Metro Rail Ltd (HMRL)",
+   "group": "Other",
+   "label": "Authority: Hyderabad Metro Rail Ltd (HMRL)"
+  },
+  {
+   "name": "authority=Indian Oil Corporation Ltd (IOCL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Indian Oil Corporation Ltd (IOCL)",
+   "group": "Other",
+   "label": "Authority: Indian Oil Corporation Ltd (IOCL)"
+  },
+  {
+   "name": "authority=Industrial Infrastructure Development Corporation (IDCO)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Industrial Infrastructure Development Corporation (IDCO)",
+   "group": "Other",
+   "label": "Authority: Industrial Infrastructure Development Corporation (IDCO)"
+  },
+  {
+   "name": "authority=Irrigation & CAD Department, Telangana",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Irrigation & CAD Department, Telangana",
+   "group": "Other",
+   "label": "Authority: Irrigation & CAD Department, Telangana"
+  },
+  {
+   "name": "authority=Irrigation & Water Resources Department, Haryana",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Irrigation & Water Resources Department, Haryana",
+   "group": "Other",
+   "label": "Authority: Irrigation & Water Resources Department, Haryana"
+  },
+  {
+   "name": "authority=Irrigation and Water Resources Department, Uttar Pradesh",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Irrigation and Water Resources Department, Uttar Pradesh",
+   "group": "Other",
+   "label": "Authority: Irrigation and Water Resources Department, Uttar Pradesh"
+  },
+  {
+   "name": "authority=Jalgaon Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Jalgaon Development Authority",
+   "group": "Other",
+   "label": "Authority: Jalgaon Development Authority"
+  },
+  {
+   "name": "authority=Jharkhand Industrial Area Development Authority (JIADA)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Jharkhand Industrial Area Development Authority (JIADA)",
+   "group": "Other",
+   "label": "Authority: Jharkhand Industrial Area Development Authority (JIADA)"
+  },
+  {
+   "name": "authority=Jhunjhunun Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Jhunjhunun Development Authority",
+   "group": "Other",
+   "label": "Authority: Jhunjhunun Development Authority"
+  },
+  {
+   "name": "authority=Karimnagar Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Karimnagar Development Authority",
+   "group": "Other",
+   "label": "Authority: Karimnagar Development Authority"
+  },
+  {
+   "name": "authority=Karnataka Industrial Areas Development Board (KIADB)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Karnataka Industrial Areas Development Board (KIADB)",
+   "group": "Other",
+   "label": "Authority: Karnataka Industrial Areas Development Board (KIADB)"
+  },
+  {
+   "name": "authority=Karnataka Neeravari Nigam Ltd (KNNL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Karnataka Neeravari Nigam Ltd (KNNL)",
+   "group": "Other",
+   "label": "Authority: Karnataka Neeravari Nigam Ltd (KNNL)"
+  },
+  {
+   "name": "authority=Karnataka Power Transmission Corporation Ltd (KPTCL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Karnataka Power Transmission Corporation Ltd (KPTCL)",
+   "group": "Other",
+   "label": "Authority: Karnataka Power Transmission Corporation Ltd (KPTCL)"
+  },
+  {
+   "name": "authority=Karnataka Solar Power Development Corporation Ltd (KSPDCL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Karnataka Solar Power Development Corporation Ltd (KSPDCL)",
+   "group": "Other",
+   "label": "Authority: Karnataka Solar Power Development Corporation Ltd (KSPDCL)"
+  },
+  {
+   "name": "authority=Karnataka State Industrial and Infrastructure Development Corporation (KSIIDC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Karnataka State Industrial and Infrastructure Development Corporation (KSIIDC)",
+   "group": "Other",
+   "label": "Authority: Karnataka State Industrial and Infrastructure Development Corporation (KSIIDC)"
+  },
+  {
+   "name": "authority=Kasaragod Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Kasaragod Development Authority",
+   "group": "Other",
+   "label": "Authority: Kasaragod Development Authority"
+  },
+  {
+   "name": "authority=Kerala State Industrial Development Corporation (KSIDC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Kerala State Industrial Development Corporation (KSIDC)",
+   "group": "Other",
+   "label": "Authority: Kerala State Industrial Development Corporation (KSIDC)"
+  },
+  {
+   "name": "authority=Lucknow Development Authority (LDA)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Lucknow Development Authority (LDA)",
+   "group": "Other",
+   "label": "Authority: Lucknow Development Authority (LDA)"
+  },
+  {
+   "name": "authority=MP Industrial Development Corporation (MPIDC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "MP Industrial Development Corporation (MPIDC)",
+   "group": "Other",
+   "label": "Authority: MP Industrial Development Corporation (MPIDC)"
+  },
+  {
+   "name": "authority=MP Power Transmission Company Ltd (MPPTCL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "MP Power Transmission Company Ltd (MPPTCL)",
+   "group": "Other",
+   "label": "Authority: MP Power Transmission Company Ltd (MPPTCL)"
+  },
+  {
+   "name": "authority=Madhya Pradesh Metro Rail Corporation Ltd (MPMRCL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Madhya Pradesh Metro Rail Corporation Ltd (MPMRCL)",
+   "group": "Other",
+   "label": "Authority: Madhya Pradesh Metro Rail Corporation Ltd (MPMRCL)"
+  },
+  {
+   "name": "authority=Maharashtra Industrial Development Corporation (MIDC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Maharashtra Industrial Development Corporation (MIDC)",
+   "group": "Other",
+   "label": "Authority: Maharashtra Industrial Development Corporation (MIDC)"
+  },
+  {
+   "name": "authority=Maharashtra Metro Rail Corporation Ltd (MahaMetro)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Maharashtra Metro Rail Corporation Ltd (MahaMetro)",
+   "group": "Other",
+   "label": "Authority: Maharashtra Metro Rail Corporation Ltd (MahaMetro)"
+  },
+  {
+   "name": "authority=Maharashtra State Electricity Transmission Co. Ltd (MSETCL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Maharashtra State Electricity Transmission Co. Ltd (MSETCL)",
+   "group": "Other",
+   "label": "Authority: Maharashtra State Electricity Transmission Co. Ltd (MSETCL)"
+  },
+  {
+   "name": "authority=Maharashtra State Road Development Corporation (MSRDC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Maharashtra State Road Development Corporation (MSRDC)",
+   "group": "Other",
+   "label": "Authority: Maharashtra State Road Development Corporation (MSRDC)"
+  },
+  {
+   "name": "authority=Maharashtra State Road Development Corporation (MSRDC) (NH wing)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Maharashtra State Road Development Corporation (MSRDC) (NH wing)",
+   "group": "Other",
+   "label": "Authority: Maharashtra State Road Development Corporation (MSRDC) (NH wing)"
+  },
+  {
+   "name": "authority=Meghalaya Power Transmission Corporation Ltd (MePTCL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Meghalaya Power Transmission Corporation Ltd (MePTCL)",
+   "group": "Other",
+   "label": "Authority: Meghalaya Power Transmission Corporation Ltd (MePTCL)"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 Central Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Central Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 East Central Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 East Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 East Central Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 East Coast Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 East Coast Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 East Coast Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 Konkan Railway Corporation Ltd",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 Konkan Railway Corporation Ltd",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Konkan Railway Corporation Ltd"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 North Central Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 North Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 North Central Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 North Western Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 North Western Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 North Western Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 Northeast Frontier Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 Northeast Frontier Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Northeast Frontier Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 Northern Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 Northern Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Northern Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 South Central Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 South Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 South Central Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 South East Central Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 South East Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 South East Central Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 Southern Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 Southern Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Southern Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 West Central Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 West Central Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 West Central Railway"
+  },
+  {
+   "name": "authority=Ministry of Railways \u2014 Western Railway",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ministry of Railways \u2014 Western Railway",
+   "group": "Other",
+   "label": "Authority: Ministry of Railways \u2014 Western Railway"
+  },
+  {
+   "name": "authority=MoRTH Regional Office",
+   "op": "onehot",
+   "source": "authority",
+   "category": "MoRTH Regional Office",
+   "group": "Other",
+   "label": "Authority: MoRTH Regional Office"
+  },
+  {
+   "name": "authority=MoRTH Regional Office, Bengaluru",
+   "op": "onehot",
+   "source": "authority",
+   "category": "MoRTH Regional Office, Bengaluru",
+   "group": "Other",
+   "label": "Authority: MoRTH Regional Office, Bengaluru"
+  },
+  {
+   "name": "authority=MoRTH Regional Office, Lucknow",
+   "op": "onehot",
+   "source": "authority",
+   "category": "MoRTH Regional Office, Lucknow",
+   "group": "Other",
+   "label": "Authority: MoRTH Regional Office, Lucknow"
+  },
+  {
+   "name": "authority=Nagaur Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Nagaur Development Authority",
+   "group": "Other",
+   "label": "Authority: Nagaur Development Authority"
+  },
+  {
+   "name": "authority=National High Speed Rail Corporation Ltd (NHSRCL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "National High Speed Rail Corporation Ltd (NHSRCL)",
+   "group": "Other",
+   "label": "Authority: National High Speed Rail Corporation Ltd (NHSRCL)"
+  },
+  {
+   "name": "authority=National Highways Authority of India (NHAI)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "National Highways Authority of India (NHAI)",
+   "group": "Other",
+   "label": "Authority: National Highways Authority of India (NHAI)"
+  },
+  {
+   "name": "authority=New & Renewable Energy Development Corporation of AP (NREDCAP)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "New & Renewable Energy Development Corporation of AP (NREDCAP)",
+   "group": "Other",
+   "label": "Authority: New & Renewable Energy Development Corporation of AP (NREDCAP)"
+  },
+  {
+   "name": "authority=North Twenty-Four Parganas Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "North Twenty-Four Parganas Development Authority",
+   "group": "Other",
+   "label": "Authority: North Twenty-Four Parganas Development Authority"
+  },
+  {
+   "name": "authority=Pathankot Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Pathankot Development Authority",
+   "group": "Other",
+   "label": "Authority: Pathankot Development Authority"
+  },
+  {
+   "name": "authority=Patna Metro Rail Corporation (PMRC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Patna Metro Rail Corporation (PMRC)",
+   "group": "Other",
+   "label": "Authority: Patna Metro Rail Corporation (PMRC)"
+  },
+  {
+   "name": "authority=Power Grid Corporation of India Ltd (POWERGRID)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Power Grid Corporation of India Ltd (POWERGRID)",
+   "group": "Other",
+   "label": "Authority: Power Grid Corporation of India Ltd (POWERGRID)"
+  },
+  {
+   "name": "authority=Power Transmission Corporation of Uttarakhand Ltd (PTCUL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Power Transmission Corporation of Uttarakhand Ltd (PTCUL)",
+   "group": "Other",
+   "label": "Authority: Power Transmission Corporation of Uttarakhand Ltd (PTCUL)"
+  },
+  {
+   "name": "authority=Public Works Department (B&R), Punjab (NH wing)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Public Works Department (B&R), Punjab (NH wing)",
+   "group": "Other",
+   "label": "Authority: Public Works Department (B&R), Punjab (NH wing)"
+  },
+  {
+   "name": "authority=Public Works Department (Roads), Meghalaya (NH wing)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Public Works Department (Roads), Meghalaya (NH wing)",
+   "group": "Other",
+   "label": "Authority: Public Works Department (Roads), Meghalaya (NH wing)"
+  },
+  {
+   "name": "authority=Public Works Department, Chhattisgarh",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Public Works Department, Chhattisgarh",
+   "group": "Other",
+   "label": "Authority: Public Works Department, Chhattisgarh"
+  },
+  {
+   "name": "authority=Public Works Department, Uttar Pradesh (NH wing)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Public Works Department, Uttar Pradesh (NH wing)",
+   "group": "Other",
+   "label": "Authority: Public Works Department, Uttar Pradesh (NH wing)"
+  },
+  {
+   "name": "authority=Public Works Department, Uttarakhand",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Public Works Department, Uttarakhand",
+   "group": "Other",
+   "label": "Authority: Public Works Department, Uttarakhand"
+  },
+  {
+   "name": "authority=Public Works Department, West Bengal",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Public Works Department, West Bengal",
+   "group": "Other",
+   "label": "Authority: Public Works Department, West Bengal"
+  },
+  {
+   "name": "authority=Punjab Small Industries & Export Corporation (PSIEC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Punjab Small Industries & Export Corporation (PSIEC)",
+   "group": "Other",
+   "label": "Authority: Punjab Small Industries & Export Corporation (PSIEC)"
+  },
+  {
+   "name": "authority=Rail Infrastructure Development Company (Karnataka) Ltd (K-RIDE)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Rail Infrastructure Development Company (Karnataka) Ltd (K-RIDE)",
+   "group": "Other",
+   "label": "Authority: Rail Infrastructure Development Company (Karnataka) Ltd (K-RIDE)"
+  },
+  {
+   "name": "authority=Rajasthan Rajya Vidyut Prasaran Nigam Ltd (RVPN)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Rajasthan Rajya Vidyut Prasaran Nigam Ltd (RVPN)",
+   "group": "Other",
+   "label": "Authority: Rajasthan Rajya Vidyut Prasaran Nigam Ltd (RVPN)"
+  },
+  {
+   "name": "authority=Rajasthan Renewable Energy Corporation Ltd (RRECL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Rajasthan Renewable Energy Corporation Ltd (RRECL)",
+   "group": "Other",
+   "label": "Authority: Rajasthan Renewable Energy Corporation Ltd (RRECL)"
+  },
+  {
+   "name": "authority=Rajasthan State Industrial Development & Investment Corporation (RIICO)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Rajasthan State Industrial Development & Investment Corporation (RIICO)",
+   "group": "Other",
+   "label": "Authority: Rajasthan State Industrial Development & Investment Corporation (RIICO)"
+  },
+  {
+   "name": "authority=Rajkot Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Rajkot Development Authority",
+   "group": "Other",
+   "label": "Authority: Rajkot Development Authority"
+  },
+  {
+   "name": "authority=Roads & Buildings Department, Andhra Pradesh (NH wing)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Roads & Buildings Department, Andhra Pradesh (NH wing)",
+   "group": "Other",
+   "label": "Authority: Roads & Buildings Department, Andhra Pradesh (NH wing)"
+  },
+  {
+   "name": "authority=Roads & Buildings Department, Gujarat (NH wing)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Roads & Buildings Department, Gujarat (NH wing)",
+   "group": "Other",
+   "label": "Authority: Roads & Buildings Department, Gujarat (NH wing)"
+  },
+  {
+   "name": "authority=Rohtas Municipal Corporation",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Rohtas Municipal Corporation",
+   "group": "Other",
+   "label": "Authority: Rohtas Municipal Corporation"
+  },
+  {
+   "name": "authority=Sardar Sarovar Narmada Nigam Ltd (SSNNL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Sardar Sarovar Narmada Nigam Ltd (SSNNL)",
+   "group": "Other",
+   "label": "Authority: Sardar Sarovar Narmada Nigam Ltd (SSNNL)"
+  },
+  {
+   "name": "authority=Sonipat Municipal Corporation",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Sonipat Municipal Corporation",
+   "group": "Other",
+   "label": "Authority: Sonipat Municipal Corporation"
+  },
+  {
+   "name": "authority=State Industries Promotion Corporation of Tamil Nadu (SIPCOT)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "State Industries Promotion Corporation of Tamil Nadu (SIPCOT)",
+   "group": "Other",
+   "label": "Authority: State Industries Promotion Corporation of Tamil Nadu (SIPCOT)"
+  },
+  {
+   "name": "authority=Telangana Renewable Energy Development Corporation (TGREDCO)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Telangana Renewable Energy Development Corporation (TGREDCO)",
+   "group": "Other",
+   "label": "Authority: Telangana Renewable Energy Development Corporation (TGREDCO)"
+  },
+  {
+   "name": "authority=Telangana State Industrial Infrastructure Corporation (TGIIC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Telangana State Industrial Infrastructure Corporation (TGIIC)",
+   "group": "Other",
+   "label": "Authority: Telangana State Industrial Infrastructure Corporation (TGIIC)"
+  },
+  {
+   "name": "authority=Transmission Corporation of Andhra Pradesh Ltd (APTRANSCO)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Transmission Corporation of Andhra Pradesh Ltd (APTRANSCO)",
+   "group": "Other",
+   "label": "Authority: Transmission Corporation of Andhra Pradesh Ltd (APTRANSCO)"
+  },
+  {
+   "name": "authority=Ujjain Development Authority",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Ujjain Development Authority",
+   "group": "Other",
+   "label": "Authority: Ujjain Development Authority"
+  },
+  {
+   "name": "authority=Uttar Pradesh Expressways Industrial Development Authority (UPEIDA)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Uttar Pradesh Expressways Industrial Development Authority (UPEIDA)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh Expressways Industrial Development Authority (UPEIDA)"
+  },
+  {
+   "name": "authority=Uttar Pradesh Metro Rail Corporation (UPMRC)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Uttar Pradesh Metro Rail Corporation (UPMRC)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh Metro Rail Corporation (UPMRC)"
+  },
+  {
+   "name": "authority=Uttar Pradesh New and Renewable Energy Development Agency (UPNEDA)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Uttar Pradesh New and Renewable Energy Development Agency (UPNEDA)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh New and Renewable Energy Development Agency (UPNEDA)"
+  },
+  {
+   "name": "authority=Uttar Pradesh Power Transmission Corporation Ltd (UPPTCL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Uttar Pradesh Power Transmission Corporation Ltd (UPPTCL)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh Power Transmission Corporation Ltd (UPPTCL)"
+  },
+  {
+   "name": "authority=Uttar Pradesh State Industrial Development Authority (UPSIDA)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Uttar Pradesh State Industrial Development Authority (UPSIDA)",
+   "group": "Other",
+   "label": "Authority: Uttar Pradesh State Industrial Development Authority (UPSIDA)"
+  },
+  {
+   "name": "authority=Visvesvaraya Jala Nigam Ltd (VJNL)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Visvesvaraya Jala Nigam Ltd (VJNL)",
+   "group": "Other",
+   "label": "Authority: Visvesvaraya Jala Nigam Ltd (VJNL)"
+  },
+  {
+   "name": "authority=Water Resources Department, Andhra Pradesh",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Andhra Pradesh",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Andhra Pradesh"
+  },
+  {
+   "name": "authority=Water Resources Department, Assam",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Assam",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Assam"
+  },
+  {
+   "name": "authority=Water Resources Department, Bihar",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Bihar",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Bihar"
+  },
+  {
+   "name": "authority=Water Resources Department, Chhattisgarh",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Chhattisgarh",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Chhattisgarh"
+  },
+  {
+   "name": "authority=Water Resources Department, Goa",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Goa",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Goa"
+  },
+  {
+   "name": "authority=Water Resources Department, Jharkhand",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Jharkhand",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Jharkhand"
+  },
+  {
+   "name": "authority=Water Resources Department, Karnataka",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Karnataka",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Karnataka"
+  },
+  {
+   "name": "authority=Water Resources Department, Madhya Pradesh",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Madhya Pradesh",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Madhya Pradesh"
+  },
+  {
+   "name": "authority=Water Resources Department, Maharashtra",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Maharashtra",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Maharashtra"
+  },
+  {
+   "name": "authority=Water Resources Department, Meghalaya",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Meghalaya",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Meghalaya"
+  },
+  {
+   "name": "authority=Water Resources Department, Punjab",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Punjab",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Punjab"
+  },
+  {
+   "name": "authority=Water Resources Department, Rajasthan",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Rajasthan",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Rajasthan"
+  },
+  {
+   "name": "authority=Water Resources Department, Tamil Nadu",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Water Resources Department, Tamil Nadu",
+   "group": "Other",
+   "label": "Authority: Water Resources Department, Tamil Nadu"
+  },
+  {
+   "name": "authority=Works Department, Odisha (NH wing)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Works Department, Odisha (NH wing)",
+   "group": "Other",
+   "label": "Authority: Works Department, Odisha (NH wing)"
+  },
+  {
+   "name": "authority=Yamuna Expressway Industrial Development Authority (YEIDA)",
+   "op": "onehot",
+   "source": "authority",
+   "category": "Yamuna Expressway Industrial Development Authority (YEIDA)",
+   "group": "Other",
+   "label": "Authority: Yamuna Expressway Industrial Development Authority (YEIDA)"
   },
   {
    "name": "project_priority=Important",
@@ -907,11 +1886,12 @@
    "Assam",
    "Bihar",
    "Chhattisgarh",
-   "Delhi NCR",
+   "Delhi",
    "Goa",
    "Gujarat",
    "Haryana",
    "Himachal Pradesh",
+   "Jammu & Kashmir",
    "Jharkhand",
    "Karnataka",
    "Kerala",
@@ -931,31 +1911,148 @@
   "project_type": [
    "Airport",
    "Expressway",
-   "Industrial Corridor",
+   "Industrial",
    "Irrigation",
    "Metro Rail",
    "National Highway",
+   "Pipeline",
    "Power Transmission",
-   "Railway Corridor"
+   "Railway",
+   "Renewable Energy",
+   "Urban Infrastructure"
   ],
   "authority": [
-   "Airports Authority of India",
-   "Command Area Development Authority",
-   "DFCCIL",
-   "Metro Rail Corporation",
-   "Ministry of Railways",
-   "MoRTH \u2014 Regional Office",
-   "NHAI",
-   "NHSRCL",
-   "NICDC",
-   "POWERGRID",
-   "State Civil Aviation Department",
-   "State Industrial Development Corporation",
-   "State PWD (NH Wing)",
-   "State Road Development Corporation",
-   "State Transmission Utility",
-   "State Water Resources Department",
-   "Urban Development Authority"
+   "Airports Authority of India (AAI)",
+   "Andhra Pradesh Industrial Infrastructure Corporation (APIIC)",
+   "Arwal Development Authority",
+   "Assam Electricity Grid Corporation Ltd (AEGCL)",
+   "Assam Industrial Development Corporation (AIDC)",
+   "Balasore Municipal Corporation",
+   "Bangalore Metro Rail Corporation Ltd (BMRCL)",
+   "Begusarai Municipal Corporation",
+   "Belagavi City Municipal Council",
+   "Bharat Petroleum Corporation Ltd (BPCL)",
+   "Bhavnagar Development Authority",
+   "Bihar Industrial Area Development Authority (BIADA)",
+   "Bihar State Power Transmission Company Ltd (BSPTCL)",
+   "Bihar State Road Development Corporation (BSRDC) (NH wing)",
+   "Cauvery Neeravari Nigam Ltd (CNNL)",
+   "Chennai Metro Rail Ltd (CMRL)",
+   "Chhattisgarh State Industrial Development Corporation (CSIDC)",
+   "Civil Aviation Department, Andhra Pradesh",
+   "Civil Aviation Department, Chhattisgarh",
+   "Civil Aviation Department, Haryana",
+   "Civil Aviation Department, Maharashtra",
+   "Civil Aviation Department, Telangana",
+   "Dedicated Freight Corridor Corporation of India Ltd (DFCCIL)",
+   "Durg Development Authority",
+   "Erode Development Authority",
+   "GAIL (India) Ltd",
+   "Gujarat Industrial Development Corporation (GIDC)",
+   "Gujarat Metro Rail Corporation (GMRC)",
+   "Gurugram Development Authority",
+   "Hapur Development Authority",
+   "Haryana Mass Rapid Transport Corporation (HMRTC)",
+   "Haryana State Industrial & Infrastructure Development Corporation (HSIIDC)",
+   "Haryana Vidyut Prasaran Nigam Ltd (HVPNL)",
+   "Highways Department, Tamil Nadu",
+   "Hindustan Petroleum Corporation Ltd (HPCL)",
+   "Hisar Development Authority",
+   "Hyderabad Metro Rail Ltd (HMRL)",
+   "Indian Oil Corporation Ltd (IOCL)",
+   "Industrial Infrastructure Development Corporation (IDCO)",
+   "Irrigation & CAD Department, Telangana",
+   "Irrigation & Water Resources Department, Haryana",
+   "Irrigation and Water Resources Department, Uttar Pradesh",
+   "Jalgaon Development Authority",
+   "Jharkhand Industrial Area Development Authority (JIADA)",
+   "Jhunjhunun Development Authority",
+   "Karimnagar Development Authority",
+   "Karnataka Industrial Areas Development Board (KIADB)",
+   "Karnataka Neeravari Nigam Ltd (KNNL)",
+   "Karnataka Power Transmission Corporation Ltd (KPTCL)",
+   "Karnataka Solar Power Development Corporation Ltd (KSPDCL)",
+   "Karnataka State Industrial and Infrastructure Development Corporation (KSIIDC)",
+   "Kasaragod Development Authority",
+   "Kerala State Industrial Development Corporation (KSIDC)",
+   "Lucknow Development Authority (LDA)",
+   "MP Industrial Development Corporation (MPIDC)",
+   "MP Power Transmission Company Ltd (MPPTCL)",
+   "Madhya Pradesh Metro Rail Corporation Ltd (MPMRCL)",
+   "Maharashtra Industrial Development Corporation (MIDC)",
+   "Maharashtra Metro Rail Corporation Ltd (MahaMetro)",
+   "Maharashtra State Electricity Transmission Co. Ltd (MSETCL)",
+   "Maharashtra State Road Development Corporation (MSRDC)",
+   "Maharashtra State Road Development Corporation (MSRDC) (NH wing)",
+   "Meghalaya Power Transmission Corporation Ltd (MePTCL)",
+   "Ministry of Railways \u2014 Central Railway",
+   "Ministry of Railways \u2014 East Central Railway",
+   "Ministry of Railways \u2014 East Coast Railway",
+   "Ministry of Railways \u2014 Konkan Railway Corporation Ltd",
+   "Ministry of Railways \u2014 North Central Railway",
+   "Ministry of Railways \u2014 North Western Railway",
+   "Ministry of Railways \u2014 Northeast Frontier Railway",
+   "Ministry of Railways \u2014 Northern Railway",
+   "Ministry of Railways \u2014 South Central Railway",
+   "Ministry of Railways \u2014 South East Central Railway",
+   "Ministry of Railways \u2014 Southern Railway",
+   "Ministry of Railways \u2014 West Central Railway",
+   "Ministry of Railways \u2014 Western Railway",
+   "MoRTH Regional Office",
+   "MoRTH Regional Office, Bengaluru",
+   "MoRTH Regional Office, Lucknow",
+   "Nagaur Development Authority",
+   "National High Speed Rail Corporation Ltd (NHSRCL)",
+   "National Highways Authority of India (NHAI)",
+   "New & Renewable Energy Development Corporation of AP (NREDCAP)",
+   "North Twenty-Four Parganas Development Authority",
+   "Pathankot Development Authority",
+   "Patna Metro Rail Corporation (PMRC)",
+   "Power Grid Corporation of India Ltd (POWERGRID)",
+   "Power Transmission Corporation of Uttarakhand Ltd (PTCUL)",
+   "Public Works Department (B&R), Punjab (NH wing)",
+   "Public Works Department (Roads), Meghalaya (NH wing)",
+   "Public Works Department, Chhattisgarh",
+   "Public Works Department, Uttar Pradesh (NH wing)",
+   "Public Works Department, Uttarakhand",
+   "Public Works Department, West Bengal",
+   "Punjab Small Industries & Export Corporation (PSIEC)",
+   "Rail Infrastructure Development Company (Karnataka) Ltd (K-RIDE)",
+   "Rajasthan Rajya Vidyut Prasaran Nigam Ltd (RVPN)",
+   "Rajasthan Renewable Energy Corporation Ltd (RRECL)",
+   "Rajasthan State Industrial Development & Investment Corporation (RIICO)",
+   "Rajkot Development Authority",
+   "Roads & Buildings Department, Andhra Pradesh (NH wing)",
+   "Roads & Buildings Department, Gujarat (NH wing)",
+   "Rohtas Municipal Corporation",
+   "Sardar Sarovar Narmada Nigam Ltd (SSNNL)",
+   "Sonipat Municipal Corporation",
+   "State Industries Promotion Corporation of Tamil Nadu (SIPCOT)",
+   "Telangana Renewable Energy Development Corporation (TGREDCO)",
+   "Telangana State Industrial Infrastructure Corporation (TGIIC)",
+   "Transmission Corporation of Andhra Pradesh Ltd (APTRANSCO)",
+   "Ujjain Development Authority",
+   "Uttar Pradesh Expressways Industrial Development Authority (UPEIDA)",
+   "Uttar Pradesh Metro Rail Corporation (UPMRC)",
+   "Uttar Pradesh New and Renewable Energy Development Agency (UPNEDA)",
+   "Uttar Pradesh Power Transmission Corporation Ltd (UPPTCL)",
+   "Uttar Pradesh State Industrial Development Authority (UPSIDA)",
+   "Visvesvaraya Jala Nigam Ltd (VJNL)",
+   "Water Resources Department, Andhra Pradesh",
+   "Water Resources Department, Assam",
+   "Water Resources Department, Bihar",
+   "Water Resources Department, Chhattisgarh",
+   "Water Resources Department, Goa",
+   "Water Resources Department, Jharkhand",
+   "Water Resources Department, Karnataka",
+   "Water Resources Department, Madhya Pradesh",
+   "Water Resources Department, Maharashtra",
+   "Water Resources Department, Meghalaya",
+   "Water Resources Department, Punjab",
+   "Water Resources Department, Rajasthan",
+   "Water Resources Department, Tamil Nadu",
+   "Works Department, Odisha (NH wing)",
+   "Yamuna Expressway Industrial Development Authority (YEIDA)"
   ],
   "project_priority": [
    "Critical",
@@ -1048,6 +2145,10 @@
   "historical_stage_delay_rate",
   "district_historical_delay_rate",
   "authority_historical_delay_rate",
+  "authority_dependency_count",
+  "pending_dependency_actions",
+  "approval_delay_days",
+  "department_coordination_score",
   "project_land_requirement_ha",
   "latitude",
   "longitude",
@@ -1056,6 +2157,7 @@
   "log_number_of_owners",
   "log_compensation_pending_days",
   "log_land_area_ha",
+  "log_approval_delay_days",
   "schedule_consumed",
   "comp_pending_frac",
   "doc_gap_frac",
@@ -1065,11 +2167,12 @@
   "state=Assam",
   "state=Bihar",
   "state=Chhattisgarh",
-  "state=Delhi NCR",
+  "state=Delhi",
   "state=Goa",
   "state=Gujarat",
   "state=Haryana",
   "state=Himachal Pradesh",
+  "state=Jammu & Kashmir",
   "state=Jharkhand",
   "state=Karnataka",
   "state=Kerala",
@@ -1086,28 +2189,145 @@
   "state=Uttarakhand",
   "state=West Bengal",
   "project_type=Expressway",
-  "project_type=Industrial Corridor",
+  "project_type=Industrial",
   "project_type=Irrigation",
   "project_type=Metro Rail",
   "project_type=National Highway",
+  "project_type=Pipeline",
   "project_type=Power Transmission",
-  "project_type=Railway Corridor",
-  "authority=Command Area Development Authority",
-  "authority=DFCCIL",
-  "authority=Metro Rail Corporation",
-  "authority=Ministry of Railways",
-  "authority=MoRTH \u2014 Regional Office",
-  "authority=NHAI",
-  "authority=NHSRCL",
-  "authority=NICDC",
-  "authority=POWERGRID",
-  "authority=State Civil Aviation Department",
-  "authority=State Industrial Development Corporation",
-  "authority=State PWD (NH Wing)",
-  "authority=State Road Development Corporation",
-  "authority=State Transmission Utility",
-  "authority=State Water Resources Department",
-  "authority=Urban Development Authority",
+  "project_type=Railway",
+  "project_type=Renewable Energy",
+  "project_type=Urban Infrastructure",
+  "authority=Andhra Pradesh Industrial Infrastructure Corporation (APIIC)",
+  "authority=Arwal Development Authority",
+  "authority=Assam Electricity Grid Corporation Ltd (AEGCL)",
+  "authority=Assam Industrial Development Corporation (AIDC)",
+  "authority=Balasore Municipal Corporation",
+  "authority=Bangalore Metro Rail Corporation Ltd (BMRCL)",
+  "authority=Begusarai Municipal Corporation",
+  "authority=Belagavi City Municipal Council",
+  "authority=Bharat Petroleum Corporation Ltd (BPCL)",
+  "authority=Bhavnagar Development Authority",
+  "authority=Bihar Industrial Area Development Authority (BIADA)",
+  "authority=Bihar State Power Transmission Company Ltd (BSPTCL)",
+  "authority=Bihar State Road Development Corporation (BSRDC) (NH wing)",
+  "authority=Cauvery Neeravari Nigam Ltd (CNNL)",
+  "authority=Chennai Metro Rail Ltd (CMRL)",
+  "authority=Chhattisgarh State Industrial Development Corporation (CSIDC)",
+  "authority=Civil Aviation Department, Andhra Pradesh",
+  "authority=Civil Aviation Department, Chhattisgarh",
+  "authority=Civil Aviation Department, Haryana",
+  "authority=Civil Aviation Department, Maharashtra",
+  "authority=Civil Aviation Department, Telangana",
+  "authority=Dedicated Freight Corridor Corporation of India Ltd (DFCCIL)",
+  "authority=Durg Development Authority",
+  "authority=Erode Development Authority",
+  "authority=GAIL (India) Ltd",
+  "authority=Gujarat Industrial Development Corporation (GIDC)",
+  "authority=Gujarat Metro Rail Corporation (GMRC)",
+  "authority=Gurugram Development Authority",
+  "authority=Hapur Development Authority",
+  "authority=Haryana Mass Rapid Transport Corporation (HMRTC)",
+  "authority=Haryana State Industrial & Infrastructure Development Corporation (HSIIDC)",
+  "authority=Haryana Vidyut Prasaran Nigam Ltd (HVPNL)",
+  "authority=Highways Department, Tamil Nadu",
+  "authority=Hindustan Petroleum Corporation Ltd (HPCL)",
+  "authority=Hisar Development Authority",
+  "authority=Hyderabad Metro Rail Ltd (HMRL)",
+  "authority=Indian Oil Corporation Ltd (IOCL)",
+  "authority=Industrial Infrastructure Development Corporation (IDCO)",
+  "authority=Irrigation & CAD Department, Telangana",
+  "authority=Irrigation & Water Resources Department, Haryana",
+  "authority=Irrigation and Water Resources Department, Uttar Pradesh",
+  "authority=Jalgaon Development Authority",
+  "authority=Jharkhand Industrial Area Development Authority (JIADA)",
+  "authority=Jhunjhunun Development Authority",
+  "authority=Karimnagar Development Authority",
+  "authority=Karnataka Industrial Areas Development Board (KIADB)",
+  "authority=Karnataka Neeravari Nigam Ltd (KNNL)",
+  "authority=Karnataka Power Transmission Corporation Ltd (KPTCL)",
+  "authority=Karnataka Solar Power Development Corporation Ltd (KSPDCL)",
+  "authority=Karnataka State Industrial and Infrastructure Development Corporation (KSIIDC)",
+  "authority=Kasaragod Development Authority",
+  "authority=Kerala State Industrial Development Corporation (KSIDC)",
+  "authority=Lucknow Development Authority (LDA)",
+  "authority=MP Industrial Development Corporation (MPIDC)",
+  "authority=MP Power Transmission Company Ltd (MPPTCL)",
+  "authority=Madhya Pradesh Metro Rail Corporation Ltd (MPMRCL)",
+  "authority=Maharashtra Industrial Development Corporation (MIDC)",
+  "authority=Maharashtra Metro Rail Corporation Ltd (MahaMetro)",
+  "authority=Maharashtra State Electricity Transmission Co. Ltd (MSETCL)",
+  "authority=Maharashtra State Road Development Corporation (MSRDC)",
+  "authority=Maharashtra State Road Development Corporation (MSRDC) (NH wing)",
+  "authority=Meghalaya Power Transmission Corporation Ltd (MePTCL)",
+  "authority=Ministry of Railways \u2014 Central Railway",
+  "authority=Ministry of Railways \u2014 East Central Railway",
+  "authority=Ministry of Railways \u2014 East Coast Railway",
+  "authority=Ministry of Railways \u2014 Konkan Railway Corporation Ltd",
+  "authority=Ministry of Railways \u2014 North Central Railway",
+  "authority=Ministry of Railways \u2014 North Western Railway",
+  "authority=Ministry of Railways \u2014 Northeast Frontier Railway",
+  "authority=Ministry of Railways \u2014 Northern Railway",
+  "authority=Ministry of Railways \u2014 South Central Railway",
+  "authority=Ministry of Railways \u2014 South East Central Railway",
+  "authority=Ministry of Railways \u2014 Southern Railway",
+  "authority=Ministry of Railways \u2014 West Central Railway",
+  "authority=Ministry of Railways \u2014 Western Railway",
+  "authority=MoRTH Regional Office",
+  "authority=MoRTH Regional Office, Bengaluru",
+  "authority=MoRTH Regional Office, Lucknow",
+  "authority=Nagaur Development Authority",
+  "authority=National High Speed Rail Corporation Ltd (NHSRCL)",
+  "authority=National Highways Authority of India (NHAI)",
+  "authority=New & Renewable Energy Development Corporation of AP (NREDCAP)",
+  "authority=North Twenty-Four Parganas Development Authority",
+  "authority=Pathankot Development Authority",
+  "authority=Patna Metro Rail Corporation (PMRC)",
+  "authority=Power Grid Corporation of India Ltd (POWERGRID)",
+  "authority=Power Transmission Corporation of Uttarakhand Ltd (PTCUL)",
+  "authority=Public Works Department (B&R), Punjab (NH wing)",
+  "authority=Public Works Department (Roads), Meghalaya (NH wing)",
+  "authority=Public Works Department, Chhattisgarh",
+  "authority=Public Works Department, Uttar Pradesh (NH wing)",
+  "authority=Public Works Department, Uttarakhand",
+  "authority=Public Works Department, West Bengal",
+  "authority=Punjab Small Industries & Export Corporation (PSIEC)",
+  "authority=Rail Infrastructure Development Company (Karnataka) Ltd (K-RIDE)",
+  "authority=Rajasthan Rajya Vidyut Prasaran Nigam Ltd (RVPN)",
+  "authority=Rajasthan Renewable Energy Corporation Ltd (RRECL)",
+  "authority=Rajasthan State Industrial Development & Investment Corporation (RIICO)",
+  "authority=Rajkot Development Authority",
+  "authority=Roads & Buildings Department, Andhra Pradesh (NH wing)",
+  "authority=Roads & Buildings Department, Gujarat (NH wing)",
+  "authority=Rohtas Municipal Corporation",
+  "authority=Sardar Sarovar Narmada Nigam Ltd (SSNNL)",
+  "authority=Sonipat Municipal Corporation",
+  "authority=State Industries Promotion Corporation of Tamil Nadu (SIPCOT)",
+  "authority=Telangana Renewable Energy Development Corporation (TGREDCO)",
+  "authority=Telangana State Industrial Infrastructure Corporation (TGIIC)",
+  "authority=Transmission Corporation of Andhra Pradesh Ltd (APTRANSCO)",
+  "authority=Ujjain Development Authority",
+  "authority=Uttar Pradesh Expressways Industrial Development Authority (UPEIDA)",
+  "authority=Uttar Pradesh Metro Rail Corporation (UPMRC)",
+  "authority=Uttar Pradesh New and Renewable Energy Development Agency (UPNEDA)",
+  "authority=Uttar Pradesh Power Transmission Corporation Ltd (UPPTCL)",
+  "authority=Uttar Pradesh State Industrial Development Authority (UPSIDA)",
+  "authority=Visvesvaraya Jala Nigam Ltd (VJNL)",
+  "authority=Water Resources Department, Andhra Pradesh",
+  "authority=Water Resources Department, Assam",
+  "authority=Water Resources Department, Bihar",
+  "authority=Water Resources Department, Chhattisgarh",
+  "authority=Water Resources Department, Goa",
+  "authority=Water Resources Department, Jharkhand",
+  "authority=Water Resources Department, Karnataka",
+  "authority=Water Resources Department, Madhya Pradesh",
+  "authority=Water Resources Department, Maharashtra",
+  "authority=Water Resources Department, Meghalaya",
+  "authority=Water Resources Department, Punjab",
+  "authority=Water Resources Department, Rajasthan",
+  "authority=Water Resources Department, Tamil Nadu",
+  "authority=Works Department, Odisha (NH wing)",
+  "authority=Yamuna Expressway Industrial Development Authority (YEIDA)",
   "project_priority=Important",
   "project_priority=Routine",
   "land_type=Commercial",

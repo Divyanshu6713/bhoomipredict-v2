@@ -69,18 +69,23 @@ function featureValue(spec, raw) {
 export function scoreRecord(surrogate, raw) {
   const features = surrogate.features;
   let z = surrogate.intercept;
+  const delay = surrogate.delay ?? null;
+  let slip = delay ? delay.intercept : 0;
   const groups = new Map();
   const detail = [];
 
-  for (const spec of features) {
+  for (let j = 0; j < features.length; j++) {
+    const spec = features[j];
     let x = featureValue(spec, raw);
     let imputed = false;
     if (!Number.isFinite(x)) {
       x = spec.median;
       imputed = true;
     }
-    const contribution = (spec.coef * (x - spec.mean)) / (spec.std || 1);
+    const standardised = (x - spec.mean) / (spec.std || 1);
+    const contribution = spec.coef * standardised;
     z += contribution;
+    if (delay) slip += (delay.coef[j] ?? 0) * standardised;
     if (Math.abs(contribution) < 1e-9) continue;
     const group = spec.group ?? 'Other';
     groups.set(group, (groups.get(group) ?? 0) + contribution);
@@ -95,6 +100,8 @@ export function scoreRecord(surrogate, raw) {
   }
 
   const probability = sigmoid(z);
+  // Expected slip = P(delayed) x conditional slip days, mirroring ml/train.py.
+  const conditionalSlip = delay ? Math.min(delay.cap ?? 400, Math.max(delay.floor ?? 31, slip)) : null;
   const bands = surrogate.riskBands;
   const band = probability >= bands.critical ? 'Critical' : probability >= bands.high ? 'High' : probability >= bands.medium ? 'Medium' : 'Low';
 
@@ -109,6 +116,8 @@ export function scoreRecord(surrogate, raw) {
     riskScore: Math.min(99, Math.max(1, Math.round(probability * 100))),
     riskBand: band,
     logOdds: Number(z.toFixed(4)),
+    predictedDelayDays: conditionalSlip === null ? null : Math.round(probability * conditionalSlip),
+    conditionalDelayDays: conditionalSlip === null ? null : Math.round(conditionalSlip),
     increasing: positive
       .sort((a, b) => b[1] - a[1])
       .map(([group, value]) => ({
@@ -152,6 +161,10 @@ export function predictionSpec(store) {
     document_completeness: [10, 100, 1, '%'],
     inactivity_days: [0, 400, 5, 'days'],
     historical_stage_delay_rate: [0.02, 0.88, 0.01, ''],
+    authority_dependency_count: [4, 20, 1, ''],
+    pending_dependency_actions: [0, 8, 1, ''],
+    approval_delay_days: [0, 365, 5, 'days'],
+    department_coordination_score: [20, 98, 1, '/100'],
     district_historical_delay_rate: [0.13, 0.61, 0.01, ''],
     authority_historical_delay_rate: [0.17, 0.53, 0.01, ''],
     project_land_requirement_ha: [50, 6000, 10, 'ha'],
@@ -239,7 +252,11 @@ export function recordFromCase(store, row) {
     document_completeness: c.docComplete[row] < 0 ? '' : c.docComplete[row],
     inactivity_days: c.inactivity[row],
     historical_stage_delay_rate: c.histStageRate[row] / 1000,
-    district_historical_delay_rate: district.observedDelayRate,
+    district_historical_delay_rate: district.historicalDelayRate ?? district.observedDelayRate,
+    authority_dependency_count: c.depCount?.[row] ?? '',
+    pending_dependency_actions: c.pendingCount?.[row] ?? '',
+    approval_delay_days: c.approvalDelay?.[row] ?? '',
+    department_coordination_score: project.coordinationScore ?? '',
     authority_historical_delay_rate: project.authorityDelayRate,
     project_land_requirement_ha: project.landRequirementHa,
     latitude: c.lat[row],

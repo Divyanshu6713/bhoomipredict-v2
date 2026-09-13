@@ -23,9 +23,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { mulberry32, dayFromISO, isoFromDay, clamp } from './lib/rand.mjs';
-import { LIFECYCLE_STAGES, STAGE_MILESTONE } from './lib/geo-reference.mjs';
-import { interventionFor } from '../server/lib/interventions.mjs';
+import { dayFromISO, isoFromDay, clamp } from './lib/rand.mjs';
+import { STAGE_MILESTONE } from './lib/geo-reference.mjs';
+import { LIFECYCLE_STAGES, DEPENDENCY_CODES } from '../server/domain/registry.mjs';
+import { deriveLifecycle } from '../server/domain/lifecycle.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -151,7 +152,15 @@ const spec = [
   ['surveyNum', Uint16Array],
   ['surveyDen', Uint8Array],
   ['surveySuffix', Uint8Array],
+  ['depCount', Uint8Array],
+  ['pendingCount', Uint8Array],
+  ['pendingMask', Uint32Array],
+  ['approvalDelay', Uint16Array],
+  ['predDelay', Float32Array],
 ];
+
+const CODE_BIT = new Map(DEPENDENCY_CODES.map((c, i) => [c, 1 << i]));
+const N_CODES = DEPENDENCY_CODES.length;
 
 const col = {};
 for (const [name, T] of spec) col[name] = new T(ROWS);
@@ -183,6 +192,14 @@ const scores = new Float32Array(
 );
 if (scores.length !== ROWS) {
   console.error(`[build] scores.f32 has ${scores.length} rows, corpus has ${ROWS}`);
+  process.exit(1);
+}
+
+const delayPath = path.join(DATA, 'model', 'delay_days.f32');
+const delayAvailable = fs.existsSync(delayPath);
+const expectedSlip = delayAvailable ? new Float32Array(fs.readFileSync(delayPath).buffer.slice(0)) : new Float32Array(ROWS);
+if (expectedSlip.length !== ROWS) {
+  console.error(`[build] delay_days.f32 has ${expectedSlip.length} rows, corpus has ${ROWS}`);
   process.exit(1);
 }
 
@@ -246,7 +263,16 @@ async function readCorpus() {
     stageOpen: LIFECYCLE_STAGES.map(() => ({ n: 0, scoreSum: 0, band: [0, 0, 0, 0] })),
     shap: new Map(), qualitySum: 0, n: 0, worst: -1, worstScore: -1,
     observed: 0, delayed: 0,
+    stageDep: LIFECYCLE_STAGES.map(() => ({ pending: new Uint32Array(N_CODES), delaySum: 0, delayN: 0, slipSum: 0 })),
+    openPending: new Uint32Array(N_CODES),
+    months: new Map(),
+    slipSum: 0,
+    compDueSum: 0, compDueN: 0,
+    possDueSum: 0, possDueN: 0,
+    rrDueSum: 0, rrDueN: 0,
+    latSum: 0, lonSum: 0,
   }));
+  const dependencyAgg = new Uint32Array(N_CODES);
   const contributorAgg = new Map();
   const monthAgg = new Map();
   const scoreHist = new Array(20).fill(0);
@@ -352,6 +378,15 @@ async function readCorpus() {
     col.surveyDen[row] = Number(hasSuffix ? rest.slice(0, -1) : rest);
     col.surveySuffix[row] = hasSuffix ? suffixChar : 0;
 
+    col.depCount[row] = Number(cells[ix.authority_dependency_count]);
+    col.pendingCount[row] = Number(cells[ix.pending_dependency_actions]);
+    let mask = 0;
+    const codes = cells[ix.pending_dependency_codes];
+    if (codes) for (const code of codes.split(';')) mask |= CODE_BIT.get(code) ?? 0;
+    col.pendingMask[row] = mask >>> 0;
+    col.approvalDelay[row] = Number(cells[ix.approval_delay_days]);
+    col.predDelay[row] = expectedSlip[row];
+
     dicts.state.id(state);
     dicts.authority.id(unquote(cells[ix.authority]));
     dicts.projectType.id(unquote(cells[ix.project_type]));
@@ -381,7 +416,7 @@ async function readCorpus() {
 
     let da = districtAgg.get(dKey);
     if (!da) {
-      da = { state, district, cases: 0, open: 0, scoreSum: 0, band: [0, 0, 0, 0], lat: 0, lon: 0, areaHa: 0, legal: 0, observed: 0, delayed: 0 };
+      da = { state, district, cases: 0, open: 0, scoreSum: 0, band: [0, 0, 0, 0], lat: 0, lon: 0, areaHa: 0, legal: 0, observed: 0, delayed: 0, historicalDelayRate: Number(cells[ix.district_historical_delay_rate]) };
       districtAgg.set(dKey, da);
     }
     da.cases++;
@@ -418,7 +453,48 @@ async function readCorpus() {
     const pa = projectAgg[pIdx];
     pa.n++;
     pa.qualitySum += quality;
+    pa.latSum += col.lat[row];
+    pa.lonSum += col.lon[row];
+    // Progress measures only over parcels for which the step is actually due:
+    // compensation from the Compensation stage, possession and R&R from Possession.
+    if (stage >= 5) {
+      pa.compDueSum += col.compCompletion[row];
+      pa.compDueN++;
+    }
+    if (stage >= 6) {
+      const ps = unquote(cells[ix.possession_status]);
+      pa.possDueSum += ps === 'Complete' ? 100 : ps === 'Partial' ? 50 : 0;
+      pa.possDueN++;
+      if (col.rrRequired[row] === 1 && col.rrProgress[row] >= 0) {
+        pa.rrDueSum += col.rrProgress[row];
+        pa.rrDueN++;
+      }
+    }
+    // Real trend: mean predicted risk of this project's cases by the month they were assessed.
+    const pm = isoFromDay(col.assessDay[row]).slice(0, 7);
+    const pmEntry = pa.months.get(pm) ?? { n: 0, scoreSum: 0, delayed: 0, observed: 0 };
+    pmEntry.n++;
+    pmEntry.scoreSum += score;
+    if (!isOpen) {
+      pmEntry.observed++;
+      pmEntry.delayed += col.delayed[row] === 1 ? 1 : 0;
+    }
+    pa.months.set(pm, pmEntry);
     if (isOpen) {
+      pa.slipSum += expectedSlip[row];
+      const sd = pa.stageDep[stage];
+      sd.slipSum += expectedSlip[row];
+      if (col.approvalDelay[row] > 0) {
+        sd.delaySum += col.approvalDelay[row];
+        sd.delayN++;
+      }
+      for (let b = 0; b < N_CODES; b++) {
+        if (mask & (1 << b)) {
+          sd.pending[b]++;
+          pa.openPending[b]++;
+          dependencyAgg[b]++;
+        }
+      }
       pa.open++;
       pa.scoreSum += score;
       pa.band[band]++;
@@ -478,7 +554,7 @@ async function readCorpus() {
     process.exit(1);
   }
 
-  return { districtAgg, stateAgg, stageAgg, projectAgg, contributorAgg, monthAgg, scoreHist, qualityHist, missingCount, openCount };
+  return { districtAgg, stateAgg, stageAgg, projectAgg, contributorAgg, monthAgg, scoreHist, qualityHist, missingCount, openCount, dependencyAgg };
 }
 
 /* ------------------------------------------------------------------- build */
@@ -518,6 +594,7 @@ async function main() {
     riskScore: d.open ? Math.round((d.scoreSum / d.open) * 100) : 0,
     band: d.band,
     observedDelayRate: d.observed ? Number((d.delayed / d.observed).toFixed(4)) : 0,
+    historicalDelayRate: d.historicalDelayRate,
     areaHa: Number(d.areaHa.toFixed(1)),
     legalDisputes: d.legal,
     lat: Number((d.lat / d.cases).toFixed(4)),
@@ -533,6 +610,8 @@ async function main() {
       todayDay: TODAY_DAY,
       shapK: SHAP_K,
       shapAvailable,
+      delayAvailable,
+      dependencyCodes: DEPENDENCY_CODES,
       layout,
       shapIdxOffset,
       shapValOffset,
@@ -549,7 +628,7 @@ async function main() {
 
   /* ------------------------------------------------- project registry v2 */
   const featureSpec = surrogate.features ?? [];
-  const trendRng = mulberry32(31415926);
+
 
   const projects = registryRaw.projects.map((p, i) => {
     const pa = agg.projectAgg[i];
@@ -573,7 +652,7 @@ async function main() {
         riskScore: hasOpen ? Math.round((ps.scoreSum / ps.n) * 100) : null,
         band: hasOpen ? BAND_NAMES[bandOf(ps.scoreSum / ps.n)] : null,
         mix: ps.band,
-        basis: hasOpen ? 'model' : s.status === 'Completed' ? 'observed' : 'no-open-cases',
+        basis: hasOpen ? 'model' : s.actualCompletion ? 'observed' : 'no-open-cases',
       };
     });
 
@@ -589,19 +668,93 @@ async function main() {
         ? currentStageRisk.riskScore / 100
         : openProb;
 
-    // Twelve-month risk history: a seeded walk that ends on the live score, so
-    // the trend and the headline number always agree.
-    const history = [];
-    let walk = Math.round(headlineProb * 100);
-    for (let m = 0; m < 12; m++) {
-      history.push(walk);
-      walk = Math.round(clamp(walk - (trendRng() * 6 - 2.2), 4, 99));
-    }
-    history.reverse();
+    // Risk trend from the data itself: the mean predicted risk of the cases
+    // assessed in each of the project's last twelve active months, alongside
+    // the observed delay rate of the milestones that have already resolved.
+    const riskTrend = Array.from(pa.months.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-12)
+      .map(([month, m]) => ({
+        month,
+        riskScore: Math.round((m.scoreSum / m.n) * 100),
+        cases: m.n,
+        observedDelayRate: m.observed ? Number((m.delayed / m.observed).toFixed(3)) : null,
+      }));
 
+    const stageDependency = pa.stageDep.map((sd) => ({
+      pending: Object.fromEntries(DEPENDENCY_CODES.map((code, b) => [code, sd.pending[b]])),
+      approvalDelayMean: sd.delayN ? sd.delaySum / sd.delayN : 0,
+    }));
+    // Project location: the case record nearest the mean of the project's cases,
+    // so a corridor spanning a state border is never pinned outside its state.
+    const meanLat = pa.latSum / Math.max(1, pa.n);
+    const meanLon = pa.lonSum / Math.max(1, pa.n);
+    let anchorRow = p.rowRange[0];
+    let best = Infinity;
+    for (let row = p.rowRange[0]; row <= p.rowRange[1]; row++) {
+      const d = (col.lat[row] - meanLat) ** 2 + (col.lon[row] - meanLon) ** 2;
+      if (d < best) {
+        best = d;
+        anchorRow = row;
+      }
+    }
+    const compDue = p.currentStageIndex >= 5 && pa.compDueN ? pa.compDueSum / pa.compDueN : 0;
+    const possDue = p.currentStageIndex >= 6 && pa.possDueN ? pa.possDueSum / pa.possDueN : 0;
+    const rrDue = p.currentStageIndex >= 6 && pa.rrDueN ? pa.rrDueSum / pa.rrDueN : null;
+    const progress = {
+      lat: Number(col.lat[anchorRow].toFixed(4)),
+      lon: Number(col.lon[anchorRow].toFixed(4)),
+      compensationCompletionPct: Number(compDue.toFixed(1)),
+      compensationStatus: compDue > 92 ? 'Paid' : compDue > 55 ? 'Partially Paid' : compDue > 18 ? 'Awarded' : compDue > 3 ? 'Assessed' : 'Not Initiated',
+      compensationBasis: 'Mean completion across parcels at or beyond the Compensation stage; 0 before the project reaches Compensation.',
+      possessionCompletionPct: Number(possDue.toFixed(1)),
+      possessionStatus: possDue > 90 ? 'Complete' : possDue > 25 ? 'Partial' : p.currentStageIndex >= 6 ? 'Notice Issued' : 'Not Initiated',
+      rrProgressPct: p.rrRequiredParcels ? (rrDue === null ? 0 : Number(rrDue.toFixed(1))) : null,
+      dueProgressRaw: {
+        compensation: pa.compDueN ? Number((pa.compDueSum / pa.compDueN).toFixed(1)) : 0,
+        possession: pa.possDueN ? Number((pa.possDueSum / pa.possDueN).toFixed(1)) : 0,
+        rr: pa.rrDueN ? Number((pa.rrDueSum / pa.rrDueN).toFixed(1)) : null,
+      },
+      rrStatus: !p.rrRequiredParcels ? 'Not Applicable' : p.currentStageIndex < 6 ? 'Not Started' : (rrDue ?? 0) > 95 ? 'Complete' : (rrDue ?? 0) > 5 ? 'In Progress' : 'Not Started',
+    };
+    const lifecycle = deriveLifecycle(p, { todayDay: TODAY_DAY, stageRisk, stageDependency });
+    const currentOpen = pa.stageOpen[p.currentStageIndex].n;
+    const predictedDelayDays = currentOpen
+      ? Math.round(pa.stageDep[p.currentStageIndex].slipSum / currentOpen)
+      : pa.open
+        ? Math.round(pa.slipSum / pa.open)
+        : 0;
+    const network = {
+      ...p.network,
+      nodes: p.network.nodes.map((node) => {
+        const b = DEPENDENCY_CODES.indexOf(node.code);
+        const currentPending = pa.stageDep[p.currentStageIndex].pending[b];
+        return {
+          ...node,
+          pendingOpenCases: pa.openPending[b],
+          pendingCurrentStage: currentPending,
+          pendingShareCurrentStage: currentOpen ? Number((currentPending / currentOpen).toFixed(3)) : 0,
+        };
+      }),
+    };
 
     return {
       ...p,
+      ...progress,
+      network,
+      stages: lifecycle.stages,
+      stageDependency,
+      lifecycle: {
+        currentStatus: lifecycle.currentStatus,
+        isDelayed: lifecycle.isDelayed,
+        isBlocked: lifecycle.isBlocked,
+        residualBacklog: lifecycle.residualBacklog,
+        parcelsAhead: lifecycle.parcelsAhead,
+        forecastCompletion: lifecycle.forecastCompletion,
+        timelineOverrunDays: lifecycle.timelineOverrunDays,
+        notificationStatus: lifecycle.notificationStatus,
+      },
+      predictedDelayDays,
       riskScore: Math.round(headlineProb * 100),
       riskBand: BAND_NAMES[bandOf(headlineProb)],
       delayProbability: Number(headlineProb.toFixed(4)),
@@ -622,8 +775,8 @@ async function main() {
         value: Number(value.toFixed(4)),
         share: Number((value / contribTotal).toFixed(4)),
       })),
-      intervention: interventionFor(topGroup),
-      riskHistory: history,
+      topContributor: topGroup,
+      riskTrend,
       worstCaseRow: pa.worst,
     };
   });
@@ -666,7 +819,7 @@ async function main() {
   const totalHigh = projects.reduce((a, p) => a + p.highRiskCases, 0);
   const totalCritical = projects.reduce((a, p) => a + p.criticalCases, 0);
   const upcoming = projects
-    .filter((p) => p.stages[p.currentStageIndex].status !== 'Completed')
+    .filter((p) => p.stages[p.currentStageIndex].status !== 'COMPLETED')
     .map((p) => ({
       projectId: p.id,
       projectName: p.name,
@@ -705,7 +858,12 @@ async function main() {
       delayedMilestones: upcoming.filter((u) => u.daysRemaining < 0).length,
       upcomingMilestones: upcoming.filter((u) => u.daysRemaining >= 0 && u.daysRemaining <= 90).length,
       budgetCr: Math.round(projects.reduce((s, p) => s + p.budgetCr, 0)),
+      blockedProjects: projects.filter((p) => p.lifecycle.isBlocked).length,
+      residualBacklogCases: projects.reduce((s, p) => s + p.lifecycle.residualBacklog, 0),
     },
+    dependencyBottlenecks: DEPENDENCY_CODES.map((code, b) => ({ code, openCasesPending: agg.dependencyAgg[b] }))
+      .filter((d) => d.openCasesPending > 0)
+      .sort((a, b) => b.openCasesPending - a.openCasesPending),
     riskDistribution: {
       Low: projects.reduce((a, p) => a + p.riskMix.Low, 0),
       Medium: projects.reduce((a, p) => a + p.riskMix.Medium, 0),
@@ -741,6 +899,7 @@ async function main() {
       comparison: metrics.models.random_forest?.test ?? null,
       split: metrics.split,
       shap: metrics.shap,
+      slipModel: metrics.slipModel ?? null,
       surrogateFidelity: metrics.surrogateFidelity,
       leakageControls: metrics.leakageControls,
       features: metrics.features,

@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { maskToCodes } from '../domain/registry.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -141,11 +142,14 @@ export function caseAt(store, row, { withContributors = false } = {}) {
     projectId: project.id,
     projectName: project.name,
     projectType: project.type,
+    projectSubtype: project.subtype ?? null,
+    framework: project.framework?.short ?? null,
     authority: project.authority,
     priority: project.priority,
     state: project.state,
     district: dk.district,
     tehsil: store.dicts.tehsil[c.tehsilIdx[row]],
+    subDistrictLabel: project.subDistrictLabel ?? 'Tehsil',
     village: store.dicts.village[c.villageIdx[row]],
     surveyNumber: `${c.surveyNum[row]}/${c.surveyDen[row]}${LETTER(c.surveySuffix[row])}`,
     lat: Number(c.lat[row].toFixed(5)),
@@ -176,7 +180,13 @@ export function caseAt(store, row, { withContributors = false } = {}) {
     inactivityDays: c.inactivity[row],
     possessionStatus: store.dicts.possession[c.possessionIdx[row]],
     historicalStageDelayRate: c.histStageRate[row] / 1000,
-    districtDelayRate: dk ? dk.observedDelayRate : null,
+    districtDelayRate: dk ? dk.historicalDelayRate ?? dk.observedDelayRate : null,
+    districtObservedDelayRate: dk ? dk.observedDelayRate : null,
+    dependencyCount: c.depCount ? c.depCount[row] : null,
+    pendingDependencies: c.pendingMask ? maskToCodes(c.pendingMask[row]) : [],
+    approvalDelayDays: c.approvalDelay ? c.approvalDelay[row] : null,
+    coordinationScore: project.coordinationScore ?? null,
+    predictedDelayDays: c.predDelay ? Math.round(c.predDelay[row]) : null,
     authorityDelayRate: project.authorityDelayRate,
     stageStartDate: isoFromDay(c.stageStartDay[row]),
     expectedStageDays: c.expectedDays[row],
@@ -275,6 +285,8 @@ export function caseRowLite(store, row) {
     riskScore: Math.min(99, Math.max(1, Math.round(c.score[row] * 100))),
     riskBand: store.bandNames[c.riskBand[row]],
     dataQuality: c.quality[row],
+    predictedDelayDays: c.predDelay ? Math.round(c.predDelay[row]) : null,
+    pendingDependencyCount: c.pendingCount ? c.pendingCount[row] : null,
     labelObserved: c.observed[row] === 1,
     outcome: c.observed[row] === 1 ? (c.delayed[row] === 1 ? 'Delayed' : 'On time') : 'Pending',
   };

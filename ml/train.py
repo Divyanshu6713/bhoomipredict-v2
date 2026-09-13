@@ -33,12 +33,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import (
     average_precision_score,
     brier_score_loss,
     confusion_matrix,
+    mean_absolute_error,
     f1_score,
     precision_score,
     recall_score,
@@ -78,12 +79,16 @@ NUMERIC = [
     "historical_stage_delay_rate",
     "district_historical_delay_rate",
     "authority_historical_delay_rate",
+    "authority_dependency_count",
+    "pending_dependency_actions",
+    "approval_delay_days",
+    "department_coordination_score",
     "project_land_requirement_ha",
     "latitude",
     "longitude",
 ]
 
-LOG_NUMERIC = ["inactivity_days", "affected_families", "number_of_owners", "compensation_pending_days", "land_area_ha"]
+LOG_NUMERIC = ["inactivity_days", "affected_families", "number_of_owners", "compensation_pending_days", "land_area_ha", "approval_delay_days"]
 
 CATEGORICAL = [
     "state",
@@ -135,6 +140,10 @@ GROUP = {
     "rr_status": "Rehabilitation & resettlement",
     "rr_pending_frac": "Rehabilitation & resettlement",
     "affected_families": "Affected families",
+    "authority_dependency_count": "Authority dependencies",
+    "pending_dependency_actions": "Pending department actions",
+    "approval_delay_days": "Approval delay",
+    "department_coordination_score": "Inter-department coordination",
     "possession_status": "Possession",
     "land_area_ha": "Parcel & project attributes",
     "land_type": "Parcel & project attributes",
@@ -163,6 +172,10 @@ LABELS = {
     "district_historical_delay_rate": "District historical delay rate",
     "authority_historical_delay_rate": "Authority historical delay rate",
     "affected_families": "Affected families",
+    "authority_dependency_count": "Authorities the acquisition depends on",
+    "pending_dependency_actions": "Department actions pending on the case",
+    "approval_delay_days": "Days an approval / clearance has been pending",
+    "department_coordination_score": "Inter-department coordination score",
     "number_of_owners": "Number of recorded owners",
     "rehabilitation_cases": "R&R cases attached",
     "rr_progress_percentage": "R&R progress %",
@@ -191,6 +204,7 @@ def load_corpus(csv_path: Path, sample: int) -> pd.DataFrame:
             "label_observed",
             "next_milestone_delayed",
             "delay_risk_category",
+            "actual_stage_delay_days",
         ]
     )
     usecols = list(dict.fromkeys(usecols))
@@ -460,6 +474,47 @@ def main() -> int:
     (OUT / "scores.f32").write_bytes(scores.tobytes())
     log(f"  scored {n_rows:,} rows in {time.time() - t0:.1f}s  mean {scores.mean():.4f}")
 
+    # ------------------------------------------------ expected slip (days)
+    # Predicted delay days use a hurdle decomposition:
+    #     expected slip = P(milestone delayed) x E[slip days | delayed]
+    # The probability is the deployed classifier above. The conditional
+    # magnitude is a regressor trained only on delayed milestones whose actual
+    # slip is already recorded, on the same chronological training window.
+    # Most milestones finish on time, so a single regressor over every row
+    # collapses towards zero and is beaten by a constant.
+    log("training conditional slip regressor…")
+    t0 = time.time()
+    slip_all = pd.to_numeric(df["actual_stage_delay_days"], errors="coerce").to_numpy(dtype=np.float64)
+    delayed_known = (~np.isnan(slip_all)) & (slip_all > DELAY_THRESHOLD_DAYS)
+    tr_r = tr[delayed_known[tr]]
+    te_r = te[delayed_known[te]]
+    reg = HistGradientBoostingRegressor(
+        loss="absolute_error", max_iter=300, learning_rate=0.08, max_leaf_nodes=31, min_samples_leaf=80,
+        l2_regularization=1.0, early_stopping=True, validation_fraction=0.12,
+        n_iter_no_change=20, random_state=17,
+    )
+    reg.fit(X[tr_r], slip_all[tr_r])
+    cond_te = reg.predict(X[te_r])
+    cond_baseline = float(np.median(slip_all[tr_r]))
+    delay_days = np.zeros(n_rows, dtype=np.float32)
+    for s in range(0, n_rows, step):
+        cond = np.clip(reg.predict(X[s : s + step]), DELAY_THRESHOLD_DAYS + 1, 400)
+        delay_days[s : s + step] = (scores[s : s + step] * cond).astype(np.float32)
+    (OUT / "delay_days.f32").write_bytes(delay_days.tobytes())
+    slip_model = {
+        "label": "Expected slip = P(delayed) x conditional slip regressor (HistGradientBoosting, absolute error)",
+        "trainRows": int(len(tr_r)),
+        "testRows": int(len(te_r)),
+        "conditionalTestMae": round(float(mean_absolute_error(slip_all[te_r], cond_te)), 2),
+        "conditionalBaselineMae": round(float(mean_absolute_error(slip_all[te_r], np.full(len(te_r), cond_baseline))), 2),
+        "meanExpectedSlipOpen": round(float(delay_days[~observed].mean()), 2) if (~observed).any() else None,
+        "caveat": "Test milestones are right-censored: long slips in the latest window are not yet resolved, so test MAE understates real-world error.",
+    }
+    log(
+        f"  slip regressor done in {time.time() - t0:.1f}s  conditional test MAE {slip_model['conditionalTestMae']}d "
+        f"(median baseline {slip_model['conditionalBaselineMae']}d)"
+    )
+
     # ------------------------------------------------------ permutation
     log("permutation importance on a validation sample…")
     rng = np.random.default_rng(7)
@@ -561,8 +616,22 @@ def main() -> int:
     band = lambda p: np.digitize(p, cuts)
     fidelity["bandAgreement"] = round(float(np.mean(band(sur_va) == band(gbm_va))), 4)
 
+    # Linear surrogate of the conditional slip regressor, for interactive scenarios.
+    slip_ridge = Ridge(alpha=1.0)
+    slip_ridge.fit((impute(X[tr_r]) - mu) / sd, np.clip(reg.predict(X[tr_r]), DELAY_THRESHOLD_DAYS + 1, 400))
+    slip_sur_te = np.clip(slip_ridge.predict((impute(X[te_r]) - mu) / sd), DELAY_THRESHOLD_DAYS + 1, 400)
+    slip_model["surrogateConditionalTestMae"] = round(float(mean_absolute_error(slip_all[te_r], slip_sur_te)), 2)
+
     surrogate = {
         "kind": "linear-logit surrogate distilled from the deployed ensemble",
+        "delay": {
+            "kind": "linear surrogate of the conditional slip regressor (days, given a delay); expected slip = probability x this",
+            "intercept": float(slip_ridge.intercept_),
+            "coef": [float(v) for v in slip_ridge.coef_],
+            "floor": DELAY_THRESHOLD_DAYS + 1,
+            "cap": 400,
+            "conditionalTestMae": slip_model["surrogateConditionalTestMae"],
+        },
         "intercept": float(ridge.intercept_),
         "fidelity": fidelity,
         "riskBands": RISK_BAND_THRESHOLDS,
@@ -607,6 +676,7 @@ def main() -> int:
         "riskBands": RISK_BAND_THRESHOLDS,
         "riskBandMix": band_mix,
         "surrogateFidelity": fidelity,
+        "slipModel": slip_model,
         "leakageControls": [
             "targets and actual_stage_delay_days are never features",
             "only rows whose milestone outcome is already knowable are used for training",

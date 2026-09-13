@@ -22,11 +22,13 @@ import {
   datasetPdfUrl,
   fetchFacets,
   fetchProjects,
-  fetchQueue,
+  fetchDashboard,
+  fetchInterventions,
   fetchSummary,
 } from '@/api/client';
+import { STAGE_STATUS_LABEL } from '@/lib/status';
 
-type ReportId = 'executive' | 'risk' | 'queue' | 'stage' | 'exceptions' | 'model';
+type ReportId = 'executive' | 'mis' | 'departments' | 'risk' | 'queue' | 'stage' | 'exceptions' | 'model';
 
 interface ReportDef {
   id: ReportId;
@@ -51,6 +53,26 @@ const REPORTS: ReportDef[] = [
     filename: 'executive-portfolio-summary',
   },
   {
+    id: 'mis',
+    title: 'State & district MIS',
+    description: 'State-wise and district-wise projects, mean risk, delayed and blocked counts, compensation, R&R and legal load.',
+    icon: Table2,
+    cadence: 'Monthly',
+    audience: 'Revenue Department / Collectorates',
+    sections: ['State summary', 'District summary', 'Progress measures'],
+    filename: 'state-district-mis',
+  },
+  {
+    id: 'departments',
+    title: 'Department bottleneck report',
+    description: 'Cases waiting on each office — land records, competent authorities, clearances, treasury — from the dependency network.',
+    icon: FileSpreadsheet,
+    cadence: 'Fortnightly',
+    audience: 'District Collector / State Nodal Officer',
+    sections: ['By role', 'By named office'],
+    filename: 'department-bottlenecks',
+  },
+  {
     id: 'risk',
     title: 'Project risk register',
     description: 'Every project ranked by next-milestone risk with its stage, deadline and leading contributor.',
@@ -63,11 +85,11 @@ const REPORTS: ReportDef[] = [
   {
     id: 'queue',
     title: 'Intervention queue pack',
-    description: 'The ranked project-stage cells with recommended reviews and named owners.',
+    description: 'Open interventions with severity, trigger, responsible office, acting role, due date and status.',
     icon: Table2,
     cadence: 'Weekly',
     audience: 'Land Acquisition Officers',
-    sections: ['Ranked cells', 'Recommended action', 'Owner'],
+    sections: ['Interventions', 'Trigger', 'Owner and due date'],
     filename: 'intervention-queue',
   },
   {
@@ -126,15 +148,76 @@ export default function Reports() {
     (signal) => fetchProjects({ state: values.scope, sort: 'risk', pageSize: 100 }, signal),
     [values.scope],
   );
-  const queue = useApi((signal) => fetchQueue({ state: values.scope, pageSize: 60 }, signal), [values.scope]);
+  const queue = useApi((signal) => fetchInterventions({ state: values.scope, pageSize: 100 }, signal), [values.scope]);
+  const dash = useApi((signal) => fetchDashboard({ state: values.scope }, signal), [values.scope]);
+  const mis = useApi((signal) => fetchProjects({ state: values.scope, sort: 'risk', pageSize: 500 }, signal), [values.scope]);
 
   const report = REPORTS.find((r) => r.id === values.report)!;
   const s = summary.data;
 
   const rows = useMemo<string[][]>(() => {
     if (!s) return [];
+    const d = dash.data;
     switch (values.report) {
+      case 'mis': {
+        const list = mis.data?.projects ?? [];
+        const group = (key: (p: (typeof list)[number]) => string) => {
+          const m = new Map<string, typeof list>();
+          for (const p of list) m.set(key(p), [...(m.get(key(p)) ?? []), p]);
+          return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+        };
+        const avg = (xs: number[]) => (xs.length ? (xs.reduce((a, b) => a + b, 0) / xs.length).toFixed(1) : '0');
+        const line = (name: string, ps: typeof list) => [
+          name,
+          String(ps.length),
+          avg(ps.map((p) => p.riskScore)),
+          String(ps.filter((p) => p.riskBand === 'High' || p.riskBand === 'Critical').length),
+          String(ps.filter((p) => p.isDelayed).length),
+          String(ps.filter((p) => p.isBlocked).length),
+          String(ps.reduce((a, p) => a + p.openCases, 0)),
+          String(ps.reduce((a, p) => a + p.residualBacklog, 0)),
+          avg(ps.filter((p) => p.currentStageIndex >= 5).map((p) => p.compensationCompletionPct)),
+          avg(ps.filter((p) => p.rrProgressPct !== null && p.currentStageIndex >= 6).map((p) => p.rrProgressPct as number)),
+          String(ps.reduce((a, p) => a + p.legalCases, 0)),
+          String(ps.reduce((a, p) => a + p.affectedFamilies, 0)),
+        ];
+        const head = ['Area', 'Projects', 'Mean risk %', 'High/Critical', 'Delayed', 'Blocked', 'Open cases', 'Residual backlog', 'Compensation % (due)', 'R&R % (due)', 'Legal cases', 'Affected families'];
+        return [['STATE SUMMARY'], head, ...group((p) => p.state).map(([k, ps]) => line(k, ps)), [''], ['DISTRICT SUMMARY'], head, ...group((p) => `${p.district}, ${p.state}`).map(([k, ps]) => line(k, ps))];
+      }
+      case 'departments':
+        return [
+          ['Role', 'Current-stage cases pending', 'Open cases pending (all stages)', 'Projects'],
+          ...(d?.departmentBottlenecks.byRole ?? []).map((r) => [r.key, String(r.currentStagePending), String(r.openCasesPending), String(r.projects)]),
+          [''],
+          ['Named office', 'Role', 'Open cases pending', 'Projects'],
+          ...(d?.departmentBottlenecks.byOffice ?? []).map((o) => [o.key, o.role, String(o.openCasesPending), String(o.projects)]),
+        ];
       case 'executive':
+        if (d) {
+          return [
+            ['Metric', 'Value'],
+            ['Scope', values.scope === 'all' ? 'All projects in your jurisdiction' : values.scope],
+            ['Total projects', String(d.kpis.totalProjects)],
+            ['High risk projects', String(d.kpis.highRiskProjects)],
+            ['Critical risk projects', String(d.kpis.criticalRiskProjects)],
+            ['Delayed projects', String(d.kpis.delayedProjects)],
+            ['Blocked projects', String(d.kpis.blockedProjects)],
+            ['Immediate action required', String(d.kpis.immediateActionRequired)],
+            ['Average delay probability (%)', (d.kpis.averageDelayProbability * 100).toFixed(1)],
+            ['Mean expected slip (days)', String(d.kpis.averagePredictedDelayDays)],
+            ['Open cases', String(d.kpis.openCases)],
+            ['Residual backlog in completed stages', String(d.kpis.residualBacklogCases)],
+            ['Open interventions', String(d.kpis.openInterventions)],
+            ['Affected families', String(d.kpis.affectedFamilies)],
+            [''],
+            ['Delay driver', 'Share (%)'],
+            ...d.delayDrivers.map((x) => [x.key, (x.share * 100).toFixed(1)]),
+            [''],
+            ['State', 'Projects', 'Mean risk %', 'High/Critical', 'Delayed', 'Blocked'],
+            ...d.stateRisk.map((x) => [x.key, String(x.projects), String(x.avgRisk), String(x.highRisk + x.critical), String(x.delayed), String(x.blocked)]),
+            ['DATA SOURCE', 'SYNTHETIC DEMO DATA'],
+          ];
+        }
         return [
           ['Metric', 'Value'],
           ['Projects', String(s.totals.projects)],
@@ -159,37 +242,45 @@ export default function Reports() {
         ];
       case 'risk':
         return [
-          ['Project ID', 'Project', 'State', 'Stage', 'Milestone deadline', 'Days remaining', 'Risk %', 'Band', 'Open cases', 'High-risk cases', 'Leading contributor'],
+          ['Project ID', 'Project', 'Type', 'State', 'District', 'Primary authority', 'Stage', 'Stage status', 'Milestone deadline', 'Days remaining', 'Delay probability %', 'Band', 'Expected slip (days)', 'Open cases', 'Residual backlog', 'Leading contributor'],
           ...(projects.data?.projects ?? []).map((p) => [
             p.id,
             p.name,
+            p.type,
             p.state,
+            p.district,
+            p.primaryAuthority,
             p.currentStage,
+            STAGE_STATUS_LABEL[p.stageStatus],
             p.milestoneDeadline,
             String(p.daysRemaining),
-            String(p.riskScore),
+            String(Math.round(p.delayProbability * 100)),
             p.riskBand,
+            String(p.predictedDelayDays ?? ''),
             String(p.openCases),
-            String(p.highRiskCases),
+            String(p.residualBacklog),
             p.topContributor ?? '',
           ]),
         ];
       case 'queue':
         return [
-          ['Rank', 'Project ID', 'Project', 'Stage', 'Milestone deadline', 'Open cases', 'Overdue cases', 'Risk %', 'Band', 'Leading contributor', 'Recommended action', 'Owner'],
+          ['Intervention', 'Priority', 'Severity', 'Status', 'Project ID', 'Project', 'District', 'Stage', 'Title', 'Trigger', 'Responsible office', 'Acting role', 'Recommended action', 'Raised', 'Due'],
           ...(queue.data?.items ?? []).map((i) => [
-            String(i.priorityRank),
+            i.id,
+            i.priority,
+            i.severity,
+            i.status,
             i.projectId,
             i.projectName,
+            i.district,
             i.stage,
-            i.milestoneDeadline ?? '',
-            String(i.openCases),
-            String(i.overdueCases),
-            String(i.riskScore),
-            i.riskBand,
-            i.topContributor,
-            i.intervention.action,
-            i.intervention.owner,
+            i.title,
+            `${i.trigger.metric} ${i.trigger.operator} ${i.trigger.threshold ?? ''} (value ${i.trigger.value})`,
+            i.responsible_department,
+            i.assignedRoleLabel,
+            i.recommended_action,
+            i.created_at.slice(0, 10),
+            i.due_date.slice(0, 10),
           ]),
         ];
       case 'stage':
@@ -237,7 +328,7 @@ export default function Reports() {
       default:
         return [['Note'], ['This pack is generated server-side from the filtered case registry.']];
     }
-  }, [values.report, s, projects.data, queue.data]);
+  }, [values.report, s, projects.data, queue.data, dash.data, mis.data, values.scope]);
 
   const generate = () => {
     if (values.report === 'exceptions') {
@@ -247,11 +338,9 @@ export default function Reports() {
       return;
     }
     setGenerating(report.id);
-    window.setTimeout(() => {
-      downloadCsv(rows, report.filename, s?.today ?? '2026-09-11');
-      setGenerating(null);
-      setGenerated((g) => ({ ...g, [report.id]: new Date().toISOString() }));
-    }, 600);
+    downloadCsv(rows, report.filename, s?.today ?? 'snapshot');
+    setGenerating(null);
+    setGenerated((g) => ({ ...g, [report.id]: new Date().toISOString() }));
   };
 
   if (summary.error) return <ErrorState error={summary.error} onRetry={summary.reload} />;

@@ -21,7 +21,7 @@ const DATA = path.join(ROOT, 'data');
 const CSV = path.join(DATA, 'land_acquisition_synthetic_350k.csv');
 const PDF = path.join(DATA, 'land_acquisition_synthetic_350k.pdf');
 
-const EXPECTED_COLUMNS = 53;
+const EXPECTED_COLUMNS = 60;
 const MIN_RECORDS = 300000;
 const MAX_RECORDS = 400000;
 const DELAY_THRESHOLD = 30;
@@ -42,6 +42,30 @@ const check = (ok, label, detail) => (ok ? pass(label, detail) : fail(label, det
 const section = (title) => console.log(`\n\x1b[1m${title}\x1b[0m`);
 
 const fmt = (n) => Number(n).toLocaleString('en-IN');
+
+/** Quote-aware split: authority and project names can contain commas. */
+function splitCsv(line) {
+  const out = [];
+  let field = '';
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else quoted = false;
+      } else field += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ',') {
+      out.push(field);
+      field = '';
+    } else field += ch;
+  }
+  out.push(field);
+  return out;
+}
 
 /* ------------------------------------------------------------------- corpus */
 
@@ -92,7 +116,7 @@ async function verifyCorpus() {
       header.forEach((h, i) => (ix[h] = i));
       continue;
     }
-    const cells = line.split(',');
+    const cells = splitCsv(line);
     if (cells.length !== header.length) badFieldCount++;
     rows++;
 

@@ -1,517 +1,306 @@
-import { useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  Bar,
-  BarChart,
-  Cell,
-  ComposedChart,
-  Line,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import {
-  Building2,
-  CalendarClock,
-  ChevronRight,
-  Clock,
-  Gauge,
-  Layers,
-  ListChecks,
-  ShieldAlert,
-  TriangleAlert,
-} from 'lucide-react';
-import { cn } from '@/lib/cn';
-import { Card, CardHeader, InfoDot, Progress, SkeletonCard, Tabs } from '@/components/ui';
+import { useNavigate } from 'react-router-dom';
+import { Bar, BarChart, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { AlertOctagon, Building2, Clock, Gauge, Gavel, Layers, Network, Percent, ShieldAlert, TrendingUp, TriangleAlert, Users, BadgeIndianRupee, CalendarClock } from 'lucide-react';
+import { Card, CardHeader, Select, SkeletonCard } from '@/components/ui';
 import { StatCard } from '@/components/ui/StatCard';
-import { ErrorState, PrototypeNotice, QualityBadge, RiskPill } from '@/components/ui/primitives';
-import { ChartLegend, ChartTooltip } from '@/components/charts';
-import { ContributorBars, ContributorChips } from '@/components/explain/Contributors';
-import { CHART_COLORS, RISK_CLASS, RISK_HEX } from '@/lib/risk';
-import { formatCompact, formatDate, formatNumber } from '@/lib/format';
+import { ErrorState, KeyValue, PrototypeNotice, RiskPill } from '@/components/ui/primitives';
+import { ChartTooltip } from '@/components/charts';
+import { CHART_COLORS, RISK_HEX, groupColor, riskFromScore } from '@/lib/risk';
+import { STAGE_STATUS_CLASS, STAGE_STATUS_LABEL } from '@/lib/status';
+import { formatCompact, formatNumber } from '@/lib/format';
 import { useApi, useFilters } from '@/hooks';
-import { fetchQueue, fetchSummary } from '@/api/client';
-import type { RiskLevel } from '@/data/types';
+import { useAuth } from '@/auth/AuthContext';
+import { fetchDashboard, fetchFacets } from '@/api/client';
+import { Badge } from '@/components/ui';
 
-const RISK_ORDER: RiskLevel[] = ['Low', 'Medium', 'High', 'Critical'];
+const tick = { fill: 'rgb(var(--c-ink-3))', fontSize: 11 };
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const summary = useApi((signal) => fetchSummary(signal), []);
-  const queue = useApi((signal) => fetchQueue({ pageSize: 6 }, signal), []);
-  const { values, set } = useFilters({ view: 'stage' });
-
+  const { user } = useAuth();
+  const { values, set } = useFilters({ state: 'all', projectType: 'all' });
+  const facets = useApi((signal) => fetchFacets(signal), []);
+  const summary = useApi((signal) => fetchDashboard({ state: values.state, projectType: values.projectType }, signal), [values.state, values.projectType]);
   const s = summary.data;
 
-  const riskData = useMemo(
-    () => (s ? RISK_ORDER.map((name) => ({ name, value: s.riskDistribution[name] })) : []),
-    [s],
-  );
-  const riskTotal = riskData.reduce((a, r) => a + r.value, 0) || 1;
-
-  const stageData = useMemo(
-    () =>
-      (s?.stages ?? []).map((st) => ({
-        stage: st.stage.replace(' & ', ' &\n'),
-        short: st.stage.split(' ')[0],
-        risk: st.riskScore,
-        open: st.openCases,
-        observed: Number((st.observedDelayRate * 100).toFixed(1)),
-        band: st.riskBand,
-      })),
-    [s],
-  );
-
-  const stateData = useMemo(
-    () =>
-      [...(s?.states ?? [])]
-        .sort((a, b) => b.riskScore - a.riskScore)
-        .slice(0, 12)
-        .map((st) => ({ state: st.state, risk: st.riskScore, open: st.openCases, band: st.riskBand })),
-    [s],
-  );
-
-  const trend = useMemo(
-    () =>
-      (s?.months ?? []).slice(-18).map((m) => ({
-        month: m.month.slice(2),
-        predicted: Number((m.meanPredicted * 100).toFixed(1)),
-        observed: m.observedDelayRate === null ? null : Number((m.observedDelayRate * 100).toFixed(1)),
-      })),
-    [s],
-  );
+  const go = (params: Record<string, string>) => navigate(`/projects?${new URLSearchParams({ ...(values.state !== 'all' ? { state: values.state } : {}), ...(values.projectType !== 'all' ? { projectType: values.projectType } : {}), ...params }).toString()}`);
 
   if (summary.error) return <ErrorState error={summary.error} onRetry={summary.reload} />;
-  if (summary.loading || !s) {
+  if (!s) {
     return (
-      <div className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <SkeletonCard key={i} lines={2} />
-          ))}
-        </div>
-        <div className="grid gap-4 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonCard key={i} lines={6} />
-          ))}
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <SkeletonCard key={i} lines={3} />
+        ))}
       </div>
     );
   }
-
-  const t = s.totals;
-  const model = s.model;
+  const k = s.kpis;
 
   return (
     <div className="space-y-5">
-      {/* ------------------------------------------------- headline metrics */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        <StatCard index={0} label="Acquisition projects" value={t.projects} icon={Building2} caption={`${t.activeProjects} active · ${t.completedProjects} in closure`} accent="#3B72F0" />
-        <StatCard index={1} label="Cases tracked" value={t.cases} icon={Layers} caption={`${formatCompact(t.openCases)} open · ${formatCompact(t.observedCases)} closed out`} accent="#0EA5A4" />
-        <StatCard index={2} label="High-risk cases" value={t.highRiskCases} icon={ShieldAlert} caption="High or Critical predicted risk" accent="#F97316" />
-        <StatCard index={3} label="Critical cases" value={t.criticalCases} icon={TriangleAlert} caption={`above ${Math.round(model.riskBands.critical * 100)}% predicted risk`} accent="#E11D48" />
-        <StatCard index={4} label="Delayed milestones" value={t.delayedMilestones} icon={Clock} caption="projects past their current stage deadline" accent="#F59E0B" />
-        <StatCard index={5} label="Upcoming milestones" value={t.upcomingMilestones} icon={CalendarClock} caption="due within 90 days" accent="#7C6CF5" />
-      </section>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="label-xs">Scope</p>
+          <p className="text-[13px] font-semibold text-ink">
+            {user?.scopeLabel} · {formatNumber(s.scope.projects)} projects
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Select className="w-[190px]" label="State" value={values.state} onChange={(v) => set({ state: v })} options={[{ label: 'All in scope', value: 'all' }, ...(facets.data?.states ?? []).map((x) => ({ label: x, value: x }))]} />
+          <Select className="w-[190px]" label="Project type" value={values.projectType} onChange={(v) => set({ projectType: v })} options={[{ label: 'All types', value: 'all' }, ...(facets.data?.projectTypes ?? []).map((x) => ({ label: x, value: x }))]} />
+        </div>
+      </div>
 
-      {/* -------------------------------------------------- secondary strip */}
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {[
-          { label: 'Land under acquisition', value: `${formatCompact(t.parcelAreaHa)} ha`, hint: `${formatCompact(t.landRequirementHa)} ha sanctioned` },
-          { label: 'Affected families', value: formatCompact(t.affectedFamilies), hint: 'across all recorded parcels' },
-          { label: 'Cases with litigation', value: formatCompact(t.legalDisputeCases), hint: `${((t.legalDisputeCases / t.cases) * 100).toFixed(1)}% of the corpus` },
-          { label: 'States · districts', value: `${t.states} · ${t.districts}`, hint: 'geographic coverage' },
-          { label: 'Portfolio outlay', value: `₹${formatCompact(t.budgetCr)} Cr`, hint: 'indicative project cost' },
-          { label: 'Mean data quality', value: `${s.dataQuality.meanScore}%`, hint: `${formatCompact(s.dataQuality.totalMissingCells)} field gaps audited` },
-        ].map((m, i) => (
-          <Card key={m.label} className="p-4 animate-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
-            <p className="label-xs leading-tight">{m.label}</p>
-            <p className="mt-1.5 font-display text-[20px] font-extrabold leading-none text-ink num">{m.value}</p>
-            <p className="mt-1 text-[10.5px] leading-tight text-ink-3">{m.hint}</p>
-          </Card>
+          { label: 'Total projects', value: k.totalProjects, icon: Building2, caption: `${formatCompact(k.openCases)} open cases`, accent: '#3B72F0', to: {} },
+          { label: 'High risk projects', value: k.highRiskProjects, icon: ShieldAlert, caption: 'next-milestone probability ≥ 55%', accent: RISK_HEX.High, to: { risk: 'High' } },
+          { label: 'Critical risk projects', value: k.criticalRiskProjects, icon: TriangleAlert, caption: 'probability ≥ 78%', accent: RISK_HEX.Critical, to: { risk: 'Critical' } },
+          { label: 'Delayed projects', value: k.delayedProjects, icon: Clock, caption: `${k.blockedProjects} of them blocked by a dependency`, accent: '#F59E0B', to: { flag: 'delayed' } },
+          { label: 'Immediate action required', value: k.immediateActionRequired, icon: AlertOctagon, caption: 'with an open Critical (P1) intervention', accent: '#BE123C', to: { flag: 'action' } },
+          { label: 'Average delay probability', value: Math.round(k.averageDelayProbability * 100), unit: '%', icon: Percent, caption: `mean expected slip ${k.averagePredictedDelayDays} days`, accent: '#7C6CF5', to: { sort: 'risk' } },
+        ].map((c, i) => (
+          <button key={c.label} onClick={() => go(c.to as Record<string, string>)} className="text-left">
+            <StatCard index={i} label={c.label} value={c.value} unit={c.unit} icon={c.icon} caption={c.caption} accent={c.accent} />
+          </button>
         ))}
       </section>
 
-      {/* ---------------------------------------------------------- row one */}
-      <section className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
-        <Card className="animate-fade-up">
-          <CardHeader
-            title="Predicted risk distribution"
-            subtitle={`${formatNumber(t.openCases)} open cases banded by the deployed model`}
-            icon={<Gauge className="h-4 w-4" />}
-            action={
-              <InfoDot
-                text={`Bands are calibrated probability cut-offs: Medium ${Math.round(model.riskBands.medium * 100)}%, High ${Math.round(
-                  model.riskBands.high * 100,
-                )}%, Critical ${Math.round(model.riskBands.critical * 100)}%.`}
-              />
-            }
-          />
-          <div className="px-5 pb-5">
-            <div className="relative h-[214px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={riskData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius="62%"
-                    outerRadius="92%"
-                    paddingAngle={3}
-                    startAngle={90}
-                    endAngle={-270}
-                    animationDuration={900}
-                    stroke="none"
-                  >
-                    {riskData.map((d) => (
-                      <Cell key={d.name} fill={RISK_HEX[d.name]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip formatter={(v) => `${formatNumber(v as number)} cases`} />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="pointer-events-none absolute inset-0 grid place-items-center">
-                <div className="text-center">
-                  <p className="font-display text-[26px] font-extrabold leading-none text-ink num">
-                    {formatCompact(riskTotal)}
-                  </p>
-                  <p className="mt-1 text-[11px] font-semibold text-ink-3">open cases</p>
-                </div>
+      <PrototypeNotice compact />
+
+      <section className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader title="Risk distribution" subtitle="Projects by risk category — click a slice to list them" icon={<Gauge className="h-4 w-4" />} />
+          <div className="h-[230px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={s.riskDistribution} dataKey="projects" nameKey="key" innerRadius={58} outerRadius={92} paddingAngle={2} onClick={(d: { key?: string }) => d?.key && go({ risk: d.key })} className="cursor-pointer">
+                  {s.riskDistribution.map((r) => (
+                    <Cell key={r.key} fill={RISK_HEX[r.key]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<ChartTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-4 gap-2 px-5 pb-5">
+            {s.riskDistribution.map((r) => (
+              <div key={r.key} className="rounded-lg border border-line bg-surface-2 p-2 text-center">
+                <p className="text-[9.5px] font-semibold uppercase" style={{ color: RISK_HEX[r.key] }}>
+                  {r.key}
+                </p>
+                <p className="font-display text-[15px] font-extrabold text-ink num">{r.projects}</p>
+                <p className="text-[9.5px] text-ink-3 num">{formatCompact(s.caseRiskDistribution.find((c) => c.key === r.key)?.cases ?? 0)} cases</p>
               </div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-2.5">
-              {riskData.map((d) => (
-                <Link
-                  key={d.name}
-                  to={`/cases?risk=${d.name}`}
-                  className="flex items-center gap-2 rounded-lg border border-line bg-surface-2 px-2.5 py-2 transition-colors hover:border-line-strong"
-                >
-                  <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: RISK_HEX[d.name] }} />
-                  <span className="text-[11.5px] font-medium text-ink-2">{d.name}</span>
-                  <span className="ml-auto text-[12px] font-bold text-ink num">{formatCompact(d.value)}</span>
-                  <span className="text-[10.5px] text-ink-3 num">{((d.value / riskTotal) * 100).toFixed(0)}%</span>
-                </Link>
-              ))}
-            </div>
-            <div className="mt-3 rounded-xl border border-line bg-surface-2 px-3 py-2.5">
-              <p className="label-xs">Projects by next-milestone risk</p>
-              <div className="mt-2 flex h-2.5 overflow-hidden rounded-full">
-                {RISK_ORDER.map((band) => {
-                  const value = s.projectRiskDistribution[band] ?? 0;
-                  const width = (value / Math.max(1, t.projects)) * 100;
-                  return width > 0 ? (
-                    <span key={band} style={{ width: `${width}%`, background: RISK_HEX[band] }} title={`${band}: ${value}`} />
-                  ) : null;
-                })}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-                {RISK_ORDER.map((band) => (
-                  <span key={band} className="text-[10.5px] text-ink-3">
-                    <span className={cn('font-bold num', RISK_CLASS[band].text)}>{s.projectRiskDistribution[band] ?? 0}</span>{' '}
-                    {band}
-                  </span>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
         </Card>
 
-        <Card className="animate-fade-up" style={{ animationDelay: '80ms' }}>
-          <CardHeader
-            title={values.view === 'stage' ? 'Risk by acquisition stage' : 'Risk by state'}
-            subtitle={
-              values.view === 'stage'
-                ? 'Mean predicted milestone risk of the open cases in each stage, against the historically observed delay rate'
-                : 'Top 12 states by predicted risk of their open cases'
-            }
-            icon={<ShieldAlert className="h-4 w-4" />}
-            action={
-              <Tabs
-                tabs={[
-                  { id: 'stage', label: 'By stage' },
-                  { id: 'state', label: 'By state' },
-                ]}
-                active={values.view}
-                onChange={(v) => set({ view: v })}
-              />
-            }
-          />
-          <div className="h-[318px] px-2 pb-4">
+        <Card className="lg:col-span-2">
+          <CardHeader title="Stage distribution" subtitle="Projects by current stage and stage status — click to filter" icon={<Layers className="h-4 w-4" />} />
+          <div className="h-[290px] px-2 pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              {values.view === 'stage' ? (
-                <ComposedChart data={stageData} margin={{ top: 8, right: 16, left: -18, bottom: 4 }}>
-                  <XAxis
-                    dataKey="short"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fill: 'rgb(var(--c-ink-3))', fontSize: 10.5 }}
-                    interval={0}
-                  />
-                  <YAxis tickLine={false} axisLine={false} tick={{ fill: 'rgb(var(--c-ink-3))' }} unit="%" width={46} domain={[0, 100]} />
-                  <Tooltip
-                    cursor={{ fill: 'rgb(var(--c-surface-2))' }}
-                    content={
-                      <ChartTooltip
-                        formatter={(v, name) => (name === 'Open cases' ? formatNumber(v as number) : `${v}%`)}
-                        labelFormatter={(l) => stageData.find((d) => d.short === l)?.stage.replace('\n', ' ') ?? l}
-                      />
-                    }
-                  />
-                  <Bar dataKey="risk" name="Predicted risk" radius={[5, 5, 0, 0]} animationDuration={900} barSize={26}>
-                    {stageData.map((d, i) => (
-                      <Cell key={i} fill={RISK_HEX[d.band]} />
-                    ))}
-                  </Bar>
-                  <Line
-                    type="monotone"
-                    dataKey="observed"
-                    name="Observed delay rate"
-                    stroke={CHART_COLORS.violet}
-                    strokeWidth={2.2}
-                    strokeDasharray="5 4"
-                    dot={{ r: 3, fill: CHART_COLORS.violet, strokeWidth: 0 }}
-                    animationDuration={1100}
-                  />
-                </ComposedChart>
-              ) : (
-                <BarChart data={stateData} layout="vertical" margin={{ top: 4, right: 30, left: 96, bottom: 0 }}>
-                  <XAxis type="number" hide domain={[0, 100]} />
-                  <YAxis
-                    type="category"
-                    dataKey="state"
-                    tickLine={false}
-                    axisLine={false}
-                    width={92}
-                    tick={{ fill: 'rgb(var(--c-ink-2))', fontSize: 11 }}
-                  />
-                  <Tooltip
-                    cursor={{ fill: 'rgb(var(--c-surface-2))' }}
-                    content={<ChartTooltip formatter={(v, name) => (name === 'Open cases' ? formatNumber(v as number) : `${v}%`)} />}
-                  />
-                  <Bar dataKey="risk" name="Predicted risk" radius={[0, 5, 5, 0]} barSize={15} animationDuration={900}>
-                    {stateData.map((d, i) => (
-                      <Cell key={i} fill={RISK_HEX[d.band]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              )}
+              <BarChart data={s.stageDistribution.map((d) => ({ ...d, short: d.key.split(' ')[0] }))} margin={{ top: 8, right: 16, left: -12, bottom: 4 }}>
+                <XAxis dataKey="short" tickLine={false} axisLine={false} tick={tick} interval={0} />
+                <YAxis tickLine={false} axisLine={false} tick={tick} allowDecimals={false} />
+                <Tooltip content={<ChartTooltip labelFormatter={(l) => s.stageDistribution.find((d) => d.key.startsWith(String(l)))?.key ?? l} />} cursor={{ fill: 'rgb(var(--c-surface-2))' }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="inProgress" name="In progress" stackId="a" fill="#0EA5E9" className="cursor-pointer" onClick={(d: { key?: string }) => d?.key && go({ stage: d.key })} />
+                <Bar dataKey="delayed" name="Delayed" stackId="a" fill="#F59E0B" className="cursor-pointer" onClick={(d: { key?: string }) => d?.key && go({ stage: d.key, status: 'DELAYED' })} />
+                <Bar dataKey="blocked" name="Blocked" stackId="a" fill="#E11D48" radius={[4, 4, 0, 0]} className="cursor-pointer" onClick={(d: { key?: string }) => d?.key && go({ stage: d.key, status: 'BLOCKED' })} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
-          <p className="border-t border-line px-5 py-2.5 text-[11px] text-ink-3">
-            The dashed series is the delay rate actually observed on closed milestones in the same stage — the model is
-            calibrated against it, not fitted to it.
-          </p>
         </Card>
       </section>
 
-      {/* ---------------------------------------------------------- row two */}
-      <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
-        <Card className="animate-fade-up">
-          <CardHeader
-            title="Top cases requiring attention"
-            subtitle="Highest-ranked project-stage cells from the intervention queue"
-            icon={<ListChecks className="h-4 w-4" />}
-            action={
-              <Link to="/queue" className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand hover:underline">
-                Full queue <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            }
-          />
-          {queue.error ? (
-            <div className="p-5">
-              <ErrorState error={queue.error} onRetry={queue.reload} title="Queue unavailable" />
-            </div>
-          ) : (
-            <div className="divide-y divide-line">
-              {(queue.data?.items ?? []).map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => navigate(`/projects/${item.projectId}`)}
-                  className="flex w-full items-start gap-4 px-5 py-3.5 text-left transition-colors hover:bg-surface-2"
-                >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-surface-3 text-[12px] font-bold text-ink-2 num">
-                    {item.priorityRank}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13.5px] font-semibold text-ink">{item.projectName}</span>
-                    <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-ink-3">
-                      <span className="font-semibold text-ink-2">{item.stage}</span>
-                      <span>·</span>
-                      <span>{item.state}</span>
-                      <span>·</span>
-                      <span className="num">{formatNumber(item.openCases)} open cases</span>
-                      {item.overdueCases > 0 && (
-                        <>
-                          <span>·</span>
-                          <span className="font-semibold text-rose-500 num">{formatNumber(item.overdueCases)} overdue</span>
-                        </>
-                      )}
-                    </span>
-                    <ContributorChips contributors={item.contributors} className="mt-1.5" />
-                  </span>
-                  <span className="shrink-0 text-right">
-                    <RiskPill level={item.riskBand} score={item.riskScore} />
-                    <span className="mt-1.5 block text-[10.5px] text-ink-3">
-                      due {item.milestoneDeadline ? formatDate(item.milestoneDeadline) : '—'}
-                    </span>
-                  </span>
-                </button>
-              ))}
-              {queue.loading &&
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="px-5 py-4">
-                    <Progress value={40} />
-                  </div>
-                ))}
-            </div>
-          )}
-        </Card>
-
-        <div className="space-y-4">
-          <Card className="animate-fade-up" style={{ animationDelay: '60ms' }}>
-            <CardHeader
-              title="Most common predictive contributors"
-              subtitle="Aggregated SHAP mass across every open case"
-              icon={<ShieldAlert className="h-4 w-4" />}
-            />
-            <div className="px-5 pb-5">
-              <ContributorBars
-                contributors={s.contributors.map((c) => ({ group: c.group, value: c.value, share: c.share }))}
-                max={6}
-              />
-            </div>
-          </Card>
-
-          <Card className="animate-fade-up" style={{ animationDelay: '120ms' }}>
-            <CardHeader title="Model in production" subtitle="Held-out test window" icon={<Gauge className="h-4 w-4" />} />
-            <div className="grid grid-cols-2 gap-2.5 px-5 pb-5">
-              {[
-                ['ROC-AUC', model.test.rocAuc.toFixed(3)],
-                ['PR-AUC', model.test.prAuc.toFixed(3)],
-                ['Precision', model.test.at_threshold.precision.toFixed(3)],
-                ['Recall', model.test.at_threshold.recall.toFixed(3)],
-                ['F1', model.test.at_threshold.f1.toFixed(3)],
-                ['Brier', model.test.brier.toFixed(3)],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-xl border border-line bg-surface-2 px-3 py-2.5">
-                  <p className="label-xs">{label}</p>
-                  <p className="mt-1 font-display text-[17px] font-extrabold leading-none text-ink num">{value}</p>
-                </div>
-              ))}
-              <div className="col-span-2 mt-1 flex flex-wrap items-center gap-2">
-                <QualityBadge score={s.dataQuality.meanScore} />
-                <Link to="/data" className="text-[11.5px] font-semibold text-brand hover:underline">
-                  Model card and dataset →
-                </Link>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      {/* -------------------------------------------------------- row three */}
-      <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <Card className="animate-fade-up">
-          <CardHeader
-            title="Predicted versus observed, by month"
-            subtitle="Mean predicted risk of cases assessed each month against the delay rate later observed"
-            icon={<CalendarClock className="h-4 w-4" />}
-            action={
-              <ChartLegend
-                items={[
-                  { label: 'Mean predicted risk', color: CHART_COLORS.brand },
-                  { label: 'Observed delay rate', color: CHART_COLORS.saffron },
-                ]}
-              />
-            }
-          />
-          <div className="h-[268px] px-2 pb-4">
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader title="State-wise risk" subtitle="Mean project risk; bar label shows High + Critical count" icon={<TrendingUp className="h-4 w-4" />} />
+          <div className="px-2 pb-4" style={{ height: Math.max(220, s.stateRisk.length * 24 + 30) }}>
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={trend} margin={{ top: 8, right: 16, left: -18, bottom: 0 }}>
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: 'rgb(var(--c-ink-3))', fontSize: 10 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: 'rgb(var(--c-ink-3))' }} unit="%" width={44} />
-                <Tooltip content={<ChartTooltip formatter={(v) => `${v}%`} />} cursor={{ stroke: 'rgb(var(--c-line-strong))' }} />
-                <Line
-                  type="monotone"
-                  dataKey="predicted"
-                  name="Mean predicted risk"
-                  stroke={CHART_COLORS.brand}
-                  strokeWidth={2.4}
-                  dot={false}
-                  animationDuration={1000}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="observed"
-                  name="Observed delay rate"
-                  stroke={CHART_COLORS.saffron}
-                  strokeWidth={2.2}
-                  strokeDasharray="5 4"
-                  dot={{ r: 2.5, fill: CHART_COLORS.saffron, strokeWidth: 0 }}
-                  connectNulls={false}
-                  animationDuration={1200}
-                />
-              </ComposedChart>
+              <BarChart data={s.stateRisk} layout="vertical" margin={{ top: 0, right: 30, left: 90, bottom: 0 }}>
+                <XAxis type="number" hide domain={[0, 100]} />
+                <YAxis type="category" dataKey="key" tickLine={false} axisLine={false} width={120} tick={{ ...tick, fill: 'rgb(var(--c-ink-2))' }} />
+                <Tooltip content={<ChartTooltip formatter={(v, n) => (n === 'Mean risk' ? `${v}%` : v)} />} cursor={{ fill: 'rgb(var(--c-surface-2))' }} />
+                <Bar dataKey="avgRisk" name="Mean risk" radius={[0, 5, 5, 0]} barSize={14} className="cursor-pointer" onClick={(d: { key?: string }) => d?.key && set({ state: d.key })}>
+                  {s.stateRisk.map((d) => (
+                    <Cell key={d.key} fill={RISK_HEX[riskFromScore(d.avgRisk)]} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
-          <p className="border-t border-line px-5 py-2.5 text-[11px] text-ink-3">
-            The observed series stops where milestones are still inside their window — those cases carry a prediction
-            and no outcome yet.
-          </p>
         </Card>
-
-        <Card className="animate-fade-up" style={{ animationDelay: '60ms' }}>
-          <CardHeader
-            title="Stage pipeline"
-            subtitle="Where the open book sits, and how each stage has historically performed"
-            icon={<Layers className="h-4 w-4" />}
-            action={
-              <Link to="/risk" className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand hover:underline">
-                Stage risk detail <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            }
-          />
+        <Card>
+          <CardHeader title="District-wise risk" subtitle="Top 15 districts by mean project risk" icon={<TrendingUp className="h-4 w-4" />} />
           <div className="divide-y divide-line">
-            {s.stages.map((st) => (
-              <Link
-                key={st.stage}
-                to={`/cases?stage=${encodeURIComponent(st.stage)}`}
-                className="flex items-center gap-3 px-5 py-2.5 transition-colors hover:bg-surface-2"
-              >
+            {s.districtRisk.map((d) => (
+              <button key={d.key} onClick={() => go({ district: d.key.split(', ')[0], state: d.key.split(', ')[1] })} className="flex w-full items-center gap-3 px-5 py-2 text-left hover:bg-surface-2">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12.5px] font-semibold text-ink">{st.stage}</span>
-                  <span className="block truncate text-[10.5px] text-ink-3">{st.milestone}</span>
-                </span>
-                <span className="hidden w-24 shrink-0 sm:block">
-                  <span className="flex items-baseline justify-between">
-                    <span className="text-[10px] text-ink-3">open</span>
-                    <span className="text-[11px] font-bold text-ink num">{formatCompact(st.openCases)}</span>
-                  </span>
-                  <Progress
-                    value={(st.openCases / Math.max(...s.stages.map((x) => x.openCases))) * 100}
-                    className="mt-1 h-1"
-                    barClassName="bg-brand"
-                  />
-                </span>
-                <span className="shrink-0 text-right">
-                  <span className={cn('block text-[13px] font-extrabold num', RISK_CLASS[st.riskBand].text)}>
-                    {st.riskScore}%
-                  </span>
-                  <span className="block text-[10px] text-ink-3 num">
-                    {(st.observedDelayRate * 100).toFixed(0)}% observed
+                  <span className="block truncate text-[12.5px] font-semibold text-ink">{d.key}</span>
+                  <span className="block text-[10.5px] text-ink-3">
+                    {d.projects} project{d.projects === 1 ? '' : 's'} · {d.delayed} delayed · {d.blocked} blocked
                   </span>
                 </span>
-              </Link>
+                <RiskPill level={riskFromScore(d.avgRisk)} score={d.avgRisk} size="sm" />
+              </button>
             ))}
           </div>
         </Card>
       </section>
 
-      {/* ------------------------------------------------------------ notice */}
-      <PrototypeNotice />
+      <section className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader title="Project-type risk" subtitle="Mean risk by type — click to filter" icon={<Building2 className="h-4 w-4" />} />
+          <div className="h-[300px] px-2 pb-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={s.projectTypeRisk} layout="vertical" margin={{ top: 0, right: 24, left: 70, bottom: 0 }}>
+                <XAxis type="number" hide domain={[0, 100]} />
+                <YAxis type="category" dataKey="key" width={110} tickLine={false} axisLine={false} tick={{ ...tick, fill: 'rgb(var(--c-ink-2))' }} />
+                <Tooltip content={<ChartTooltip formatter={(v) => `${v}%`} />} cursor={{ fill: 'rgb(var(--c-surface-2))' }} />
+                <Bar dataKey="avgRisk" name="Mean risk" barSize={14} radius={[0, 5, 5, 0]} className="cursor-pointer" onClick={(d: { key?: string }) => d?.key && set({ projectType: d.key })}>
+                  {s.projectTypeRisk.map((d) => (
+                    <Cell key={d.key} fill={RISK_HEX[riskFromScore(d.avgRisk)]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <Card>
+          <CardHeader title="Delay drivers" subtitle="Share of risk-increasing SHAP contribution, weighted by open cases" icon={<ShieldAlert className="h-4 w-4" />} />
+          <div className="space-y-2.5 px-5 pb-5">
+            {s.delayDrivers.map((d) => (
+              <div key={d.key}>
+                <div className="flex justify-between text-[12px]">
+                  <span className="font-semibold text-ink">{d.key}</span>
+                  <span className="font-bold text-ink num">{Math.round(d.share * 100)}%</span>
+                </div>
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-3">
+                  <div className="h-full rounded-full" style={{ width: `${d.share * 100}%`, background: groupColor(d.key) }} />
+                </div>
+              </div>
+            ))}
+            <p className="border-t border-line pt-2 text-[10.5px] text-ink-3">Contributions explain predictions; they are not proof of cause.</p>
+          </div>
+        </Card>
+        <Card>
+          <CardHeader title="Department bottlenecks" subtitle="Current-stage cases waiting on each type of office" icon={<Network className="h-4 w-4" />} />
+          <div className="divide-y divide-line">
+            {s.departmentBottlenecks.byRole.slice(0, 8).map((d) => (
+              <div key={d.key} className="flex items-center gap-3 px-5 py-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[12.5px] font-semibold text-ink">{d.key}</span>
+                  <span className="block text-[10.5px] text-ink-3">{d.projects} projects · {formatNumber(d.openCasesPending)} open cases across stages</span>
+                </span>
+                <span className="text-[13px] font-bold text-ink num">{formatNumber(d.currentStagePending)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-line px-5 py-2.5">
+            <p className="label-xs mb-1">Most-loaded named offices</p>
+            {s.departmentBottlenecks.byOffice.slice(0, 4).map((o) => (
+              <p key={o.key} className="truncate text-[11px] text-ink-2" title={o.key}>
+                <span className="font-bold num">{formatNumber(o.openCasesPending)}</span> · {o.key}
+              </p>
+            ))}
+          </div>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-4">
+        <Card>
+          <CardHeader title="Compensation progress" subtitle={`${s.compensation.projectsAtOrPastCompensation} projects at or past Compensation`} icon={<BadgeIndianRupee className="h-4 w-4" />} />
+          <div className="space-y-3 px-5 pb-5">
+            <KeyValue columns={2} rows={[{ label: 'Mean completion', value: `${s.compensation.averageCompletionPct}%` }, { label: 'Backlog projects', value: s.compensation.backlogProjects }]} />
+            <MiniBars rows={s.compensation.buckets} color="#0EA5A4" />
+          </div>
+        </Card>
+        <Card>
+          <CardHeader title="Legal disputes" subtitle="Across projects in scope" icon={<Gavel className="h-4 w-4" />} />
+          <div className="space-y-3 px-5 pb-5">
+            <KeyValue columns={2} rows={[{ label: 'Legal cases', value: formatCompact(s.legal.legalCases) }, { label: 'Disputed parcels', value: formatCompact(s.legal.disputedParcels) }, { label: 'Escalation flagged', value: s.legal.projectsWithEscalation }]} />
+            <MiniBars rows={s.legal.byType.slice(0, 5).map((t) => ({ key: t.key, count: t.legalCases }))} color="#E11D48" />
+          </div>
+        </Card>
+        <Card>
+          <CardHeader title="R&R progress" subtitle={`${s.rr.projectsWithRR} projects with R&R due`} icon={<Users className="h-4 w-4" />} />
+          <div className="space-y-3 px-5 pb-5">
+            <KeyValue columns={2} rows={[{ label: 'Mean delivery', value: `${s.rr.averageProgressPct}%` }, { label: 'Affected families', value: formatCompact(s.rr.affectedFamilies) }]} />
+            <MiniBars rows={s.rr.buckets} color="#7C6CF5" />
+          </div>
+        </Card>
+        <Card>
+          <CardHeader title="Timeline adherence" subtitle="Current stage status and forecast overrun" icon={<CalendarClock className="h-4 w-4" />} />
+          <div className="space-y-3 px-5 pb-5">
+            <div className="flex flex-wrap gap-1.5">
+              {(['IN_PROGRESS', 'DELAYED', 'BLOCKED'] as const).map((st) => (
+                <button key={st} onClick={() => go({ status: st })}>
+                  <Badge className={STAGE_STATUS_CLASS[st]}>
+                    {STAGE_STATUS_LABEL[st]} <span className="num">{st === 'IN_PROGRESS' ? s.timeline.onTrack : st === 'DELAYED' ? s.timeline.delayed : s.timeline.blocked}</span>
+                  </Badge>
+                </button>
+              ))}
+            </div>
+            <MiniBars rows={s.timeline.overrunBuckets} color="#F59E0B" />
+          </div>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+        <Card>
+          <CardHeader title="Predicted vs observed" subtitle="Mean predicted risk and observed delay rate by assessment month" icon={<TrendingUp className="h-4 w-4" />} />
+          <div className="h-[260px] px-2 pb-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={s.trend.map((t) => ({ ...t, month: t.month.slice(2) }))} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={tick} />
+                <YAxis tickLine={false} axisLine={false} tick={tick} unit="%" domain={[0, 100]} />
+                <Tooltip content={<ChartTooltip formatter={(v) => `${v}%`} />} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Line dataKey="predicted" name="Mean predicted" stroke={CHART_COLORS.brand} strokeWidth={2.2} dot={false} />
+                <Line dataKey="observed" name="Observed delay rate" stroke={CHART_COLORS.saffron} strokeWidth={2} strokeDasharray="4 4" dot={false} connectNulls />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <Card>
+          <CardHeader title="Highest-risk projects" subtitle="With the top triggered action" icon={<AlertOctagon className="h-4 w-4" />} />
+          <div className="divide-y divide-line">
+            {s.topProjects.map((p) => (
+              <button key={p.id} onClick={() => navigate(`/projects/${p.id}`)} className="flex w-full items-center gap-3 px-5 py-2.5 text-left hover:bg-surface-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[12.5px] font-semibold text-ink">{p.name}</span>
+                  <span className="block truncate text-[10.5px] text-ink-3">
+                    {p.district}, {p.state} · {p.stage} ({STAGE_STATUS_LABEL[p.stageStatus]}){p.topAction ? ` · ${p.topAction}` : ''}
+                  </span>
+                </span>
+                <RiskPill level={p.riskBand} score={p.riskScore} size="sm" />
+              </button>
+            ))}
+          </div>
+        </Card>
+      </section>
+    </div>
+  );
+}
+
+function MiniBars({ rows, color }: { rows: Array<{ key: string; count: number }>; color: string }) {
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  return (
+    <div className="space-y-1.5">
+      {rows.map((r) => (
+        <div key={r.key} className="flex items-center gap-2 text-[11px]">
+          <span className="w-[92px] shrink-0 truncate text-ink-3" title={r.key}>
+            {r.key}
+          </span>
+          <span className="h-2 flex-1 overflow-hidden rounded-full bg-surface-3">
+            <span className="block h-full rounded-full" style={{ width: `${(r.count / max) * 100}%`, background: color }} />
+          </span>
+          <span className="w-8 text-right font-bold text-ink num">{formatNumber(r.count)}</span>
+        </div>
+      ))}
     </div>
   );
 }

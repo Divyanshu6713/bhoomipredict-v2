@@ -248,7 +248,7 @@ export default function About() {
           <ul className="space-y-2.5 px-5 pb-5">
             {[
               'All data is synthetic. Metrics demonstrate that the pipeline learns the structure in the corpus; they say nothing about real-world accuracy.',
-              'Coordinates are district centroids with jitter, not surveyed parcel geometry — the GIS layer is schematic by construction.',
+              'Administrative boundaries are real (Survey of India depiction, via INDIAN-SHAPEFILES); project and parcel coordinates are synthetic points sampled inside the real district polygon, not surveyed parcel geometry or real project sites.',
               'The corpus has no litigation text, no court calendars, no photographs and no field notes, so none of those signals are modelled.',
               'Risk is estimated for a single milestone horizon. Total project duration is not forecast.',
               'Scenario estimates assume every unchanged field stays as recorded, which real interventions rarely respect.',

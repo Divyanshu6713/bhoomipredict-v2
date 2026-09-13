@@ -1,10 +1,9 @@
 /**
  * BhoomiPredict API.
  *
- * A dependency-free Node HTTP service over the columnar case store. It exists so
- * that filtering, sorting, paging and aggregation of the 350,000-case corpus
- * happen server-side: the browser only ever receives the page or the aggregate
- * it asked for, never the corpus.
+ * A dependency-free Node HTTP service over the columnar case store and the
+ * runtime workflow state. Filtering, sorting, paging and aggregation happen
+ * server-side; every data endpoint is scoped to the signed-in user's role.
  *
  *   node server/index.mjs            # port 5179, or PORT / BP_API_PORT
  *
@@ -15,6 +14,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { loadStore, caseAt, isoFromDay, featureContributionsFor, DATA } from './lib/store.mjs';
 import {
@@ -25,143 +25,155 @@ import {
   queryContributors,
   queryCaseRows,
   contributorsFor,
+  clearCache,
 } from './lib/query.mjs';
 import { scoreRecord, predictionSpec, defaultRecord, recordFromCase } from './lib/scorer.mjs';
-import { interventionFor } from './lib/interventions.mjs';
+import { loadState, getState, saveState, flushState, recordAudit, queryAudit } from './lib/persistence.mjs';
+import {
+  attachStore,
+  effectiveProjects,
+  getProject,
+  projectSummary,
+  createProject,
+  updateProject,
+  deleteProject,
+  restoreProject,
+  advanceStage,
+  deletedProjects,
+  touchProjects,
+  ServiceError,
+} from './lib/projects.mjs';
+import { listInterventions, updateIntervention, listAlerts, updateAlert, notificationCount, allInterventions, INTERVENTION_STATUSES, ALERT_STATUSES } from './lib/workflow.mjs';
+import { scoreScenario, scenarioOptions, scenarioSeedForProject } from './lib/scenario.mjs';
+import { dashboardSummary, scopedProjects } from './lib/dashboard.mjs';
+import { uploadDocument, addVersion, reviewDocument, listDocuments, documentFile, DOCUMENT_TYPES, MAX_BYTES } from './lib/documents.mjs';
+import { processUpload, csvTemplate } from './lib/upload.mjs';
+import { startRetrain, jobStatus, pythonAvailable } from './lib/jobs.mjs';
+import { runConsistencyChecks } from './lib/consistency.mjs';
+import { USERS, ROLES, userById, can, inScope, describeUser, CATEGORIES } from './domain/roles.mjs';
+import { evaluateCase, RULE_THRESHOLDS } from './domain/rules.mjs';
+import { FRAMEWORKS, PROJECT_TYPES, PROFILED_STATES, REGISTRY_NOTE, DEPENDENCY_META, authorityOptions } from './domain/registry.mjs';
+import { GEO_DIR, districtIndex } from './domain/geography.mjs';
+import { LIFECYCLE_RULES } from './domain/lifecycle.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 const PORT = Number(process.env.BP_API_PORT ?? process.env.PORT ?? 5179);
 
-const store = loadStore();
+let store = loadStore();
+loadState();
+attachStore(store);
+effectiveProjects();
 console.log(
   `[api] store loaded: ${store.rows.toLocaleString('en-IN')} cases · ${(store.bytes / 1048576).toFixed(1)} MB · ` +
     `${store.projects.length} projects · ${store.loadMs}ms`,
 );
 
+function reloadStore() {
+  store = loadStore();
+  clearCache();
+  attachStore(store);
+  touchProjects();
+  effectiveProjects();
+  console.log(`[api] store reloaded: ${store.rows} cases, model ${store.model?.metrics?.generatedAt}`);
+}
+
 /* ------------------------------------------------------------------ helpers */
 
 const json = (res, body, status = 200, headers = {}) => {
   const payload = JSON.stringify(body);
-  res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'no-store',
-    ...headers,
-  });
-  res.end(payload);
+  const accepts = /\bgzip\b/.test(res.req?.headers['accept-encoding'] ?? '');
+  const base = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers };
+  if (accepts && payload.length > 8192) {
+    res.writeHead(status, { ...base, 'Content-Encoding': 'gzip' });
+    res.end(zlib.gzipSync(payload, { level: 5 }));
+  } else {
+    res.writeHead(status, base);
+    res.end(payload);
+  }
 };
 
 const notFound = (res, message = 'Not found') => json(res, { error: message }, 404);
-
 const paramsOf = (url) => Object.fromEntries(url.searchParams.entries());
 
-const readBody = (req) =>
+const readRaw = (req, limit) =>
   new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
     req.on('data', (c) => {
       size += c.length;
-      if (size > 1_000_000) {
-        reject(new Error('payload too large'));
+      if (size > limit) {
+        reject(new ServiceError(`Payload larger than ${Math.round(limit / 1048576)} MB`, 413));
         req.destroy();
         return;
       }
       chunks.push(c);
     });
-    req.on('end', () => {
-      if (!chunks.length) return resolve({});
-      try {
-        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
-      } catch (err) {
-        reject(err);
-      }
-    });
+    req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 
+async function readBody(req) {
+  const buf = await readRaw(req, 1_000_000);
+  if (!buf.length) return {};
+  try {
+    return JSON.parse(buf.toString('utf8'));
+  } catch {
+    throw new ServiceError('Request body is not valid JSON', 400);
+  }
+}
+
+/* -------------------------------------------------------------------- auth */
+
+function sessionUser(req, url) {
+  const header = req.headers.authorization ?? '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : url.searchParams.get('token');
+  if (!token) return null;
+  const session = getState().sessions[token];
+  if (!session) return null;
+  return userById(session.userId);
+}
+
+function requireUser(req, url) {
+  const user = sessionUser(req, url);
+  if (!user) throw new ServiceError('Sign in required', 401);
+  return user;
+}
+
+function requirePermission(user, permission) {
+  if (!can(user, permission)) throw new ServiceError(`${ROLES[user.role].label} does not have permission for ${permission}`, 403);
+}
+
+function projectInScopeOr404(user, id) {
+  const p = getProject(decodeURIComponent(id));
+  if (!p) throw new ServiceError('Project not found', 404);
+  if (!inScope(user, p)) throw new ServiceError('This project is outside your jurisdiction', 403);
+  return p;
+}
+
+/** Corpus project ids visible to the user, as a filter for case-level queries. */
+function scopeFilter(user, p) {
+  if (ROLES[user.role].scope === 'national') return p;
+  const ids = scopedProjects(user).filter((x) => x.source === 'corpus').map((x) => x.id);
+  const requested = p.projectId ? p.projectId.split(',') : null;
+  const allowed = requested ? requested.filter((id) => ids.includes(id)) : ids;
+  return { ...p, projectId: allowed.length ? allowed.join(',') : '__none__' };
+}
+
 /* --------------------------------------------------------------- endpoints */
 
-function projectDetail(id) {
-  const idx = store.projectById.get(id);
-  if (idx === undefined) return null;
-  const project = store.projects[idx];
-  const start = store.ranges[idx * 2];
-  const end = store.ranges[idx * 2 + 1];
-  const c = store.col;
-
-  // Case-level rollups for this project, computed on its own contiguous range.
-  let open = 0;
-  let observed = 0;
-  let delayed = 0;
-  let areaOpen = 0;
-  let compSum = 0;
-  let qualitySum = 0;
-  let inactivitySum = 0;
-  let legalCases = 0;
-  let legalParcels = 0;
-  let familiesSum = 0;
-  const band = [0, 0, 0, 0];
-  const worst = [];
-
-  for (let row = start; row < end; row++) {
-    compSum += c.compCompletion[row];
-    qualitySum += c.quality[row];
-    inactivitySum += c.inactivity[row];
-    legalCases += c.legalCases[row];
-    legalParcels += c.legalDispute[row];
-    if (c.families[row] > 0) familiesSum += c.families[row];
-    if (c.observed[row] === 1) {
-      observed++;
-      if (c.delayed[row] === 1) delayed++;
-    } else {
-      open++;
-      areaOpen += c.areaHa[row];
-      band[c.riskBand[row]]++;
-      worst.push(row);
-    }
-  }
-  worst.sort((a, b) => c.score[b] - c.score[a]);
-
-  const topCases = worst.slice(0, 8).map((row) => caseAt(store, row, { withContributors: true }));
-  const total = end - start;
-
+function caseStatusOf(c) {
+  const overlay = getState().caseStatus[c.caseId];
   return {
-    project: {
-      ...project,
-      compensationCompletionPct: Number((compSum / Math.max(1, total)).toFixed(1)),
-      dataQuality: Math.round(qualitySum / Math.max(1, total)),
-      avgInactivityDays: Number((inactivitySum / Math.max(1, total)).toFixed(1)),
-      legalCases,
-      legalDisputeParcels: legalParcels,
-      affectedFamilies: familiesSum,
-      openCases: open,
-      observedCases: observed,
-      observedDelayRate: observed ? Number((delayed / observed).toFixed(4)) : 0,
-      openAreaHa: Number(areaOpen.toFixed(1)),
-      riskMix: { Low: band[0], Medium: band[1], High: band[2], Critical: band[3] },
-      highRiskCases: band[2] + band[3],
-      criticalCases: band[3],
-    },
-    topCases,
-    intervention: interventionFor(project.contributors[0]?.group ?? 'Other'),
-    contributors: project.contributors,
-    stageRisk: project.stageRisk,
-    riskHistory: project.riskHistory.map((value, i) => ({
-      month: isoFromDay(store.todayDay - (11 - i) * 30).slice(0, 7),
-      riskScore: value,
-    })),
+    caseStatus: overlay?.status ?? (c.labelObserved ? 'CLOSED' : 'OPEN'),
+    caseStatusNote: overlay?.note ?? null,
+    caseStatusUpdatedAt: overlay?.at ?? null,
+    caseStatusUpdatedBy: overlay?.byName ?? null,
   };
 }
 
-function summaryPayload() {
-  return {
-    ...store.summary,
-    store: { rows: store.rows, bytes: store.bytes, loadMs: store.loadMs },
-  };
-}
-
-function projectList(p) {
+function projectList(user, p) {
   const risk = p.risk ? p.risk.split(',') : null;
   const stages = p.stage ? p.stage.split(',') : null;
   const states = p.state ? p.state.split(',') : null;
@@ -169,10 +181,11 @@ function projectList(p) {
   const authorities = p.authority ? p.authority.split(',') : null;
   const priorities = p.priority ? p.priority.split(',') : null;
   const districts = p.district ? p.district.split(',') : null;
+  const statuses = p.status ? p.status.split(',') : null;
+  const sources = p.source ? p.source.split(',') : null;
   const q = p.q ? p.q.trim().toLowerCase() : null;
-  const statusFilter = p.status ? p.status.split(',') : null;
 
-  let rows = store.projects.filter((pr) => {
+  let rows = scopedProjects(user).filter((pr) => {
     if (risk && !risk.includes(pr.riskBand)) return false;
     if (stages && !stages.includes(pr.currentStage)) return false;
     if (states && !states.includes(pr.state)) return false;
@@ -180,13 +193,12 @@ function projectList(p) {
     if (authorities && !authorities.includes(pr.authority)) return false;
     if (priorities && !priorities.includes(pr.priority)) return false;
     if (districts && !pr.districts.some((d) => districts.includes(d))) return false;
-    if (statusFilter) {
-      const milestoneStatus = pr.stages[pr.currentStageIndex].status;
-      if (!statusFilter.includes(milestoneStatus)) return false;
-    }
-    if (q && !`${pr.name} ${pr.id} ${pr.state} ${pr.authority} ${pr.districts.join(' ')}`.toLowerCase().includes(q)) {
-      return false;
-    }
+    if (statuses && !statuses.includes(pr.lifecycle.currentStatus)) return false;
+    if (sources && !sources.includes(pr.source)) return false;
+    if (p.flag === 'delayed' && !pr.lifecycle.isDelayed) return false;
+    if (p.flag === 'blocked' && !pr.lifecycle.isBlocked) return false;
+    if (p.flag === 'action' && !pr.recommendations.some((r) => r.intervention && ['High', 'Critical'].includes(r.severity))) return false;
+    if (q && !`${pr.name} ${pr.id} ${pr.state} ${pr.authority} ${pr.districts.join(' ')} ${pr.type} ${pr.subtype ?? ''}`.toLowerCase().includes(q)) return false;
     return true;
   });
 
@@ -194,17 +206,18 @@ function projectList(p) {
   const dir = p.dir === 'asc' ? 1 : -1;
   const key = {
     risk: (x) => x.riskScore,
-    progress: (x) => x.progressPct,
+    progress: (x) => x.progressPct ?? 0,
     parcels: (x) => x.totalParcels,
-    open: (x) => x.openCases,
-    highRisk: (x) => x.highRiskCases,
+    open: (x) => x.openCases ?? 0,
+    highRisk: (x) => x.highRiskCases ?? 0,
     deadline: (x) => -new Date(x.milestoneDeadline).getTime(),
     name: (x) => x.name,
     area: (x) => x.landRequirementHa,
     families: (x) => x.affectedFamilies,
-    quality: (x) => x.dataQuality,
+    quality: (x) => x.dataQuality ?? 0,
+    delay: (x) => x.predictedDelayDays ?? 0,
+    backlog: (x) => x.lifecycle.residualBacklog,
   }[sort] ?? ((x) => x.riskScore);
-
   rows = [...rows].sort((a, b) => {
     const av = key(a);
     const bv = key(b);
@@ -212,7 +225,7 @@ function projectList(p) {
     return (av - bv) * dir;
   });
 
-  const pageSize = Math.min(100, Math.max(1, Number(p.pageSize ?? 20)));
+  const pageSize = Math.min(500, Math.max(1, Number(p.pageSize ?? 20)));
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
   const page = Math.min(Math.max(1, Number(p.page ?? 1)), pages);
 
@@ -222,88 +235,127 @@ function projectList(p) {
     pages,
     pageSize,
     aggregate: {
-      openCases: rows.reduce((s, r) => s + r.openCases, 0),
+      openCases: rows.reduce((s, r) => s + (r.openCases ?? 0), 0),
       totalParcels: rows.reduce((s, r) => s + r.totalParcels, 0),
-      highRiskCases: rows.reduce((s, r) => s + r.highRiskCases, 0),
+      highRiskCases: rows.reduce((s, r) => s + (r.highRiskCases ?? 0), 0),
       landRequirementHa: Math.round(rows.reduce((s, r) => s + r.landRequirementHa, 0)),
-      affectedFamilies: rows.reduce((s, r) => s + r.affectedFamilies, 0),
+      affectedFamilies: rows.reduce((s, r) => s + (r.affectedFamilies ?? 0), 0),
       avgRisk: rows.length ? Math.round(rows.reduce((s, r) => s + r.riskScore, 0) / rows.length) : 0,
-      delayedMilestones: rows.filter((r) => r.stages[r.currentStageIndex].daysRemaining < 0).length,
-      riskMix: ['Low', 'Medium', 'High', 'Critical'].reduce((acc, b) => {
-        acc[b] = rows.filter((r) => r.riskBand === b).length;
-        return acc;
-      }, {}),
+      delayedProjects: rows.filter((r) => r.lifecycle.isDelayed).length,
+      blockedProjects: rows.filter((r) => r.lifecycle.isBlocked).length,
+      delayedMilestones: rows.filter((r) => r.lifecycle.isDelayed).length,
+      residualBacklog: rows.reduce((s, r) => s + r.lifecycle.residualBacklog, 0),
+      riskMix: ['Low', 'Medium', 'High', 'Critical'].reduce((acc, b) => ((acc[b] = rows.filter((r) => r.riskBand === b).length), acc), {}),
     },
-    projects: rows.slice((page - 1) * pageSize, page * pageSize).map((pr) => ({
-      id: pr.id,
-      name: pr.name,
-      type: pr.type,
-      state: pr.state,
-      districts: pr.districts,
-      authority: pr.authority,
-      priority: pr.priority,
-      currentStage: pr.currentStage,
-      currentStageIndex: pr.currentStageIndex,
-      currentMilestone: pr.currentMilestone,
-      milestoneDeadline: pr.milestoneDeadline,
-      milestoneStatus: pr.stages[pr.currentStageIndex].status,
-      daysRemaining: pr.stages[pr.currentStageIndex].daysRemaining,
-      progressPct: pr.progressPct,
-      totalParcels: pr.totalParcels,
-      openCases: pr.openCases,
-      highRiskCases: pr.highRiskCases,
-      criticalCases: pr.criticalCases,
-      landRequirementHa: pr.landRequirementHa,
-      affectedFamilies: pr.affectedFamilies,
-      compensationStatus: pr.compensationStatus,
-      compensationCompletionPct: pr.compensationCompletionPct,
-      possessionStatus: pr.possessionStatus,
-      rrStatus: pr.rrStatus,
-      legalCases: pr.legalCases,
-      dominantOwnership: pr.dominantOwnership,
-      stakeholderResponsiveness: pr.stakeholderResponsiveness,
-      riskScore: pr.riskScore,
-      riskBand: pr.riskBand,
-      delayProbability: pr.delayProbability,
-      riskBasis: pr.riskBasis,
-      dataQuality: pr.dataQuality,
-      topContributor: pr.contributors[0]?.group ?? null,
-      budgetCr: pr.budgetCr,
-      startDate: pr.startDate,
-      targetCompletionDate: pr.targetCompletionDate,
-    })),
+    projects: rows.slice((page - 1) * pageSize, page * pageSize).map(projectSummary),
   };
 }
 
-function facets() {
-  const uniq = (fn) => Array.from(new Set(store.projects.map(fn))).sort();
+function projectDetail(user, p) {
+  let topCases = [];
+  let openAreaHa = null;
+  if (p.storeIndex !== undefined) {
+    const start = store.ranges[p.storeIndex * 2];
+    const end = store.ranges[p.storeIndex * 2 + 1];
+    const c = store.col;
+    const worst = [];
+    let area = 0;
+    for (let row = start; row < end; row++) {
+      if (c.observed[row] === 0) {
+        worst.push(row);
+        area += c.areaHa[row];
+      }
+    }
+    worst.sort((a, b) => c.score[b] - c.score[a]);
+    topCases = worst.slice(0, 8).map((row) => {
+      const cs = caseAt(store, row, { withContributors: true });
+      return { ...cs, ...caseStatusOf(cs) };
+    });
+    openAreaHa = Number(area.toFixed(1));
+  }
+  const { recommendations, riskSnapshots, ...rest } = p;
+  const related = new Set([`project:${p.id}`]);
+  const interventions = listInterventions(user, { projectId: p.id, includeClosed: '1', pageSize: 100 }).items;
+  const alerts = listAlerts(user, { projectId: p.id, pageSize: 100 }).items;
+  const docs = listDocuments(user, { projectId: p.id }, effectiveProjects().byId);
+  interventions.forEach((i) => related.add(`intervention:${i.id}`));
+  alerts.forEach((a) => related.add(`alert:${a.id}`));
+  docs.documents.forEach((d) => related.add(`document:${d.id}`));
+  const activity = queryAudit({ pageSize: 200 }).entries.filter((e) => related.has(`${e.entity}:${e.entityId}`) || (e.entity === 'case' && topCases.some((c) => c.caseId === e.entityId)) || e.newValue?.projectId === p.id).slice(0, 40);
+
+  return {
+    project: { ...rest, openAreaHa },
+    summary: projectSummary(p),
+    topCases,
+    recommendations,
+    riskSnapshots,
+    interventions,
+    alerts,
+    documents: docs,
+    activity,
+    scenarioSeed: scenarioSeedForProject(p),
+    permissions: {
+      edit: can(user, 'project.edit'),
+      delete: can(user, 'project.delete'),
+      advanceStage: can(user, 'project.advanceStage'),
+      uploadDocument: docs.allowedTypes.length > 0 && can(user, 'document.upload'),
+      reviewDocument: can(user, 'document.review'),
+      updateIntervention: can(user, 'intervention.update'),
+      assignIntervention: can(user, 'intervention.assign'),
+      updateAlert: can(user, 'alert.update'),
+    },
+  };
+}
+
+function facets(user) {
+  const projects = scopedProjects(user);
+  const uniq = (fn) => Array.from(new Set(projects.map(fn))).sort();
   return {
     states: uniq((p) => p.state),
-    projectTypes: uniq((p) => p.type),
+    projectTypes: Object.keys(PROJECT_TYPES),
+    subtypes: Object.fromEntries(Object.entries(PROJECT_TYPES).map(([k, v]) => [k, v.subtypes])),
     authorities: uniq((p) => p.authority),
-    priorities: uniq((p) => p.priority),
+    priorities: ['Routine', 'Important', 'Critical'],
     stages: store.stages,
     riskBands: store.bandNames,
     ownership: store.dicts.ownership,
     compensationStatuses: store.dicts.compStatus,
     landTypes: store.dicts.landType,
-    districts: store.districtTable.map((d) => ({ state: d.state, district: d.district, key: d.key })),
-    milestoneStatuses: ['In Progress', 'Delayed', 'Completed', 'Pending'],
+    districts: Array.from(new Map(projects.flatMap((p) => p.districts.map((d) => [`${p.state}|${d}`, { state: p.state, district: d, key: `${p.state}|${d}` }]))).values()).sort((a, b) => a.key.localeCompare(b.key)),
+    stageStatuses: ['IN_PROGRESS', 'DELAYED', 'BLOCKED'],
+    milestoneStatuses: ['IN_PROGRESS', 'DELAYED', 'BLOCKED', 'COMPLETED', 'PENDING'],
+    interventionStatuses: INTERVENTION_STATUSES,
+    alertStatuses: ALERT_STATUSES,
+    categories: CATEGORIES,
+    documentTypes: DOCUMENT_TYPES,
+    roles: Object.entries(ROLES).map(([id, r]) => ({ id, label: r.label })),
     today: store.today,
   };
 }
 
-/** CSV of whatever the current filter selects, streamed straight from the store. */
+function registryOverview() {
+  return {
+    note: REGISTRY_NOTE,
+    frameworks: Object.values(FRAMEWORKS).map((f) => ({ id: f.id, name: f.name, short: f.short, mode: f.mode, siaRequired: f.siaRequired, disputeForum: f.disputeForum, note: f.note ?? null, milestones: f.milestones })),
+    projectTypes: Object.entries(PROJECT_TYPES).map(([name, t]) => ({ name, subtypes: t.subtypes, linear: t.linear, central: t.central })),
+    dependencies: DEPENDENCY_META,
+    profiledStates: PROFILED_STATES,
+    lifecycleRules: LIFECYCLE_RULES,
+    ruleThresholds: RULE_THRESHOLDS,
+  };
+}
+
 function exportCases(res, p) {
   const limit = Math.min(50000, Math.max(1, Number(p.limit ?? 20000)));
   const { total, rows } = queryCaseRows(store, p, limit);
   const head = [
-    'case_id', 'parcel_id', 'project_id', 'project_name', 'state', 'district', 'village',
+    'case_id', 'parcel_id', 'project_id', 'project_name', 'state', 'district', 'taluk_or_tehsil', 'village',
     'current_stage', 'milestone', 'milestone_due_date', 'days_to_milestone', 'land_area_ha',
     'ownership_complexity', 'affected_families', 'compensation_status',
     'compensation_completion_percentage', 'legal_dispute', 'legal_case_count', 'inactivity_days',
-    'document_completeness', 'data_quality_score', 'predicted_delay_risk_percent', 'risk_band',
-    'top_predictive_contributor', 'recommended_review', 'label_observed', 'observed_outcome',
+    'document_completeness', 'pending_dependencies', 'approval_delay_days', 'data_quality_score',
+    'predicted_delay_risk_percent', 'risk_band', 'predicted_delay_days',
+    'top_predictive_contributor', 'label_observed', 'observed_outcome', 'data_source',
   ];
   res.writeHead(200, {
     'Content-Type': 'text/csv; charset=utf-8',
@@ -313,7 +365,6 @@ function exportCases(res, p) {
     'X-Rows-Exported': String(rows.length),
   });
   res.write(`${head.join(',')}\n`);
-
   const q = (v) => (v === null || v === undefined ? '' : /[",]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
   const CHUNK = 2000;
   for (let i = 0; i < rows.length; i += CHUNK) {
@@ -321,12 +372,12 @@ function exportCases(res, p) {
       const c = caseAt(store, row, { withContributors: true });
       const top = c.contributors.find((x) => x.value > 0)?.group ?? null;
       return [
-        c.caseId, c.parcelId, c.projectId, c.projectName, c.state, c.district, c.village,
+        c.caseId, c.parcelId, c.projectId, c.projectName, c.state, c.district, c.tehsil, c.village,
         c.stage, c.milestone, c.milestoneDueDate, c.daysToMilestone, c.areaHa,
         c.ownership, c.affectedFamilies, c.compensationStatus, c.compensationCompletionPct,
         c.legalDispute ? 1 : 0, c.legalCases, c.inactivityDays, c.documentCompleteness,
-        c.dataQuality, c.riskScore, c.riskBand, top, top ? interventionFor(top).action : '',
-        c.labelObserved ? 1 : 0, c.outcome,
+        c.pendingDependencies.join(';'), c.approvalDelayDays, c.dataQuality, c.riskScore, c.riskBand, c.predictedDelayDays,
+        top, c.labelObserved ? 1 : 0, c.outcome, 'SYNTHETIC DEMO DATA',
       ].map(q).join(',');
     });
     res.write(`${lines.join('\n')}\n`);
@@ -334,15 +385,28 @@ function exportCases(res, p) {
   res.end();
 }
 
-/** Stream a data file, gzipped when the client accepts it. */
+function exportProjects(res, user, p) {
+  const { projects } = projectList(user, { ...p, pageSize: 500, page: 1 });
+  const cols = Object.keys(projects[0] ?? { id: '' }).filter((k) => !['districts', 'supportingDepartments'].includes(k));
+  const q = (v) => (v === null || v === undefined ? '' : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+  res.writeHead(200, {
+    'Content-Type': 'text/csv; charset=utf-8',
+    'Content-Disposition': `attachment; filename="bhoomipredict-projects-${store.today}.csv"`,
+    'Cache-Control': 'no-store',
+  });
+  res.write(`${[...cols, 'districts', 'supporting_departments'].join(',')}\n`);
+  for (const r of projects) res.write(`${[...cols.map((c) => q(r[c])), q(r.districts.join('; ')), q(r.supportingDepartments.join('; '))].join(',')}\n`);
+  res.end();
+}
+
 function streamFile(req, res, filePath, contentType, downloadName) {
   if (!fs.existsSync(filePath)) return notFound(res, `${path.basename(filePath)} has not been generated yet`);
   const stat = fs.statSync(filePath);
-  const acceptsGzip = /\bgzip\b/.test(req.headers['accept-encoding'] ?? '') && contentType.startsWith('text');
+  const acceptsGzip = /\bgzip\b/.test(req.headers['accept-encoding'] ?? '') && (contentType.startsWith('text') || contentType.includes('json'));
   const headers = {
     'Content-Type': contentType,
-    'Content-Disposition': `attachment; filename="${downloadName}"`,
-    'Cache-Control': 'no-store',
+    'Content-Disposition': downloadName ? `attachment; filename="${downloadName}"` : 'inline',
+    'Cache-Control': downloadName ? 'no-store' : 'public, max-age=3600',
     'X-Uncompressed-Length': String(stat.size),
   };
   if (acceptsGzip) headers['Content-Encoding'] = 'gzip';
@@ -351,6 +415,21 @@ function streamFile(req, res, filePath, contentType, downloadName) {
   const stream = fs.createReadStream(filePath);
   if (acceptsGzip) stream.pipe(zlib.createGzip({ level: 6 })).pipe(res);
   else stream.pipe(res);
+}
+
+/* ------------------------------------------------------------ boundaries */
+
+const boundaryCache = new Map();
+function boundaries(level, state) {
+  const file = { outline: 'india-outline.json', states: 'india-states.json', districts: 'india-districts.json' }[level];
+  if (!file) throw new ServiceError('level must be outline, states or districts', 422);
+  const k = `${level}|${state ?? ''}`;
+  if (!boundaryCache.has(k)) {
+    const raw = JSON.parse(fs.readFileSync(path.join(GEO_DIR, file), 'utf8'));
+    const features = level === 'districts' && state ? raw.features.filter((f) => f.properties.state === state) : raw.features;
+    boundaryCache.set(k, JSON.stringify({ type: 'FeatureCollection', attribution: raw.attribution, features }));
+  }
+  return boundaryCache.get(k);
 }
 
 /* ----------------------------------------------------------------- routing */
@@ -368,14 +447,7 @@ const MIME = {
 
 function serveStatic(req, res, pathname) {
   if (!fs.existsSync(DIST)) {
-    return json(
-      res,
-      {
-        error: 'Front end bundle not found',
-        hint: 'Run "npm run build" for production, or "npm run dev" which serves the app from Vite.',
-      },
-      404,
-    );
+    return json(res, { error: 'Front end bundle not found', hint: 'Run "npm run build" for production, or "npm run dev" which serves the app from Vite.' }, 404);
   }
   const rel = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
   const file = path.join(DIST, rel);
@@ -389,169 +461,402 @@ function serveStatic(req, res, pathname) {
   fs.createReadStream(target).pipe(res);
 }
 
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
+const route = (method, pattern) => (req, pathname) => {
+  if (req.method !== method) return null;
+  if (typeof pattern === 'string') return pathname === pattern ? [] : null;
+  const m = pattern.exec(pathname);
+  return m ? m.slice(1).map(decodeURIComponent) : null;
+};
+
+async function handle(req, res, url) {
   const { pathname } = url;
   const p = paramsOf(url);
+  const at = (method, pattern) => route(method, pattern)(req, pathname);
+  let m;
 
+  /* ------------------------------------------------------------- public */
+  if (at('GET', '/api/health')) {
+    return json(res, {
+      ok: true,
+      rows: store.rows,
+      projects: effectiveProjects().list.length,
+      today: store.today,
+      storeBytes: store.bytes,
+      shap: store.meta.shapAvailable,
+      model: store.model?.metrics?.generatedAt ?? null,
+      uptimeSeconds: Math.round(process.uptime()),
+    });
+  }
+  if (at('GET', '/api/auth/users')) {
+    return json(res, { note: 'Demonstration profiles. A production deployment authenticates through government SSO and maps directory attributes onto these roles.', users: USERS.map(describeUser) });
+  }
+  if (at('POST', '/api/auth/login')) {
+    const body = await readBody(req);
+    const user = userById(body.userId);
+    if (!user) throw new ServiceError('Unknown profile', 404);
+    const token = crypto.randomBytes(24).toString('hex');
+    getState().sessions[token] = { userId: user.id, createdAt: new Date().toISOString() };
+    saveState();
+    recordAudit({ user, action: 'session.signed_in', entity: 'user', entityId: user.id });
+    return json(res, { token, user: describeUser(user) });
+  }
+  if (at('POST', '/api/auth/logout')) {
+    const header = req.headers.authorization ?? '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    const user = sessionUser(req, url);
+    if (token && getState().sessions[token]) {
+      delete getState().sessions[token];
+      saveState();
+      if (user) recordAudit({ user, action: 'session.signed_out', entity: 'user', entityId: user.id });
+    }
+    return json(res, { ok: true });
+  }
+  if (at('GET', '/api/summary')) return json(res, { ...store.summary, store: { rows: store.rows, bytes: store.bytes, loadMs: store.loadMs } });
+  if (at('GET', '/api/geo/boundaries')) {
+    const body = boundaries(p.level ?? 'states', p.state);
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=86400', ...(/\bgzip\b/.test(req.headers['accept-encoding'] ?? '') ? { 'Content-Encoding': 'gzip' } : {}) });
+    return res.end(/\bgzip\b/.test(req.headers['accept-encoding'] ?? '') ? zlib.gzipSync(body) : body);
+  }
+
+  /* ------------------------------------------------------ authenticated */
+  const user = requireUser(req, url);
+
+  if (at('GET', '/api/auth/me') || at('GET', '/api/profile')) {
+    const projects = scopedProjects(user);
+    const mine = listInterventions(user, { mine: '1', pageSize: 100 });
+    const assignedCases = Array.from(new Set(mine.items.flatMap((i) => i.caseIds))).slice(0, 25);
+    return json(res, {
+      user: describeUser(user),
+      notifications: notificationCount(user),
+      assignedProjects: projects
+        .filter((pr) => mine.items.some((i) => i.projectId === pr.id))
+        .slice(0, 25)
+        .map((pr) => ({ id: pr.id, name: pr.name, state: pr.state, district: pr.district, riskScore: pr.riskScore, riskBand: pr.riskBand, stage: pr.currentStage, stageStatus: pr.lifecycle.currentStatus })),
+      jurisdiction: { projects: projects.length, highOrCritical: projects.filter((pr) => ['High', 'Critical'].includes(pr.riskBand)).length, delayed: projects.filter((pr) => pr.lifecycle.isDelayed).length },
+      assignedInterventions: mine.total,
+      assignedCases,
+      recentActivity: queryAudit({ userId: user.id, pageSize: 15 }).entries,
+    });
+  }
+  if (at('GET', '/api/notifications')) return json(res, notificationCount(user));
+  if (at('GET', '/api/users')) {
+    return json(res, { users: USERS.map(describeUser).map((u) => ({ id: u.id, name: u.name, designation: u.designation, role: u.role, roleLabel: u.roleLabel, state: u.state, district: u.district, scopeLabel: u.scopeLabel })) });
+  }
+
+  if (at('GET', '/api/facets')) return json(res, facets(user));
+  if (at('GET', '/api/registry')) return json(res, registryOverview());
+  if (at('GET', '/api/geo')) {
+    const projects = scopedProjects(user);
+    const states = new Set(projects.map((pr) => pr.state));
+    const districtKeys = new Set(projects.flatMap((pr) => pr.districts.map((d) => `${pr.state}|${d}`)));
+    return json(res, {
+      today: store.today,
+      states: store.geo.states.filter((s) => states.has(s.state)),
+      districts: store.geo.districts.filter((d) => districtKeys.has(d.key)),
+      attribution: districtIndex().attribution,
+    });
+  }
+  if (at('GET', '/api/model') || at('GET', '/api/metrics')) return json(res, { ...store.model, python: undefined });
+
+  /* ------------------------------------------------------------ projects */
+  if (at('GET', '/api/projects')) return json(res, projectList(user, p));
+  if (at('GET', '/api/projects/map')) {
+    return json(res, {
+      dataSource: 'SYNTHETIC DEMO DATA',
+      projects: scopedProjects(user).map((pr) => ({
+        id: pr.id,
+        name: pr.name,
+        state: pr.state,
+        district: pr.district,
+        districts: pr.districts,
+        type: pr.type,
+        stage: pr.currentStage,
+        stageStatus: pr.lifecycle.currentStatus,
+        riskScore: pr.riskScore,
+        delayProbability: pr.delayProbability,
+        riskBand: pr.riskBand,
+        predictedDelayDays: pr.predictedDelayDays,
+        primaryAuthority: pr.authority,
+        lat: pr.lat,
+        lon: pr.lon,
+        openCases: pr.openCases ?? 0,
+        source: pr.source,
+      })),
+    });
+  }
+  if (at('GET', '/api/projects/deleted')) {
+    requirePermission(user, 'project.delete');
+    return json(res, { projects: deletedProjects() });
+  }
+  if (at('POST', '/api/projects')) {
+    requirePermission(user, 'project.create');
+    const body = await readBody(req);
+    const scopeProbe = { state: body.state, districts: [body.district], authority: body.authority, network: { nodes: [] } };
+    if (!inScope(user, scopeProbe)) throw new ServiceError('You can only create projects inside your jurisdiction', 403);
+    const created = createProject(user, body);
+    return json(res, { project: projectSummary(created) }, 201);
+  }
+  if ((m = at('GET', /^\/api\/projects\/([^/]+)$/))) return json(res, projectDetail(user, projectInScopeOr404(user, m[0])));
+  if ((m = at('PUT', /^\/api\/projects\/([^/]+)$/))) {
+    requirePermission(user, 'project.edit');
+    const pr = projectInScopeOr404(user, m[0]);
+    const updated = updateProject(user, pr.id, await readBody(req));
+    return json(res, { project: projectSummary(updated) });
+  }
+  if ((m = at('DELETE', /^\/api\/projects\/([^/]+)$/))) {
+    requirePermission(user, 'project.delete');
+    const pr = projectInScopeOr404(user, m[0]);
+    const body = await readBody(req);
+    deleteProject(user, pr.id, { reason: body.reason });
+    return json(res, { ok: true, id: pr.id, restorable: true });
+  }
+  if ((m = at('POST', /^\/api\/projects\/([^/]+)\/restore$/))) {
+    requirePermission(user, 'project.delete');
+    const restored = restoreProject(user, m[0]);
+    return json(res, { project: projectSummary(restored) });
+  }
+  if ((m = at('POST', /^\/api\/projects\/([^/]+)\/advance-stage$/))) {
+    requirePermission(user, 'project.advanceStage');
+    const pr = projectInScopeOr404(user, m[0]);
+    const updated = advanceStage(user, pr.id, await readBody(req));
+    return json(res, { project: projectSummary(updated) });
+  }
+  if ((m = at('GET', /^\/api\/projects\/([^/]+)\/cases$/))) {
+    const pr = projectInScopeOr404(user, m[0]);
+    if (pr.storeIndex === undefined) return json(res, { total: 0, page: 1, pages: 1, pageSize: 10, rows: [], aggregate: null, queryMs: 0, note: 'No case-level records are attached to this project.' });
+    const result = queryCases(store, { ...p, projectId: pr.id });
+    return json(res, { ...result, rows: result.rows.map((r) => ({ ...r, ...caseStatusOf(r) })) });
+  }
+
+  /* --------------------------------------------------------------- cases */
+  if (at('GET', '/api/cases')) {
+    const result = queryCases(store, scopeFilter(user, p));
+    return json(res, { ...result, rows: result.rows.map((r) => ({ ...r, ...caseStatusOf(r) })) });
+  }
+  if ((m = at('GET', /^\/api\/cases\/([^/]+)$/))) {
+    const mm = /^LAC-(\d+)$/i.exec(m[0]);
+    const row = mm ? Number(mm[1]) - 500000 : -1;
+    if (!(row >= 0 && row < store.rows)) throw new ServiceError('Case not found', 404);
+    const projectBase = store.projects[store.col.projectIdx[row]];
+    const project = getProject(projectBase.id);
+    if (!project) throw new ServiceError('The project for this case has been deleted', 410);
+    if (!inScope(user, project)) throw new ServiceError('This case is outside your jurisdiction', 403);
+    const detail = caseAt(store, row, { withContributors: true });
+    const withStatus = { ...detail, ...caseStatusOf(detail) };
+    return json(res, {
+      case: { ...withStatus, featureContributions: featureContributionsFor(store, row) },
+      project: projectSummary(project),
+      network: project.network,
+      stage: project.stages[detail.stageIndex],
+      recommendations: evaluateCase(withStatus, project),
+      documents: listDocuments(user, { caseId: detail.caseId }, effectiveProjects().byId).documents,
+      activity: queryAudit({ entity: 'case', entityId: detail.caseId, pageSize: 20 }).entries,
+      permissions: { updateCase: can(user, 'case.update') },
+      explanation: {
+        basis: store.meta.shapAvailable ? 'TreeSHAP on the deployed ensemble' : 'linear surrogate',
+        unit: 'log-odds contribution to the predicted risk',
+        baseValue: store.model.metrics.shap?.baseValue ?? null,
+        caveat: 'These factors contributed most to the model’s prediction for this case. They are not a finding that any factor caused a delay.',
+      },
+    });
+  }
+  if ((m = at('PATCH', /^\/api\/cases\/([^/]+)\/status$/))) {
+    requirePermission(user, 'case.update');
+    const mm = /^LAC-(\d+)$/i.exec(m[0]);
+    const row = mm ? Number(mm[1]) - 500000 : -1;
+    if (!(row >= 0 && row < store.rows)) throw new ServiceError('Case not found', 404);
+    const project = getProject(store.projects[store.col.projectIdx[row]].id);
+    if (!project || !inScope(user, project)) throw new ServiceError('This case is outside your jurisdiction', 403);
+    const body = await readBody(req);
+    const allowed = ['OPEN', 'UNDER_REVIEW', 'ESCALATED', 'ON_HOLD', 'RESOLVED_PENDING_RESCORE'];
+    if (!allowed.includes(body.status)) throw new ServiceError(`Case status must be one of: ${allowed.join(', ')}`, 422);
+    if (!body.note || String(body.note).trim().length < 5) throw new ServiceError('A note of at least 5 characters is required', 422);
+    const key = `LAC-${500000 + row}`;
+    const state = getState();
+    const before = state.caseStatus[key] ?? { status: store.col.observed[row] ? 'CLOSED' : 'OPEN' };
+    state.caseStatus[key] = { status: body.status, note: String(body.note).slice(0, 500), by: user.id, byName: user.name, at: new Date().toISOString() };
+    saveState();
+    recordAudit({ user, action: 'case.status_changed', entity: 'case', entityId: key, oldValue: { status: before.status }, newValue: { status: body.status, projectId: project.id }, note: body.note });
+    return json(res, { caseId: key, ...state.caseStatus[key] });
+  }
+
+  if (at('GET', '/api/queue')) return json(res, queryQueue(store, scopeFilter(user, p)));
+  if (at('GET', '/api/map/points')) return json(res, queryMapPoints(store, scopeFilter(user, p)));
+  if (at('GET', '/api/breakdown')) return json(res, queryBreakdown(store, scopeFilter(user, p)));
+  if (at('GET', '/api/contributors')) return json(res, queryContributors(store, scopeFilter(user, p)));
+
+  /* ----------------------------------------------------------- prediction */
+  if (at('GET', '/api/predict/spec')) return json(res, { ...predictionSpec(store), defaults: defaultRecord(store) });
+  if (at('GET', '/api/predict/case')) {
+    const mm = /^LAC-(\d+)$/i.exec(p.caseId ?? '');
+    const row = mm ? Number(mm[1]) - 500000 : -1;
+    if (!(row >= 0 && row < store.rows)) throw new ServiceError('Case not found', 404);
+    const record = recordFromCase(store, row);
+    return json(res, {
+      record,
+      ensemble: {
+        probability: Number(store.col.score[row].toFixed(4)),
+        riskScore: Math.min(99, Math.max(1, Math.round(store.col.score[row] * 100))),
+        contributors: contributorsFor(store, row),
+      },
+      surrogate: scoreRecord(store.surrogate, record),
+    });
+  }
+  if (at('POST', '/api/predict')) {
+    const body = await readBody(req);
+    const record = { ...defaultRecord(store), ...(body.record ?? body) };
+    // The registry decides which acquiring bodies a project type can have; an
+    // inconsistent pair is rejected rather than scored.
+    if (body.record?.project_type && body.record?.authority && body.record?.state) {
+      const options = authorityOptions({ projectType: record.project_type, state: record.state, district: body.record.district });
+      const typeKnown = Boolean(PROJECT_TYPES[record.project_type]);
+      if (typeKnown && options.length && !options.includes(record.authority)) {
+        throw new ServiceError(`"${record.authority}" is not an eligible acquiring body for ${record.project_type} in ${record.state}`, 422, { eligible: options });
+      }
+    }
+    const result = scoreRecord(store.surrogate, record);
+    const baseline = body.baseline ? scoreRecord(store.surrogate, { ...defaultRecord(store), ...body.baseline }) : null;
+    return json(res, {
+      record,
+      result,
+      baseline,
+      delta: baseline ? { probability: Number((result.probability - baseline.probability).toFixed(4)), riskScore: Number(((result.probability - baseline.probability) * 100).toFixed(1)) } : null,
+    });
+  }
+  if (at('GET', '/api/scenario/options')) return json(res, scenarioOptions(store, p));
+  if (at('GET', '/api/scenario/seed')) {
+    const pr = projectInScopeOr404(user, p.projectId ?? '');
+    return json(res, { project: projectSummary(pr), seed: scenarioSeedForProject(pr) });
+  }
+  if (at('POST', '/api/scenario/score')) return json(res, scoreScenario(store, await readBody(req)));
+
+  /* ------------------------------------------------------------ workflow */
+  if (at('GET', '/api/dashboard/summary')) return json(res, dashboardSummary(user, p, store));
+  if (at('GET', '/api/interventions')) return json(res, listInterventions(user, p));
+  if ((m = at('PATCH', /^\/api\/interventions\/(.+)$/))) {
+    requirePermission(user, 'intervention.update');
+    return json(res, { intervention: updateIntervention(user, m[0], await readBody(req)) });
+  }
+  if (at('GET', '/api/alerts')) return json(res, listAlerts(user, p));
+  if ((m = at('PATCH', /^\/api\/alerts\/(.+)$/))) {
+    requirePermission(user, 'alert.update');
+    const body = await readBody(req);
+    return json(res, { alert: updateAlert(user, m[0], body.status) });
+  }
+  if (at('GET', '/api/recommendations')) {
+    const pr = projectInScopeOr404(user, p.projectId ?? '');
+    return json(res, { projectId: pr.id, recommendations: pr.recommendations });
+  }
+
+  /* ----------------------------------------------------------- documents */
+  if (at('GET', '/api/documents')) return json(res, listDocuments(user, p, effectiveProjects().byId));
+  if (at('POST', '/api/documents')) {
+    requirePermission(user, 'document.upload');
+    const bytes = await readRaw(req, MAX_BYTES + 1024);
+    const doc = uploadDocument(user, { projectId: p.projectId, title: p.title, type: p.type, stage: p.stage, caseId: p.caseId, fileName: p.fileName }, bytes);
+    return json(res, { document: doc }, 201);
+  }
+  if ((m = at('POST', /^\/api\/documents\/([^/]+)\/versions$/))) {
+    requirePermission(user, 'document.upload');
+    const bytes = await readRaw(req, MAX_BYTES + 1024);
+    return json(res, { document: addVersion(user, m[0], p.fileName, bytes) }, 201);
+  }
+  if ((m = at('PATCH', /^\/api\/documents\/([^/]+)$/))) {
+    requirePermission(user, 'document.review');
+    const body = await readBody(req);
+    touchProjects(); // a rejection feeds the documentation alert rule
+    const doc = reviewDocument(user, m[0], body);
+    touchProjects();
+    return json(res, { document: doc });
+  }
+  if ((m = at('GET', /^\/api\/documents\/([^/]+)\/download$/))) {
+    const f = documentFile(user, m[0], p.version);
+    res.writeHead(200, { 'Content-Type': f.contentType, 'Content-Disposition': `attachment; filename="${f.fileName}"`, 'Cache-Control': 'no-store' });
+    return fs.createReadStream(f.file).pipe(res);
+  }
+
+  /* --------------------------------------------------------------- admin */
+  if (at('GET', '/api/upload/template')) {
+    res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="bhoomipredict-project-upload-template.csv"' });
+    return res.end(csvTemplate());
+  }
+  if (at('POST', '/api/upload')) {
+    requirePermission(user, 'data.upload');
+    const text = (await readRaw(req, 2 * 1024 * 1024)).toString('utf8');
+    const commit = p.commit === '1' || p.commit === 'true';
+    const result = processUpload(user, text, { commit });
+    if (!commit) recordAudit({ user, action: 'upload.validated', entity: 'upload', entityId: new Date().toISOString(), newValue: result.summary ?? { fileErrors: result.fileErrors } });
+    return json(res, result, result.ok || !commit ? 200 : 422);
+  }
+  if (at('POST', '/api/retrain')) {
+    requirePermission(user, 'model.retrain');
+    const result = startRetrain(user, { onSuccess: async () => reloadStore() });
+    recordAudit({ user, action: result.started ? 'model.retrain_started' : 'model.retrain_refused', entity: 'model', entityId: result.job.id ?? 'retrain', note: result.reason ?? null });
+    return json(res, result, result.started ? 202 : 409);
+  }
+  if (at('GET', '/api/retrain/status')) {
+    requirePermission(user, 'admin.view');
+    return json(res, { job: jobStatus(), environment: pythonAvailable(), model: store.model?.metrics?.generatedAt ?? null });
+  }
+  if (at('GET', '/api/audit')) {
+    requirePermission(user, 'audit.view');
+    return json(res, queryAudit(p));
+  }
+  if (at('GET', '/api/validation')) {
+    requirePermission(user, 'admin.view');
+    return json(res, runConsistencyChecks(store));
+  }
+
+  /* ------------------------------------------------------------- exports */
+  if (at('GET', '/api/export/cases.csv')) return exportCases(res, scopeFilter(user, p));
+  if (at('GET', '/api/export/projects.csv')) return exportProjects(res, user, p);
+  if (at('GET', '/api/export/dataset.csv')) return streamFile(req, res, path.join(DATA, 'land_acquisition_synthetic_350k.csv'), 'text/csv; charset=utf-8', 'land_acquisition_synthetic_350k.csv');
+  if (at('GET', '/api/export/dataset.pdf')) return streamFile(req, res, path.join(DATA, 'land_acquisition_synthetic_350k.pdf'), 'application/pdf', 'land_acquisition_synthetic_350k.pdf');
+  if (at('GET', '/api/export/manifest')) {
+    const files = [
+      ['land_acquisition_synthetic_350k.csv', 'Full synthetic corpus (CSV)', '/api/export/dataset.csv'],
+      ['land_acquisition_synthetic_350k.pdf', 'Dataset documentation and tabular export (PDF)', '/api/export/dataset.pdf'],
+    ].map(([name, label, href]) => {
+      const file = path.join(DATA, name);
+      const exists = fs.existsSync(file);
+      return { name, label, href, available: exists, bytes: exists ? fs.statSync(file).size : 0, generatedAt: exists ? fs.statSync(file).mtime.toISOString() : null };
+    });
+    return json(res, { files });
+  }
+
+  return notFound(res, `No such endpoint: ${req.method} ${pathname}`);
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     return res.end();
   }
-
   try {
-    if (pathname === '/api/health') {
-      return json(res, {
-        ok: true,
-        rows: store.rows,
-        projects: store.projects.length,
-        today: store.today,
-        storeBytes: store.bytes,
-        shap: store.meta.shapAvailable,
-        uptimeSeconds: Math.round(process.uptime()),
-      });
-    }
-
-    if (pathname === '/api/summary') return json(res, summaryPayload());
-    if (pathname === '/api/facets') return json(res, facets());
-    if (pathname === '/api/geo') return json(res, store.geo);
-    if (pathname === '/api/model') return json(res, store.model);
-
-    if (pathname === '/api/projects') return json(res, projectList(p));
-
-    const projectMatch = /^\/api\/projects\/([^/]+)$/.exec(pathname);
-    if (projectMatch) {
-      const detail = projectDetail(decodeURIComponent(projectMatch[1]));
-      return detail ? json(res, detail) : notFound(res, 'Project not found');
-    }
-
-    const projectCases = /^\/api\/projects\/([^/]+)\/cases$/.exec(pathname);
-    if (projectCases) {
-      const id = decodeURIComponent(projectCases[1]);
-      if (!store.projectById.has(id)) return notFound(res, 'Project not found');
-      return json(res, queryCases(store, { ...p, projectId: id }));
-    }
-
-    if (pathname === '/api/cases') return json(res, queryCases(store, p));
-
-    const caseMatch = /^\/api\/cases\/([^/]+)$/.exec(pathname);
-    if (caseMatch) {
-      const id = decodeURIComponent(caseMatch[1]);
-      const m = /^LAC-(\d+)$/i.exec(id);
-      const row = m ? Number(m[1]) - 500000 : -1;
-      if (!(row >= 0 && row < store.rows)) return notFound(res, 'Case not found');
-      const detail = caseAt(store, row, { withContributors: true });
-      const top = detail.contributors.find((x) => x.value > 0)?.group ?? 'Other';
-      return json(res, {
-        case: { ...detail, featureContributions: featureContributionsFor(store, row) },
-        project: store.projects[store.col.projectIdx[row]],
-        intervention: interventionFor(top),
-        explanation: {
-          basis: store.meta.shapAvailable ? 'TreeSHAP on the deployed ensemble' : 'linear surrogate',
-          unit: 'log-odds contribution to the predicted risk',
-          baseValue: store.model.metrics.shap?.baseValue ?? null,
-          caveat:
-            'These factors contributed most to the model’s prediction for this case. They are not a finding that any factor caused a delay.',
-        },
-      });
-    }
-
-    if (pathname === '/api/queue') return json(res, queryQueue(store, p));
-    if (pathname === '/api/map/points') return json(res, queryMapPoints(store, p));
-    if (pathname === '/api/breakdown') return json(res, queryBreakdown(store, p));
-    if (pathname === '/api/contributors') return json(res, queryContributors(store, p));
-
-    if (pathname === '/api/predict/spec') {
-      return json(res, { ...predictionSpec(store), defaults: defaultRecord(store) });
-    }
-
-    if (pathname === '/api/predict/case') {
-      const m = /^LAC-(\d+)$/i.exec(p.caseId ?? '');
-      const row = m ? Number(m[1]) - 500000 : -1;
-      if (!(row >= 0 && row < store.rows)) return notFound(res, 'Case not found');
-      const record = recordFromCase(store, row);
-      return json(res, {
-        record,
-        ensemble: {
-          probability: Number(store.col.score[row].toFixed(4)),
-          riskScore: Math.min(99, Math.max(1, Math.round(store.col.score[row] * 100))),
-          contributors: contributorsFor(store, row),
-        },
-        surrogate: scoreRecord(store.surrogate, record),
-      });
-    }
-
-    if (pathname === '/api/predict' && req.method === 'POST') {
-      const body = await readBody(req);
-      const record = { ...defaultRecord(store), ...(body.record ?? body) };
-      const result = scoreRecord(store.surrogate, record);
-      const baseline = body.baseline ? scoreRecord(store.surrogate, { ...defaultRecord(store), ...body.baseline }) : null;
-      return json(res, {
-        record,
-        result,
-        baseline,
-        delta: baseline
-          ? {
-              probability: Number((result.probability - baseline.probability).toFixed(4)),
-              // Taken from the probabilities rather than the displayed scores, so a
-              // saturated case that genuinely moved does not report a flat zero.
-              riskScore: Number(((result.probability - baseline.probability) * 100).toFixed(1)),
-            }
-          : null,
-        intervention: interventionFor(result.increasing[0]?.group ?? 'Other'),
-      });
-    }
-
-    if (pathname === '/api/export/cases.csv') return exportCases(res, p);
-    if (pathname === '/api/export/dataset.csv') {
-      return streamFile(
-        req,
-        res,
-        path.join(DATA, 'land_acquisition_synthetic_350k.csv'),
-        'text/csv; charset=utf-8',
-        'land_acquisition_synthetic_350k.csv',
-      );
-    }
-    if (pathname === '/api/export/dataset.pdf') {
-      return streamFile(
-        req,
-        res,
-        path.join(DATA, 'land_acquisition_synthetic_350k.pdf'),
-        'application/pdf',
-        'land_acquisition_synthetic_350k.pdf',
-      );
-    }
-    if (pathname === '/api/export/manifest') {
-      const files = [
-        ['land_acquisition_synthetic_350k.csv', 'Full synthetic corpus (CSV)', '/api/export/dataset.csv'],
-        ['land_acquisition_synthetic_350k.pdf', 'Dataset documentation and tabular export (PDF)', '/api/export/dataset.pdf'],
-      ].map(([name, label, href]) => {
-        const file = path.join(DATA, name);
-        const exists = fs.existsSync(file);
-        return {
-          name,
-          label,
-          href,
-          available: exists,
-          bytes: exists ? fs.statSync(file).size : 0,
-          generatedAt: exists ? fs.statSync(file).mtime.toISOString() : null,
-        };
-      });
-      return json(res, { files });
-    }
-
-    if (pathname.startsWith('/api/')) return notFound(res, `No such endpoint: ${pathname}`);
-
-    return serveStatic(req, res, pathname);
+    if (url.pathname.startsWith('/api/')) return await handle(req, res, url);
+    return serveStatic(req, res, url.pathname);
   } catch (err) {
+    if (err instanceof ServiceError) return json(res, { error: err.message, details: err.details ?? undefined }, err.status);
     console.error('[api]', err);
     return json(res, { error: err.message ?? 'Internal error' }, 500);
   }
 });
 
+process.on('SIGINT', () => {
+  flushState();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  flushState();
+  process.exit(0);
+});
+
 server.listen(PORT, () => {
   console.log(`[api] listening on http://localhost:${PORT}`);
 });
+
+export { isoFromDay, allInterventions };

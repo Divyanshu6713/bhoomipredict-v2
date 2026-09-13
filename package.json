@@ -17,7 +17,9 @@
     "data:store": "node scripts/build-store.mjs",
     "data:pdf": "node scripts/make-pdf.mjs",
     "data:pdf:full": "node --max-old-space-size=4096 scripts/make-pdf.mjs --full",
-    "data:verify": "node scripts/verify-data.mjs"
+    "data:verify": "node scripts/verify-data.mjs",
+    "test:smoke": "node scripts/smoke-test.mjs",
+    "data:geo": "node scripts/build-geo.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.451.0",
