@@ -116,7 +116,7 @@ export function processUpload(user, text, { commit = false } = {}) {
     const key = `${String(record.project_name ?? '').toLowerCase()}|${String(record.district ?? '').toLowerCase()}`;
     if (seenNames.has(key)) rowErrors.push({ column: 'project_name', message: `Duplicate of row ${seenNames.get(key)} (same project name and district).` });
     else seenNames.set(key, i + 1);
-    if (!rowErrors.length && !inScope(user, { state: value.state, districts: [value.district], authority: value.authority, network: { nodes: [] } })) {
+    if (!rowErrors.length && !inScope(user, { state: value.state, districts: [value.district], type: value.type, authority: value.authority, network: { nodes: [] } })) {
       rowErrors.push({ column: 'state', message: `${value.district}, ${value.state} is outside your jurisdiction.` });
     }
     results.push({ row: i + 1, name: record.project_name ?? '', valid: rowErrors.length === 0, errors: rowErrors, value: rowErrors.length ? null : value });

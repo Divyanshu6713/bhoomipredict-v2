@@ -137,7 +137,7 @@ const FOOTER_H = 26;
 
 function chrome(page, { section, title, pdf }) {
   page.rect(0, 0, page.width, 26, { fill: COLOR.navy });
-  page.text(MARGIN, 17, 'BHOOMIPREDICT  |  SYNTHETIC LAND-ACQUISITION CORPUS', { size: 8, font: 'B', color: COLOR.white });
+  page.text(MARGIN, 17, 'LANDPULSE AI  |  SYNTHETIC LAND-ACQUISITION CORPUS', { size: 8, font: 'B', color: COLOR.white });
   page.text(page.width - MARGIN - 200, 17, `${meta.datasetName}  ·  ${fmt(meta.records)} records`, {
     size: 8,
     color: [0.65, 0.72, 0.85],
@@ -202,7 +202,7 @@ function table(page, { x, top, columns, rows, rowHeight = 13, fontSize = 8, head
 
 function renderTitlePage(page, sampleCount, partPages, volume = null) {
   page.rect(0, 0, page.width, 250, { fill: COLOR.navy });
-  page.text(MARGIN + 12, 60, 'BHOOMIPREDICT', { size: 11, font: 'B', color: [0.55, 0.68, 0.95] });
+  page.text(MARGIN + 12, 60, 'LANDPULSE AI', { size: 11, font: 'B', color: [0.55, 0.68, 0.95] });
   page.text(MARGIN + 12, 100, 'Synthetic Land Acquisition', { size: 26, font: 'B', color: COLOR.white });
   page.text(MARGIN + 12, 132, 'Case Corpus', { size: 26, font: 'B', color: COLOR.white });
   page.text(MARGIN + 12, 162, meta.datasetName, { size: 11, font: 'O', color: [0.62, 0.72, 0.9] });

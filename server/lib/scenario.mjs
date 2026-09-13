@@ -21,6 +21,7 @@
 import { PROJECT_TYPES, LIFECYCLE_STAGES, authorityOptions, buildDependencyNetwork, coordinationScore } from '../domain/registry.mjs';
 import { districtIndex, resolveDistrict } from '../domain/geography.mjs';
 import { evaluateScenario } from '../domain/rules.mjs';
+import { issueProfile } from '../domain/issues.mjs';
 import { scoreRecord, defaultRecord } from './scorer.mjs';
 import { ServiceError, projectRecord, getProject } from './projects.mjs';
 import { dayFromISO, isoFromDay } from '../domain/lifecycle.mjs';
@@ -267,6 +268,7 @@ export function scoreScenario(store, body) {
     baseline,
     delta,
     recommendations: evaluateScenario(pseudo),
+    issues: issueProfile({ projectType: context.projectType, stage: context.stage, framework: network.framework, nodes, record }),
     seedProject: seedProject ? { id: seedProject.id, name: seedProject.name, riskScore: seedProject.riskScore, riskBasis: seedProject.riskBasis } : null,
   };
 }

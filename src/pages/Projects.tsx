@@ -11,11 +11,13 @@ import { STAGE_STATUS_CLASS, STAGE_STATUS_LABEL, RISK_BASIS_LABEL } from '@/lib/
 import { useAuth } from '@/auth/AuthContext';
 import { formatCompact, formatNumber } from '@/lib/format';
 import { useApi, useDebounced, useFilters } from '@/hooks';
+import { ProvenanceBadge } from '@/components/brand/Provenance';
 import { casesCsvUrl, fetchFacets, fetchProjects, projectsCsvUrl } from '@/api/client';
 import type { ProjectSummary } from '@/data/types';
 
 const DEFAULTS = {
   q: '',
+  sector: 'all',
   state: 'all',
   district: 'all',
   flag: 'all',
@@ -41,6 +43,7 @@ export default function Projects() {
   const query = useMemo(
     () => ({
       q: debounced,
+      sector: values.sector,
       state: values.state,
       district: values.district,
       flag: values.flag,
@@ -85,7 +88,7 @@ export default function Projects() {
         <div className="min-w-0">
           <p className="truncate text-[12.5px] font-medium text-ink">{p.state}</p>
           <p className="truncate text-[11px] text-ink-3">{p.districts.join(', ')}</p>
-          {p.source !== 'corpus' && <Badge className="mt-1 border-sky-500/25 bg-sky-500/10 text-sky-600">{p.source === 'upload' ? 'uploaded' : 'added'}</Badge>}
+          {p.source !== 'corpus' && <ProvenanceBadge mode="user" compact className="mt-1" />}
         </div>
       ),
     },
@@ -182,6 +185,13 @@ export default function Projects() {
   ];
 
   const selects = [
+    {
+      key: 'sector',
+      label: 'Sector',
+      value: values.sector,
+      width: 'w-[170px]',
+      options: [allOption('All sectors'), ...(facets.data?.sectors ?? []).filter((s) => s.projectTypes.length).map((s) => ({ label: s.label, value: s.id }))],
+    },
     {
       key: 'state',
       label: 'State',

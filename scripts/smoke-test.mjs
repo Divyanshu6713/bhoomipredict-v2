@@ -233,6 +233,91 @@ async function run() {
   const dcDash = (await get('/dashboard/summary', dc)).json;
   ok(dcDash.kpis.totalProjects === dcList.total, 'dashboard and registry agree for the same role');
 
+  section('National hierarchy & positions');
+  const hier = (await get('/hierarchy')).json;
+  ok(hier.states.length === 36 && hier.states.filter((x) => x.type === 'State').length === 28 && hier.states.filter((x) => x.type !== 'State').length === 8, 'hierarchy lists all 28 States and 8 Union Territories');
+  ok(hier.states.every((st) => hier.organisations.some((o) => o.id === `st:${st.code}` && o.kind === 'state_government') && hier.organisations.some((o) => o.id === `st:${st.code}:revenue`)), 'every State / UT has a government and a revenue department');
+  ok(['in:morth', 'in:mor', 'in:mop', 'in:mocoal', 'in:mopsw', 'in:mod', 'in:mohua', 'in:dolr', 'in:moefcc', 'in:nhai'].every((id) => hier.organisations.some((o) => o.id === id)), 'central ministries and organisations are catalogued');
+  const ladakh = (await get('/hierarchy/options?orgId=st:LA:revenue')).json;
+  ok(ladakh.options.district?.length > 0 && ladakh.position.units.state === 'Ladakh', 'a Union Territory resolves its districts', `${ladakh.options.district?.length} districts`);
+  const zones = (await get('/hierarchy/options?orgId=in:mor')).json;
+  ok(zones.levels.includes('region') && zones.options.region.some((z) => z.id === 'Southern Railway'), 'Ministry of Railways exposes zones as its region level');
+
+  const scoped = async (userId) => (await get('/projects?pageSize=500', await login(userId))).json.projects;
+  const morthList = await scoped('u-morth');
+  ok(morthList.length > 0 && morthList.every((pr) => ['National Highway', 'Expressway'].includes(pr.type)), 'MoRTH sees only road projects, nationally', `${morthList.length}`);
+  ok(new Set(morthList.map((pr) => pr.state)).size > 5, 'a ministry portfolio spans many States', `${new Set(morthList.map((pr) => pr.state)).size} states`);
+  const moefList = await scoped('u-moefcc');
+  const moefDetail = await detail(moefList[0].id, admin);
+  ok(moefList.length > 0 && moefDetail.project.network.nodes.some((n) => n.code === 'FOREST'), 'MoEFCC portfolio is projects with a forest clearance', `${moefList.length}`);
+  const dolrList = await scoped('u-dolr');
+  ok(dolrList.length > 0 && dolrList.every((pr) => pr.framework === 'RFCTLARR Act, 2013'), 'DoLR portfolio is RFCTLARR proceedings', `${dolrList.length}`);
+  const zoneList = await scoped('u-mor-sr');
+  ok(zoneList.length > 0 && zoneList.every((pr) => pr.type === 'Railway' && ['Tamil Nadu', 'Kerala'].includes(pr.state)), 'Southern Railway zone sees its railway projects only', `${zoneList.length}`);
+  const tiruppur = await scoped('u-mor-tiruppur');
+  ok(tiruppur.length > 0 && tiruppur.every((pr) => pr.type === 'Railway' && pr.districts.includes('Tiruppur')), 'India → Railways → Tamil Nadu → Tiruppur scope', `${tiruppur.length}`);
+  const mh = await scoped('u-mh-state');
+  const nagpur = await scoped('u-mh-nagpur-collector');
+  ok(mh.length > 0 && mh.every((pr) => pr.state === 'Maharashtra') && nagpur.length > 0 && nagpur.every((pr) => pr.districts.includes('Nagpur')), 'Maharashtra state and Nagpur district scopes', `${mh.length} / ${nagpur.length}`);
+  const tnRoads = await scoped('u-tn-highways');
+  ok(tnRoads.every((pr) => pr.state === 'Tamil Nadu' && ['National Highway', 'Expressway'].includes(pr.type)), 'a state roads department sees its state road projects only', `${tnRoads.length}`);
+
+  const wb = await call('POST', '/auth/login', { body: { role: 'DISTRICT_ADMIN', position: { orgId: 'st:WB:revenue', units: { state: 'West Bengal', district: 'Hugli' } } } });
+  ok(wb.status === 200 && wb.json.user.position.tier === 'district' && wb.json.user.scopeLabel === 'Hugli, West Bengal', 'a district position can be configured in any State', wb.json?.user?.scopeLabel);
+  const wbList = (await get('/projects?pageSize=500', wb.json.token)).json.projects;
+  ok(wbList.every((pr) => pr.state === 'West Bengal' && pr.districts.includes('Hugli')), 'configured position is enforced by the API', `${wbList.length}`);
+  const od = await call('POST', '/auth/login', { body: { role: 'STATE_ADMIN', position: { orgId: 'st:OD:revenue', units: {} } } });
+  const odList = (await get('/projects?pageSize=500', od.json.token)).json.projects;
+  ok(od.status === 200 && odList.length > 0 && odList.every((pr) => pr.state === 'Odisha'), 'configured Odisha state position', `${odList.length}`);
+  const badTier = await call('POST', '/auth/login', { body: { role: 'LAND_ACQUISITION_OFFICER', position: { orgId: 'in:morth', units: {} } } });
+  ok(badTier.status === 422, 'a role not held at the tier is refused', badTier.json?.error);
+  const noAdmin = await call('POST', '/auth/login', { body: { role: 'NATIONAL_ADMIN', position: { orgId: 'in:lacc', units: {} } } });
+  ok(noAdmin.status === 422, 'national administration cannot be self-configured');
+
+  const natProfile = (await get('/profile', admin)).json;
+  ok(natProfile.user.position.tier === 'national' && natProfile.user.position.chain.find((r) => r.level === 'district')?.all === true, 'national profile is not forced to a district');
+  const dcProfile = (await get('/profile', dc)).json;
+  ok(['Karnataka', 'Mysuru Division', 'Mandya'].every((v) => dcProfile.user.position.chain.some((r) => r.value === v)) && dcProfile.portfolio.totals.projects === dcList.total, 'district profile shows State → Division → District and its portfolio', dcProfile.user.position.chain.map((r) => r.value).join(' > '));
+
+  section('National portfolio drill-down');
+  const nat = (await get('/hierarchy/portfolio', admin)).json;
+  ok(nat.level === 'sector' && nat.children.reduce((a, c) => a + c.stats.projects, 0) === nat.totals.projects, 'sector totals add up to the national total', `${nat.totals.projects}`);
+  ok(nat.children.some((c) => c.id === 'ports' && c.onboarded === false), 'registered sectors without project types are shown as not onboarded');
+  const rail = (await get('/hierarchy/portfolio?sector=railways', admin)).json;
+  ok(rail.level === 'state' && rail.children.reduce((a, c) => a + c.stats.projects, 0) === rail.totals.projects, 'state totals add up within a sector');
+  const leaf = (await get(`/hierarchy/portfolio?sector=railways&state=${encodeURIComponent('Tamil Nadu')}&district=Tiruppur`, admin)).json;
+  ok(leaf.level === 'project' && leaf.children.length === tiruppur.length && leaf.path.map((x) => x.label).join('>') === 'India>Railways>Tamil Nadu>Tiruppur', 'drill-down reaches projects');
+  const dcNat = (await get('/hierarchy/portfolio', dc)).json;
+  ok(dcNat.totals.projects === dcList.total, 'drill-down respects the user scope');
+  const dashRoads = (await get('/dashboard/summary?sector=roads', admin)).json;
+  const listRoads = (await get('/projects?sector=roads&pageSize=1', admin)).json;
+  ok(dashRoads.kpis.totalProjects === listRoads.total && listRoads.total === morthList.length, 'sector filter agrees across dashboard, registry and ministry scope');
+
+  section('Project-type dependencies & issue profiles');
+  const reg = (await get('/registry', admin)).json;
+  const rule = (t, c) => reg.dependencyMatrix.find((x) => x.projectType === t).dependencies.find((d) => d.code === c).applicability;
+  ok(rule('Airport', 'AVIATION') === 'always' && rule('National Highway', 'AVIATION') === 'never' && rule('Irrigation', 'FOREST') === 'conditional', 'declarative dependency matrix');
+  ok(reg.issueMatrix.find((x) => x.projectType === 'Power Transmission').issues.find((i) => i.id === 'right_of_way').exposure !== 'never' && reg.issueMatrix.find((x) => x.projectType === 'National Highway').issues.find((i) => i.id === 'right_of_way').exposure === 'never', 'issue exposure follows the framework');
+  const nhProject = morthList.find((pr) => pr.type === 'National Highway');
+  const nhDetail = await detail(nhProject.id, admin);
+  ok(nhDetail.issues.issues.length > 8 && nhDetail.issues.excluded.some((e) => e.id === 'right_of_way') && nhDetail.issues.excluded.some((e) => e.id === 'urban_local_body'), 'highway issue profile excludes right of way and municipal processes');
+  ok(nhDetail.provenance.record === 'synthetic' && nhDetail.provenance.risk === 'model', 'project detail declares data provenance');
+  const scRow = await call('POST', '/scenario/score', { token: admin, body: { context: { state: 'Odisha', district: 'Khordha', projectType: 'Power Transmission', subtype: '400 kV line', stage: 'Objection / Claims', affectedFamilies: 10 }, pending: ['DISTRICT_HEAD'], signals: {} } });
+  ok(scRow.status === 200 && scRow.json.issues.issues.some((i) => i.id === 'right_of_way' && i.status === 'active') && scRow.json.issues.excluded.some((e) => e.id === 'rehabilitation'), 'transmission scenario: right of way active, R&R not applicable');
+  const scDam = await call('POST', '/scenario/score', { token: admin, body: { context: { state: 'Gujarat', district: 'Narmada', projectType: 'Irrigation', subtype: 'Reservoir submergence', stage: 'Survey & Verification', affectedFamilies: 400 }, pending: ['FOREST'], signals: {} } });
+  ok(scDam.status === 200 && scDam.json.issues.issues.find((i) => i.id === 'forest_environment')?.status === 'active' && scDam.json.issues.issues.some((i) => i.id === 'rehabilitation'), 'reservoir scenario: forest clearance active and R&R applicable');
+
+  section('Data integration layer');
+  const integ = (await get('/integrations', admin)).json;
+  ok(integ.providers.length >= 9 && integ.connectedOfficialSources === 0 && integ.providers.every((pr) => pr.adapter.mode === 'synthetic' && !pr.connected), 'every provider slot runs a synthetic adapter; none connected');
+  const parcel = (await get('/integrations/parcel/LAC-500000', admin)).json;
+  const sections = Object.values(parcel.sections);
+  ok(sections.length === 5 && sections.every((sec) => sec.provenance?.mode === 'synthetic'), 'parcel data view carries synthetic provenance per section');
+  ok(parcel.sections.registration.data === null, 'no registration data is fabricated');
+  const outCase = (await get('/cases?pageSize=1&state=Uttar%20Pradesh', admin)).json.rows[0];
+  ok((await get(`/integrations/parcel/${outCase.caseId}`, dc)).status === 403, 'integration views respect jurisdiction');
+  ok(health.json.product === 'LandPulse AI', 'API identifies as LandPulse AI');
+
   section('Intervention & alert workflow');
   const slao = await login('u-ka-mandya-slao');
   const mine = (await get('/interventions?mine=1&pageSize=50', slao)).json;

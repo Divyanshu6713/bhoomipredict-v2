@@ -14,7 +14,8 @@ import {
   Globe2,
   LayoutDashboard,
   Layers,
-  LineChart,
+  Network,
+  PlugZap,
   ListChecks,
   Map,
   Menu,
@@ -29,6 +30,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { BRAND } from '@/lib/brand';
 import { AnimatedNumber, Badge, Button, Card, DemoDataBadge, SectionTitle } from '@/components/ui';
 import { Logo } from '@/components/layout/Logo';
 import { HeroVisual } from '@/components/landing/HeroVisual';
@@ -67,18 +69,18 @@ const FLOW = [
 ];
 
 const FEATURES = [
-  { icon: BrainCircuit, title: 'Milestone delay prediction', text: 'The probability that a case, stage or project misses its next statutory milestone by more than 30 days.' },
-  { icon: Activity, title: 'Calibrated risk banding', text: 'Low / Medium / High / Critical bands set from calibrated probabilities, checked against observed outcomes.' },
+  { icon: BrainCircuit, title: 'Milestone delay prediction', text: 'The probability that a case, stage or project misses its next statutory milestone by more than 30 days — explained and back-tested.' },
+  { icon: ListChecks, title: 'Land-acquisition issue profiling', text: 'Ownership, compensation, documentation, approvals, litigation, R&R, clearances, utilities and more — only the causes that apply to the project type.' },
+  { icon: Network, title: 'National administrative hierarchy', text: 'Central ministries, organisations, zones, all 28 States and 8 UTs, divisions and districts — each user sees exactly their jurisdiction.' },
+  { icon: Workflow, title: 'Project-type dependencies', text: 'Roads, railways, irrigation, transmission and urban works each carry their own authorities, frameworks and clearances.' },
   { icon: Layers, title: 'Nine-stage case management', text: 'Lifecycle, milestones, compensation, possession and R&R tracked per parcel across the statutory pipeline.' },
-  { icon: Globe2, title: 'Geographic Intelligence', text: 'State and district-level risk concentration to direct field capacity where it changes the outcome.' },
-  { icon: Workflow, title: 'Stage-level bottlenecks', text: 'Which stage is accumulating parcels, how long it takes, and how often it has historically slipped.' },
-  { icon: BellRing, title: 'Early warnings', text: 'Milestones flagged for review before the deadline passes, each routed to a named owner.' },
-  { icon: LineChart, title: 'Back-testing and analytics', text: 'Predicted risk against the delay rate actually observed, plus factor trends and portfolio throughput.' },
-  { icon: ListChecks, title: 'Intervention prioritisation', text: 'A ranked queue tied to the specific factors behind each prediction — advice for a person, not an action.' },
+  { icon: Globe2, title: 'Geographic intelligence', text: 'India → State → district risk concentration on official administrative boundaries.' },
+  { icon: BellRing, title: 'Early warnings & interventions', text: 'Milestones flagged before the deadline passes, each routed to a named owner with a ranked, evidence-backed action.' },
+  { icon: PlugZap, title: 'Government data integration-ready', text: 'Provider contracts for land records, courts, compensation, notifications, clearances and GIS — synthetic adapters today, official sources tomorrow.' },
 ];
 
 const PIPELINE = [
-  { icon: Database, title: 'Data Collection', text: 'Revenue records, survey status, award registers, court listings and objection filings.' },
+  { icon: Database, title: 'Data integration layer', text: 'Land records, notifications, awards, court and clearance data through provider contracts — synthetic in this prototype.' },
   { icon: Layers, title: 'Validation & features', text: 'Completeness scoring, field-gap audit, stage-date normalisation and engineered schedule-versus-progress signals.' },
   { icon: BrainCircuit, title: 'ML prediction', text: 'A gradient-boosted ensemble trained with a time-aware split, benchmarked against a logistic baseline.' },
   { icon: Activity, title: 'Explainability', text: 'Per-case SHAP contributions, grouped into the operational factors a reviewer recognises.' },
@@ -86,6 +88,7 @@ const PIPELINE = [
 ];
 
 const AUDIENCE = [
+  'Central Ministries & Organisations',
   'Land Acquisition Officers',
   'District Collectorates',
   'Project Implementation Units',
@@ -193,25 +196,26 @@ function Hero() {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge className="border-brand/30 bg-brand/10 text-brand-ink" dot="bg-brand">
-              Government of India · Infrastructure Decision Support
+              National Land Acquisition Intelligence · Prototype
             </Badge>
             <DemoDataBadge />
           </div>
 
           <h1 className="mt-6 font-display text-[38px] font-extrabold leading-[1.08] tracking-tight text-white sm:text-[52px] lg:text-[56px]">
-            Predict Land Acquisition{' '}
+            Anticipate{' '}
             <span className="relative inline-block">
               <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#7BA4FF] to-[#4F8BFF]">
-                Delays
+                Bottlenecks.
               </span>
               <span className="absolute inset-x-0 bottom-1.5 z-0 h-3 rounded bg-brand/25" />
             </span>{' '}
-            Before They Happen.
+            Accelerate Infrastructure.
           </h1>
 
           <p className="mt-5 max-w-xl text-[16.5px] leading-relaxed text-white/60">
-            AI-powered intelligence for faster, more transparent and data-driven land acquisition — turning
-            revenue records, survey status and litigation data into a forecast a district officer can act on.
+            {BRAND.product} is a land acquisition intelligence, delay-risk prediction and decision support platform
+            for infrastructure across India — identifying the ownership, compensation, approval, legal and clearance
+            bottlenecks behind a delay, from the ministry down to the district, before the milestone slips.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -332,7 +336,7 @@ function SolutionSection() {
               From historical records to a decision, in four steps.
             </h2>
             <p className="mt-3 text-[15px] leading-relaxed text-white/55">
-              BhoomiPredict does not stop at a risk label. Each stage of the chain is designed to survive a review
+              {BRAND.product} does not stop at a risk label. Each stage of the chain is designed to survive a review
               meeting — the score is explainable, the forecast is bounded, and the recommendation names an owner.
             </p>
           </div>
@@ -522,7 +526,7 @@ function HowItWorksSection() {
                 Every number on the screen can be traced back to a cause.
               </h3>
               <p className="mt-3 text-[14px] leading-relaxed text-ink-2">
-                A forecast that cannot be explained cannot be acted on. BhoomiPredict decomposes each prediction into
+                A forecast that cannot be explained cannot be acted on. {BRAND.product} decomposes each prediction into
                 ranked contributing factors and converts those factors directly into recommendations — so the officer
                 reading the screen knows both the number and the reason behind it.
               </p>
@@ -603,9 +607,9 @@ function FinalCta() {
 
 function Footer() {
   const cols = [
-    { title: 'Track', links: [['Command Centre', '/dashboard'], ['Projects', '/projects'], ['Cases & Parcels', '/cases'], ['GIS Risk Map', '/map']] },
+    { title: 'Track', links: [['Command Centre', '/dashboard'], ['National Portfolio', '/hierarchy'], ['Projects', '/projects'], ['GIS Risk Map', '/map']] },
     { title: 'Predict', links: [['AI Risk', '/risk'], ['Scenario Scoring', '/predict'], ['Intervention Queue', '/queue'], ['Alert Centre', '/alerts']] },
-    { title: 'Review', links: [['Analytics', '/analytics'], ['Data & Model', '/data'], ['Reports', '/reports'], ['Methodology', '/about']] },
+    { title: 'Review', links: [['Analytics', '/analytics'], ['Data Sources', '/data-sources'], ['Data & Model', '/data'], ['About & Methodology', '/about']] },
   ];
 
   return (
@@ -615,8 +619,8 @@ function Footer() {
           <div>
             <Logo tone="light" />
             <p className="mt-4 max-w-xs text-[12.5px] leading-relaxed text-white/40">
-              An AI-powered land acquisition delay prediction and decision support platform for Indian
-              infrastructure programmes.
+              {BRAND.tagline} Land acquisition intelligence, delay-risk prediction and decision support for
+              infrastructure programmes across India.
             </p>
             <div className="mt-4">
               <DemoDataBadge />
@@ -640,7 +644,9 @@ function Footer() {
         </div>
 
         <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] pt-6 text-[11.5px] text-white/35">
-          <p>BhoomiPredict · AI decision support for land acquisition · v2.0</p>
+          <p>
+            {BRAND.product} · {BRAND.version} · <span className="font-semibold text-white/60">{BRAND.attribution}</span>
+          </p>
           <p>Demonstration build. Synthetic data only — not an official government record.</p>
         </div>
       </div>
