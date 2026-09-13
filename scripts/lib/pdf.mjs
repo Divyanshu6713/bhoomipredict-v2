@@ -183,7 +183,7 @@ class Page {
 }
 
 export class Pdf {
-  constructor({ title = 'Document', author = 'BhoomiPredict', subject = '', compress = true } = {}) {
+  constructor({ title = 'Document', author = 'LandPulse AI', subject = '', compress = true } = {}) {
     this.pages = [];
     this.meta = { title, author, subject };
     this.compress = compress;
@@ -237,7 +237,7 @@ export class Pdf {
 
     const infoNum = push(
       `<< /Title (${escapeText(this.meta.title)}) /Author (${escapeText(this.meta.author)}) ` +
-        `/Subject (${escapeText(this.meta.subject)}) /Creator (BhoomiPredict dataset exporter) ` +
+        `/Subject (${escapeText(this.meta.subject)}) /Creator (LandPulse AI dataset exporter) ` +
         `/CreationDate (D:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z) >>`,
     );
 

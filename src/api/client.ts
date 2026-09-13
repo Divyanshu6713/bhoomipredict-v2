@@ -19,6 +19,12 @@ import type {
   DocumentList,
   DocumentRecord,
   ExportManifest,
+  HierarchyConfig,
+  HierarchyOptionsResponse,
+  IntegrationStatus,
+  ParcelDataView,
+  PortfolioDrilldown,
+  RoleId,
   Facets,
   GeoCollection,
   InterventionItem,
@@ -142,6 +148,18 @@ const post = <T,>(path: string, body?: unknown, signal?: AbortSignal) => request
 
 export const fetchDemoUsers = (signal?: AbortSignal) => get<{ note: string; users: User[] }>('/auth/users', undefined, signal);
 export const login = (userId: string) => post<{ token: string; user: User }>('/auth/login', { userId });
+export const loginWithPosition = (role: RoleId, position: { orgId: string; units: Record<string, string | undefined> }) => post<{ token: string; user: User }>('/auth/login', { role, position });
+
+/* -------------------------------------------------------------- hierarchy */
+
+export const fetchHierarchy = (signal?: AbortSignal) => get<HierarchyConfig>('/hierarchy', undefined, signal);
+export const fetchHierarchyOptions = (params: Query, signal?: AbortSignal) => get<HierarchyOptionsResponse>('/hierarchy/options', params, signal);
+export const fetchPortfolio = (params: Query, signal?: AbortSignal) => get<PortfolioDrilldown>('/hierarchy/portfolio', params, signal);
+
+/* ------------------------------------------------------------ integration */
+
+export const fetchIntegrations = (signal?: AbortSignal) => get<IntegrationStatus>('/integrations', undefined, signal);
+export const fetchParcelDataView = (caseId: string, signal?: AbortSignal) => get<ParcelDataView>(`/integrations/parcel/${encodeURIComponent(caseId)}`, undefined, signal);
 export const logout = () => post<{ ok: boolean }>('/auth/logout');
 export const fetchProfile = (signal?: AbortSignal) => get<Profile>('/profile', undefined, signal);
 export const fetchNotifications = (signal?: AbortSignal) => get<Notifications>('/notifications', undefined, signal);

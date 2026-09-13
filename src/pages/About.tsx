@@ -18,11 +18,13 @@ import { RISK_HEX } from '@/lib/risk';
 import { formatCompact, formatNumber } from '@/lib/format';
 import { useApi } from '@/hooks';
 import { fetchSummary } from '@/api/client';
+import { BRAND } from '@/lib/brand';
+import { LogoMark } from '@/components/layout/Logo';
 
 const PIPELINE = [
-  { label: 'Data', detail: 'Acquisition case records, project registry and stage history', icon: Database },
+  { label: 'Data integration', detail: 'Provider contracts for land records, courts, compensation, notifications, clearances and GIS — synthetic adapters in the prototype', icon: Database },
   { label: 'Validation', detail: 'Completeness scoring, field-gap audit, consistency checks', icon: ShieldCheck },
-  { label: 'Case management', detail: 'Nine-stage lifecycle, milestones, compensation, possession, R&R', icon: Layers },
+  { label: 'Hierarchy & dependencies', detail: 'National administrative hierarchy, project-type authorities and nine-stage lifecycle', icon: Layers },
   { label: 'ML prediction', detail: 'Batch-scored delay risk per case and per stage', icon: Gauge },
   { label: 'Explainability', icon: Sparkles, detail: 'Per-case SHAP contributions grouped into operational factors' },
   { label: 'GIS', detail: 'District clusters and parcel-level risk distribution', icon: GitBranch },
@@ -31,6 +33,8 @@ const PIPELINE = [
 ];
 
 const IS = [
+  'A national land acquisition intelligence platform: one engine across ministries, organisations, all States and UTs, divisions and districts',
+  'An issue-aware view of delay: ownership, compensation, documentation, approvals, litigation, R&R, clearances, utilities and coordination, per project type',
   'An interoperable decision-support layer that sits alongside existing land-record, acquisition-workflow and project-monitoring systems',
   'A predictive early-warning tool: it estimates the probability that a specific milestone slips by more than 30 days',
   'An explanation surface: every prediction carries the factors that moved it, with their weights',
@@ -42,6 +46,7 @@ const IS_NOT = [
   'A predictor of court outcomes or judgments',
   'A causal account of why a delay happened — contributions describe the model, not the world',
   'Evidence of real-world accuracy: every figure here is computed on synthetic data',
+  'Connected to any government database — the integration layer is contract-ready, with synthetic adapters only',
   'An automated decision-maker — nothing in the platform actions anything on its own',
 ];
 
@@ -73,6 +78,36 @@ export default function About() {
               worth someone's week.
             </p>
           </div>
+        </div>
+      </Card>
+
+      <Card className="animate-fade-up">
+        <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1.4fr_1fr]">
+          <div className="flex items-start gap-4">
+            <LogoMark className="h-14 w-14" />
+            <div>
+              <p className="font-display text-[22px] font-extrabold tracking-tight text-ink">{BRAND.product}</p>
+              <p className="text-[13px] font-semibold text-brand">{BRAND.tagline}</p>
+              <p className="mt-2 text-[13px] leading-relaxed text-ink-2">
+                A land acquisition intelligence, delay-risk prediction and decision support platform. It reads the interconnected causes of acquisition delay — ownership disputes, compensation, documentation, approvals, notifications and objections, litigation, rehabilitation and resettlement, forest and environment clearances, utility shifting and coordination across authorities — and helps the responsible office act before a milestone slips.
+              </p>
+            </div>
+          </div>
+          <dl className="grid grid-cols-2 gap-2.5 text-[12px]">
+            {[
+              ['Product', BRAND.product],
+              ['Built by', BRAND.team],
+              ['Stage', 'Hackathon prototype'],
+              ['Data', 'Synthetic demo corpus'],
+              ['Scope', 'All 28 States & 8 UTs'],
+              ['Integrations', 'Contract-ready · none connected'],
+            ].map(([k, v]) => (
+              <div key={k} className="rounded-xl border border-line bg-surface-2 px-3 py-2">
+                <dt className="label-xs">{k}</dt>
+                <dd className="mt-0.5 font-semibold text-ink">{v}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </Card>
 
@@ -297,8 +332,11 @@ export default function About() {
         <SectionTitle
           eyebrow="Interoperability"
           title="Designed to complement, not replace"
-          description="The platform consumes what systems of record already hold — case status, stage dates, compensation state, litigation flags — and returns a risk score, an explanation and a priority. It writes nothing back, owns no system of record, and makes no decision."
+          description="The platform is designed to consume what systems of record already hold — case status, stage dates, compensation state, litigation flags — through its data integration layer, and return a risk score, an explanation and a priority. It writes nothing back, owns no system of record, and makes no decision. In this prototype every provider is a synthetic adapter."
         />
+        <Link to="/data-sources" className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand hover:underline">
+          See the data sources and provider contracts <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {[
             { label: 'Consumes', value: 'Case and project status, stage dates, compensation and litigation state, administrative timings' },

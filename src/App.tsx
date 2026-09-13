@@ -25,6 +25,8 @@ import Audit from '@/pages/Audit';
 import Documents from '@/pages/Documents';
 import Profile from '@/pages/Profile';
 import Registry from '@/pages/Registry';
+import PortfolioHierarchy from '@/pages/PortfolioHierarchy';
+import DataSources from '@/pages/DataSources';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -94,6 +96,8 @@ function Shell() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/documents" element={<Documents />} />
         <Route path="/registry" element={<Registry />} />
+        <Route path="/hierarchy" element={<PortfolioHierarchy />} />
+        <Route path="/data-sources" element={<DataSources />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<RequirePermission permission="admin.view"><Admin /></RequirePermission>} />
         <Route path="/audit" element={<RequirePermission permission="audit.view"><Audit /></RequirePermission>} />

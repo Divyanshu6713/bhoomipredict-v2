@@ -1,12 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { fetchProfile, getToken, login as apiLogin, logout as apiLogout, onUnauthorized, setToken } from '@/api/client';
-import type { Profile, User } from '@/data/types';
+import { fetchProfile, getToken, login as apiLogin, loginWithPosition, logout as apiLogout, onUnauthorized, setToken } from '@/api/client';
+import type { Profile, RoleId, User } from '@/data/types';
 
 interface AuthState {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
   signIn: (userId: string) => Promise<void>;
+  signInWithPosition: (role: RoleId, position: { orgId: string; units: Record<string, string | undefined> }) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => void;
   can: (permission: string) => boolean;
@@ -60,6 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setNonce((n) => n + 1);
   }, []);
 
+  const signInWithPosition = useCallback(async (role: RoleId, position: { orgId: string; units: Record<string, string | undefined> }) => {
+    const { token } = await loginWithPosition(role, position);
+    setToken(token);
+    setNonce((n) => n + 1);
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       await apiLogout();
@@ -77,11 +84,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       loading,
       signIn,
+      signInWithPosition,
       signOut,
       refresh,
       can: (permission: string) => Boolean(profile?.user.permissions.includes(permission)),
     }),
-    [profile, loading, signIn, signOut, refresh],
+    [profile, loading, signIn, signInWithPosition, signOut, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

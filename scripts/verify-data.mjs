@@ -301,7 +301,7 @@ function verifyDeliverables() {
 /* -------------------------------------------------------------------- main */
 
 async function main() {
-  console.log('\n\x1b[1mBhoomiPredict data verification\x1b[0m');
+  console.log('\n\x1b[1mLandPulse AI data verification\x1b[0m');
   const corpus = await verifyCorpus();
   verifyModel(corpus);
   verifyStore(corpus);
