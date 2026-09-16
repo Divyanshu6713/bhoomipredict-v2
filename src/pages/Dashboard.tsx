@@ -10,7 +10,7 @@ import { STAGE_STATUS_CLASS, STAGE_STATUS_LABEL } from '@/lib/status';
 import { formatCompact, formatNumber } from '@/lib/format';
 import { useApi, useFilters } from '@/hooks';
 import { useAuth } from '@/auth/AuthContext';
-import { fetchDashboard, fetchFacets } from '@/api/client';
+import { fetchDashboard, fetchFacets, fetchTrends } from '@/api/client';
 import { Badge } from '@/components/ui';
 
 const tick = { fill: 'rgb(var(--c-ink-3))', fontSize: 11 };
@@ -18,9 +18,10 @@ const tick = { fill: 'rgb(var(--c-ink-3))', fontSize: 11 };
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { values, set } = useFilters({ sector: 'all', state: 'all', projectType: 'all' });
+  const { values, set } = useFilters({ sector: 'all', state: 'all', district: 'all', projectType: 'all' });
   const facets = useApi((signal) => fetchFacets(signal), []);
-  const summary = useApi((signal) => fetchDashboard({ sector: values.sector, state: values.state, projectType: values.projectType }, signal), [values.sector, values.state, values.projectType]);
+  const summary = useApi((signal) => fetchDashboard({ sector: values.sector, state: values.state, district: values.district, projectType: values.projectType }, signal), [values.sector, values.state, values.district, values.projectType]);
+  const trend = useApi((signal) => fetchTrends({ level: values.state !== 'all' ? 'district' : 'state', state: values.state, district: values.district, months: 15, top: 1 }, signal), [values.state, values.district]);
   const s = summary.data;
 
   const go = (params: Record<string, string>) => navigate(`/projects?${new URLSearchParams({ ...(values.sector !== 'all' ? { sector: values.sector } : {}), ...(values.state !== 'all' ? { state: values.state } : {}), ...(values.projectType !== 'all' ? { projectType: values.projectType } : {}), ...params }).toString()}`);
@@ -54,7 +55,8 @@ export default function Dashboard() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Select className="w-[190px]" label="Sector" value={values.sector} onChange={(v) => set({ sector: v, projectType: 'all' })} options={[{ label: 'All sectors', value: 'all' }, ...(facets.data?.sectors ?? []).filter((x) => x.projectTypes.length).map((x) => ({ label: x.label, value: x.id }))]} />
-          <Select className="w-[190px]" label="State" value={values.state} onChange={(v) => set({ state: v })} options={[{ label: 'All in scope', value: 'all' }, ...(facets.data?.states ?? []).map((x) => ({ label: x, value: x }))]} />
+          <Select className="w-[170px]" label="State" value={values.state} onChange={(v) => set({ state: v, district: 'all' })} options={[{ label: 'All in scope', value: 'all' }, ...(facets.data?.states ?? []).map((x) => ({ label: x, value: x }))]} />
+          <Select className="w-[170px]" label="District" value={values.district} onChange={(v) => set({ district: v })} options={[{ label: values.state === 'all' ? 'Choose a state' : 'All districts', value: 'all' }, ...(facets.data?.districts ?? []).filter((d) => d.state === values.state).map((d) => ({ label: d.district, value: d.district }))]} />
           <Select className="w-[190px]" label="Project type" value={values.projectType} onChange={(v) => set({ projectType: v })} options={[{ label: 'All types', value: 'all' }, ...(facets.data?.projectTypes ?? []).filter((x) => values.sector === 'all' || facets.data?.sectors.find((sec) => sec.id === values.sector)?.projectTypes.includes(x)).map((x) => ({ label: x, value: x }))]} />
         </div>
       </div>
@@ -62,11 +64,11 @@ export default function Dashboard() {
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {[
           { label: 'Total projects', value: k.totalProjects, icon: Building2, caption: `${formatCompact(k.openCases)} open cases`, accent: '#3B72F0', to: {} },
-          { label: 'High risk projects', value: k.highRiskProjects, icon: ShieldAlert, caption: 'next-milestone probability ≥ 55%', accent: RISK_HEX.High, to: { risk: 'High' } },
-          { label: 'Critical risk projects', value: k.criticalRiskProjects, icon: TriangleAlert, caption: 'probability ≥ 78%', accent: RISK_HEX.Critical, to: { risk: 'Critical' } },
+          { label: 'High risk projects', value: k.highRiskProjects, icon: ShieldAlert, caption: '45–60% of open parcels expected to slip', accent: RISK_HEX.High, to: { risk: 'High' } },
+          { label: 'Critical risk projects', value: k.criticalRiskProjects, icon: TriangleAlert, caption: '≥ 60% of open parcels expected to slip', accent: RISK_HEX.Critical, to: { risk: 'Critical' } },
           { label: 'Delayed projects', value: k.delayedProjects, icon: Clock, caption: `${k.blockedProjects} of them blocked by a dependency`, accent: '#F59E0B', to: { flag: 'delayed' } },
           { label: 'Immediate action required', value: k.immediateActionRequired, icon: AlertOctagon, caption: 'with an open Critical (P1) intervention', accent: '#BE123C', to: { flag: 'action' } },
-          { label: 'Average delay probability', value: Math.round(k.averageDelayProbability * 100), unit: '%', icon: Percent, caption: `mean expected slip ${k.averagePredictedDelayDays} days`, accent: '#7C6CF5', to: { sort: 'risk' } },
+          { label: 'Average delay probability', value: Math.round(k.averageDelayProbability * 100), unit: '%', icon: Percent, caption: `${k.severeOverrunLikely ?? 0} projects forecast > 6 months late · slip ${k.averagePredictedDelayDays}d`, accent: '#7C6CF5', to: { sort: 'risk' } },
         ].map((c, i) => (
           <button key={c.label} onClick={() => go(c.to as Record<string, string>)} className="text-left">
             <StatCard index={i} label={c.label} value={c.value} unit={c.unit} icon={c.icon} caption={c.caption} accent={c.accent} />
@@ -258,16 +260,25 @@ export default function Dashboard() {
 
       <section className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
         <Card>
-          <CardHeader title="Predicted vs observed" subtitle="Mean predicted risk and observed delay rate by assessment month" icon={<TrendingUp className="h-4 w-4" />} />
+          <CardHeader
+            title="Delay trend"
+            subtitle={`${values.district !== 'all' ? values.district : values.state !== 'all' ? values.state : 'All in scope'} · observed share of milestones > 30 days late, then the model forecast for open milestones`}
+            icon={<TrendingUp className="h-4 w-4" />}
+            action={
+              <Link to={`/trends${values.state !== 'all' ? `?level=district&state=${encodeURIComponent(values.state)}` : ''}`} className="text-[12px] font-semibold text-brand hover:underline">
+                State & district trends →
+              </Link>
+            }
+          />
           <div className="h-[260px] px-2 pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={s.trend.map((t) => ({ ...t, month: t.month.slice(2) }))} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
+              <ComposedChart data={(trend.data?.series ?? []).map((t) => ({ month: t.month.slice(2), observed: t.overall.observed === null ? null : Math.round(t.overall.observed * 1000) / 10, forecast: t.overall.forecast === null ? null : Math.round(t.overall.forecast * 1000) / 10 }))} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tick={tick} />
-                <YAxis tickLine={false} axisLine={false} tick={tick} unit="%" domain={[0, 100]} />
+                <YAxis tickLine={false} axisLine={false} tick={tick} unit="%" domain={[0, 'auto']} />
                 <Tooltip content={<ChartTooltip formatter={(v) => `${v}%`} />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line dataKey="predicted" name="Mean predicted" stroke={CHART_COLORS.brand} strokeWidth={2.2} dot={false} />
-                <Line dataKey="observed" name="Observed delay rate" stroke={CHART_COLORS.saffron} strokeWidth={2} strokeDasharray="4 4" dot={false} connectNulls />
+                <Line dataKey="observed" name="Observed delay rate" stroke={CHART_COLORS.saffron} strokeWidth={2.2} dot={false} />
+                <Line dataKey="forecast" name="Model forecast (open milestones)" stroke={CHART_COLORS.brand} strokeWidth={2.2} strokeDasharray="5 4" dot={{ r: 2 }} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>

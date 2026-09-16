@@ -202,14 +202,14 @@ function Hero() {
           </div>
 
           <h1 className="mt-6 font-display text-[38px] font-extrabold leading-[1.08] tracking-tight text-white sm:text-[52px] lg:text-[56px]">
-            Anticipate{' '}
+            Predict{' '}
             <span className="relative inline-block">
               <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#7BA4FF] to-[#4F8BFF]">
-                Bottlenecks.
+                Delays.
               </span>
               <span className="absolute inset-x-0 bottom-1.5 z-0 h-3 rounded bg-brand/25" />
             </span>{' '}
-            Accelerate Infrastructure.
+            Enable Action.
           </h1>
 
           <p className="mt-5 max-w-xl text-[16.5px] leading-relaxed text-white/60">

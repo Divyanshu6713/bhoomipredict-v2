@@ -130,6 +130,9 @@ export function dashboardSummary(user, f = {}, store) {
       affectedFamilies: projects.reduce((a, p) => a + (p.affectedFamilies ?? 0), 0),
       landRequirementHa: Math.round(projects.reduce((a, p) => a + (p.landRequirementHa ?? 0), 0)),
       averagePredictedDelayDays: Math.round(mean(projects.map((p) => p.predictedDelayDays ?? 0))),
+      likelyToMissTarget: projects.filter((p) => (p.forecast?.completion?.probabilityMissTarget ?? 0) >= 0.5).length,
+      // Median forecast more than six months beyond the sanctioned target — the overruns worth escalating.
+      severeOverrunLikely: projects.filter((p) => (p.forecast?.completion?.p50OverrunDays ?? 0) > 180).length,
     },
     riskDistribution: BANDS.map((b) => ({ key: b, projects: projects.filter((p) => p.riskBand === b).length })),
     caseRiskDistribution: BANDS.map((b) => ({ key: b, cases: projects.reduce((a, p) => a + (p.riskMix?.[b] ?? 0), 0) })),

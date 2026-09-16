@@ -51,6 +51,15 @@ import type {
   UploadResult,
   User,
   ValidationReport,
+  DelayTrends,
+  PerformanceIndicators,
+  LearningStatus,
+  DriftReport,
+  RecordedOutcome,
+  NotificationFeed,
+  ApiClient,
+  AuditVerification,
+  SecurityPosture,
 } from '@/data/types';
 
 const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ?? '';
@@ -77,13 +86,17 @@ export class ApiError extends Error {
 /* ---------------------------------------------------------------- session */
 
 const TOKEN_KEY = 'bp-session';
-let token: string | null = (() => {
+const DOWNLOAD_KEY = 'bp-download';
+const read = (key: string) => {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(key);
   } catch {
     return null;
   }
-})();
+};
+let token: string | null = read(TOKEN_KEY);
+/** A separate, download-only credential: the only one ever placed in a URL. */
+let downloadToken: string | null = read(DOWNLOAD_KEY);
 
 const unauthorizedListeners = new Set<() => void>();
 export const onUnauthorized = (fn: () => void) => {
@@ -92,11 +105,14 @@ export const onUnauthorized = (fn: () => void) => {
 };
 
 export const getToken = () => token;
-export function setToken(next: string | null) {
+export function setToken(next: string | null, nextDownload: string | null = null) {
   token = next;
+  downloadToken = next ? nextDownload ?? downloadToken : null;
   try {
     if (next) localStorage.setItem(TOKEN_KEY, next);
     else localStorage.removeItem(TOKEN_KEY);
+    if (downloadToken) localStorage.setItem(DOWNLOAD_KEY, downloadToken);
+    else localStorage.removeItem(DOWNLOAD_KEY);
   } catch {
     /* storage unavailable — the session lasts for this tab only */
   }
@@ -147,8 +163,18 @@ const post = <T,>(path: string, body?: unknown, signal?: AbortSignal) => request
 /* ------------------------------------------------------------------- auth */
 
 export const fetchDemoUsers = (signal?: AbortSignal) => get<{ note: string; users: User[] }>('/auth/users', undefined, signal);
-export const login = (userId: string) => post<{ token: string; user: User }>('/auth/login', { userId });
-export const loginWithPosition = (role: RoleId, position: { orgId: string; units: Record<string, string | undefined> }) => post<{ token: string; user: User }>('/auth/login', { role, position });
+export interface SessionResponse {
+  token: string;
+  downloadToken: string;
+  expiresAt: string;
+  idleMinutes: number;
+  user: User;
+}
+export const login = (userId: string, password: string) => post<SessionResponse>('/auth/login', { userId, password });
+export const loginWithPosition = (role: RoleId, position: { orgId: string; units: Record<string, string | undefined> }, password: string) =>
+  post<SessionResponse>('/auth/login', { role, position, password });
+export const changePassword = (currentPassword: string, newPassword: string) => post<{ ok: boolean }>('/auth/password', { currentPassword, newPassword });
+export const fetchSecurityPosture = (signal?: AbortSignal) => get<SecurityPosture>('/security/posture', undefined, signal);
 
 /* -------------------------------------------------------------- hierarchy */
 
@@ -276,10 +302,38 @@ export const uploadProjectsCsv = (text: string, commit: boolean) =>
   request<UploadResult>('POST', '/upload', { params: { commit: commit ? 1 : 0 }, raw: text, contentType: 'text/csv' });
 export const startRetrain = () => post<{ started: boolean; reason?: string; job: RetrainStatus['job'] }>('/retrain');
 
+/* ------------------------------------------------ trends, learning & more */
+
+export const fetchTrends = (params: Query, signal?: AbortSignal) => get<DelayTrends>('/analytics/trends', params, signal);
+export const fetchPerformance = (params: Query, signal?: AbortSignal) => get<PerformanceIndicators>('/analytics/performance', params, signal);
+
+export const fetchLearningStatus = (signal?: AbortSignal) => get<LearningStatus>('/learning/status', undefined, signal);
+export const fetchDrift = (params: Query, signal?: AbortSignal) => get<DriftReport>('/learning/drift', params, signal);
+export const recordCaseOutcome = (caseId: string, body: { completedOn?: string; stillPendingOn?: string; note?: string }) =>
+  post<{ outcome: RecordedOutcome }>(`/cases/${encodeURIComponent(caseId)}/outcome`, body);
+export const uploadOutcomesCsv = (text: string, commit: boolean) =>
+  request<{ summary: { rows: number; valid: number; invalid: number; delayed: number; committed: boolean }; errors: Array<{ row: number; error: string }> }>('POST', '/learning/outcomes', { params: { commit: commit ? 1 : 0 }, raw: text, contentType: 'text/csv' });
+export const advanceSimulationClock = (days: number) =>
+  post<{ from: string; to: string; released: number; delayed: number; scan: NotificationFeed['lastScan'] }>('/learning/simulate', { days });
+export const updateLearningSettings = (patch: { autoRetrain?: boolean; autoRetrainMinOutcomes?: number }) => request<{ learning: unknown }>('PATCH', '/learning/settings', { body: patch });
+export const rollbackModel = (versionId: string) => post<{ started: boolean; reason?: string; job: RetrainStatus['job'] }>(`/learning/rollback/${encodeURIComponent(versionId)}`);
+
+export const fetchNotificationFeed = (params: Query, signal?: AbortSignal) => get<NotificationFeed>('/notifications/feed', params, signal);
+export const markNotificationsRead = (ids?: string[]) => post<{ changed: number }>('/notifications/read', { ids });
+export const runNotificationScan = () => post<{ scan: NotificationFeed['lastScan'] }>('/notifications/scan');
+
+export const fetchApiClients = (signal?: AbortSignal) => get<{ clients: ApiClient[]; scopes: Record<string, string>; openapi: string }>('/integrations/clients', undefined, signal);
+export const createApiClient = (body: { name: string; scopes: string[]; position?: { orgId: string; units: Record<string, string | undefined> }; rateLimitPerMinute?: number; webhookUrl?: string | null }) =>
+  post<{ client: ApiClient; key: string }>('/integrations/clients', body);
+export const revokeApiClient = (id: string) => request<{ client: ApiClient }>('DELETE', `/integrations/clients/${encodeURIComponent(id)}`);
+export const fetchOpenApi = (signal?: AbortSignal) => get<{ info: { title: string; version: string; description: string }; paths: Record<string, Record<string, { summary: string; description: string }>> }>('/v1/openapi.json', undefined, signal);
+export const verifyAudit = (signal?: AbortSignal) => get<AuditVerification>('/audit/verify', undefined, signal);
+
 /* ---------------------------------------------------------------- exports */
 
-/** Download links carry the session token, since a plain anchor cannot send headers. */
-export const exportUrl = (path: string, params?: Query) => `${BASE}/api${path}${qs({ ...params, token: token ?? undefined })}`;
+/** Download links carry the download-only token, since a plain anchor cannot send headers. */
+export const exportUrl = (path: string, params?: Query) => `${BASE}/api${path}${qs({ ...params, dl: downloadToken ?? undefined })}`;
+export const outcomesTemplateUrl = () => exportUrl('/learning/outcomes/template');
 
 export const casesCsvUrl = (params: Query) => exportUrl('/export/cases.csv', params);
 export const projectsCsvUrl = (params: Query) => exportUrl('/export/projects.csv', params);

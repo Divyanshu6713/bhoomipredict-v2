@@ -27,6 +27,18 @@ const TRANSITIONS = {
 
 const addDays = (iso, d) => new Date(new Date(iso).getTime() + d * 86400000).toISOString();
 
+/**
+ * "Now" for due dates: the wall clock, or the simulation clock when an
+ * administrator has advanced it to demonstrate time passing (Model lifecycle).
+ */
+export function workflowNow() {
+  const sim = getState().learning?.simulationDate;
+  const real = Date.now();
+  if (!sim) return real;
+  const offset = new Date(`${sim}T00:00:00Z`).getTime() - new Date(`${getState().learning.simulationBase ?? sim}T00:00:00Z`).getTime();
+  return real + Math.max(0, offset);
+}
+
 function ensureRecord(bucket, id, defaults) {
   if (!bucket[id]) bucket[id] = { firstSeenAt: new Date().toISOString(), history: [], ...defaults };
   return bucket[id];
@@ -75,7 +87,11 @@ export function allInterventions() {
         expectedOutcome: r.expectedOutcome,
         created_at: w.firstSeenAt,
         due_date: addDays(w.firstSeenAt, r.dueInDays),
-        overdue: !['RESOLVED', 'DISMISSED'].includes(w.status) && Date.now() > new Date(addDays(w.firstSeenAt, r.dueInDays)).getTime(),
+        overdue: !['RESOLVED', 'DISMISSED'].includes(w.status) && workflowNow() > new Date(addDays(w.firstSeenAt, r.dueInDays)).getTime(),
+        escalationLevel: w.escalationLevel ?? 0,
+        escalatedTo: w.escalatedTo ?? null,
+        escalatedToLabel: w.escalatedTo ? ROLES[w.escalatedTo]?.label ?? w.escalatedTo : null,
+        escalatedAt: w.escalatedAt ?? null,
         status: w.status,
         note: w.note ?? null,
         updatedAt: w.updatedAt ?? null,
@@ -264,6 +280,7 @@ export function updateAlert(user, id, status) {
 export function notificationCount(user) {
   const projects = effectiveProjects().byId;
   const unread = allAlerts().filter((a) => a.status === 'UNREAD' && inScope(user, projects.get(a.projectId)) && ROLES[user.role].focus.includes(a.category)).length;
-  const assigned = allInterventions().filter((i) => (i.assigned_role === user.role || i.assigneeId === user.id) && ['OPEN', 'ACKNOWLEDGED'].includes(i.status) && inScope(user, projects.get(i.projectId))).length;
-  return { unreadAlerts: unread, openAssigned: assigned, total: unread + assigned };
+  const assigned = allInterventions().filter((i) => (i.assigned_role === user.role || i.assigneeId === user.id || i.escalatedTo === user.role) && ['OPEN', 'ACKNOWLEDGED'].includes(i.status) && inScope(user, projects.get(i.projectId))).length;
+  const messages = getState().notifications?.items?.filter((x) => x.recipient.id === user.id && !x.read).length ?? 0;
+  return { unreadAlerts: unread, openAssigned: assigned, unreadMessages: messages, total: unread + assigned + messages };
 }

@@ -49,6 +49,55 @@ export const RULE_THRESHOLDS = {
   deadlineHighDays: 30,
 };
 
+/**
+ * Project-type and framework-specific overrides. A threshold that is fair for
+ * an ownership acquisition is not fair for a right-of-user pipeline, so the
+ * applicable set is resolved per project (framework mode first, then type).
+ * Each override carries the reason shown in the Registry.
+ */
+export const RULE_THRESHOLD_OVERRIDES = [
+  {
+    match: { frameworkMode: 'right_of_user' },
+    thresholds: { compensationStageMinPct: 55, compensationStageCriticalPct: 45, possessionStageMinCompPct: 70, possessionStageCriticalCompPct: 60, legalCasesPer100Parcels: 50, legalCasesHighPer100Parcels: 60 },
+    reason: 'Right-of-user corridors (PMP Act) pay damage compensation on a short cycle and rarely attract title litigation, so a lower backlog and fewer cases already indicate trouble.',
+  },
+  {
+    match: { frameworkMode: 'right_of_way' },
+    thresholds: { compensationStageMinPct: 50, compensationStageCriticalPct: 42, legalCasesPer100Parcels: 55, legalCasesHighPer100Parcels: 65, dependencyPendingShare: 0.32 },
+    reason: 'Transmission right-of-way compensation is tower-footprint and corridor based; payment is expected earlier and utility / clearance dependencies gate the work.',
+  },
+  {
+    match: { projectType: 'Metro Rail' },
+    thresholds: { documentationMinPct: 62, documentationHighPct: 55, residualBacklogShare: 0.12 },
+    reason: 'Urban parcels carry dense, multi-owner records; documentation gaps block awards sooner than on agricultural land.',
+  },
+  {
+    match: { projectType: 'Irrigation' },
+    thresholds: { rrMinProgressPct: 60, rrHighProgressPct: 48 },
+    reason: 'Submergence and command-area works displace whole habitations, so R&R lag is escalated earlier.',
+  },
+  {
+    match: { projectType: 'Airport' },
+    thresholds: { rrMinProgressPct: 58, timelineOverrunDays: 90 },
+    reason: 'Greenfield airports acquire contiguous land pools with resettlement; a short overrun delays the whole construction package.',
+  },
+];
+
+/** The thresholds that apply to one project: defaults, then framework, then type overrides. */
+export function thresholdsFor(project) {
+  const mode = project?.framework?.mode ?? project?.network?.framework?.mode ?? null;
+  const applied = [];
+  let t = { ...RULE_THRESHOLDS };
+  for (const o of RULE_THRESHOLD_OVERRIDES) {
+    const ok = (!o.match.frameworkMode || o.match.frameworkMode === mode) && (!o.match.projectType || o.match.projectType === project?.type);
+    if (ok) {
+      t = { ...t, ...o.thresholds };
+      applied.push({ match: o.match, reason: o.reason, keys: Object.keys(o.thresholds) });
+    }
+  }
+  return { thresholds: t, applied };
+}
+
 const SEVERITY_RANK = { Low: 0, Medium: 1, High: 2, Critical: 3 };
 export const severityRank = (s) => SEVERITY_RANK[s] ?? 0;
 const PRIORITY = { Critical: 'P1', High: 'P2', Medium: 'P3', Low: 'P4' };
@@ -94,7 +143,8 @@ const pct = (v) => `${Math.round(v)}%`;
  * @param ctx.rejectedDocuments count of rejected documents on the project
  */
 export function evaluateProject(project, ctx = {}) {
-  const T = RULE_THRESHOLDS;
+  const T = thresholdsFor(project).thresholds;
+  const bands = ctx.bands ?? { high: 0.45, critical: 0.6 };
   const out = [];
   const stages = project.stages ?? [];
   const current = stages[project.currentStageIndex] ?? null;
@@ -136,8 +186,8 @@ export function evaluateProject(project, ctx = {}) {
       category: 'risk',
       severity: critical ? 'Critical' : 'High',
       title: `${project.riskBand} predicted delay risk on the ${stageName} milestone`,
-      reason: `The model puts the probability of the ${stageName} milestone slipping by more than 30 days at ${project.riskScore}%${project.predictedDelayDays ? `, with an expected slip of about ${project.predictedDelayDays} days` : ''}.`,
-      trigger: { source: 'model', metric: 'delay_probability', value: project.delayProbability, operator: '>=', threshold: critical ? 0.78 : 0.55 },
+      reason: `Delay risk ${project.riskScore}: the deployed model expects about ${project.riskScore}% of the open parcels at ${stageName} to miss their milestone by more than 30 days${project.predictedDelayDays ? `, with an expected slip of about ${project.predictedDelayDays} days` : ''}.`,
+      trigger: { source: 'model', metric: 'delay_risk', value: project.delayProbability, operator: '>=', threshold: critical ? bands.critical : bands.high },
       owner: owner(project, 'PRIMARY'),
       assignedRole: 'DISTRICT_ADMIN',
       supporting: ['DISTRICT_HEAD', 'LA_OFFICER'],
@@ -411,10 +461,14 @@ export function evaluateProject(project, ctx = {}) {
   const top = (project.contributors ?? [])[0];
   if (top && CONTRIBUTOR_ACTION[top.group] && (project.riskBand === 'High' || project.riskBand === 'Critical' || project.riskBand === 'Medium')) {
     const map = CONTRIBUTOR_ACTION[top.group];
+    // The leading driver of a High / Critical prediction becomes an owned
+    // intervention in its own right, so an officer acts on why the model is
+    // worried even when no threshold rule has fired yet.
+    const escalate = (project.riskBand === 'High' || project.riskBand === 'Critical') && top.share >= 0.2;
     push({
       code: 'MODEL_CONTRIBUTOR',
       category: map.category,
-      severity: 'Low',
+      severity: escalate ? 'Medium' : 'Low',
       title: `Leading model contributor: ${top.group}`,
       reason: `${top.group} carries ${pct(top.share * 100)} of the risk-increasing SHAP contribution across this project's open cases. A contribution explains the prediction; it is not proof of cause.`,
       trigger: { source: 'model', metric: 'shap_share', value: top.share, operator: 'top', threshold: null },
@@ -422,7 +476,7 @@ export function evaluateProject(project, ctx = {}) {
       action: map.action,
       outcome: 'Contributor addressed or explained at the next review.',
       alert: false,
-      intervention: false,
+      intervention: escalate,
     });
   }
 
@@ -430,8 +484,8 @@ export function evaluateProject(project, ctx = {}) {
 }
 
 /** Rules applied to a scenario (no case data, no lifecycle history). */
-export function evaluateScenario(scenario) {
-  return evaluateProject(scenario, {}).filter((r) => r.code !== 'CASE_BACKLOG' && r.code !== 'TIMELINE_OVERRUN');
+export function evaluateScenario(scenario, ctx = {}) {
+  return evaluateProject(scenario, ctx).filter((r) => r.code !== 'CASE_BACKLOG' && r.code !== 'TIMELINE_OVERRUN');
 }
 
 /**

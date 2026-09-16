@@ -3,6 +3,9 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   BarChart3,
+  BrainCircuit,
+  KeyRound,
+  LineChart,
   Bell,
   Brain,
   ChevronRight,
@@ -68,17 +71,20 @@ const PREDICT_NAV: NavItem[] = [
 ];
 
 const REVIEW_NAV: NavItem[] = [
+  { to: '/trends', label: 'Delay Trends & KPIs', icon: LineChart },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/reports', label: 'Reports', icon: FileBarChart },
   { to: '/documents', label: 'Documents', icon: FileStack },
   { to: '/registry', label: 'Authority Registry', icon: Network },
   { to: '/data-sources', label: 'Data Sources', icon: PlugZap },
+  { to: '/integrations', label: 'APIs & Security', icon: KeyRound },
   { to: '/data', label: 'Data & Model', icon: Database },
   { to: '/about', label: 'Methodology', icon: Info },
 ];
 
 const ADMIN_NAV: NavItem[] = [
   { to: '/admin', label: 'Administration', icon: Settings2, permission: 'admin.view' },
+  { to: '/learning', label: 'Model Lifecycle', icon: BrainCircuit, permission: 'admin.view' },
   { to: '/audit', label: 'Audit Trail', icon: History, permission: 'audit.view' },
 ];
 
@@ -95,6 +101,9 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/alerts': { title: 'Alert Centre', subtitle: 'Rule-driven alerts on risk, deadlines, blockages and backlogs in your jurisdiction' },
   '/map': { title: 'GIS Risk Map', subtitle: 'India → state → district → project, on administrative boundaries' },
   '/analytics': { title: 'Portfolio Analytics', subtitle: 'Stage throughput, district performance and model behaviour' },
+  '/trends': { title: 'Delay Trends & Performance', subtitle: 'State-wise and district-wise delay trends — observed history and model forecast — with performance indicators' },
+  '/learning': { title: 'Model Lifecycle', subtitle: 'Continuous learning: new outcomes, prospective monitoring, drift, gated retraining, registry and rollback' },
+  '/integrations': { title: 'APIs & Security', subtitle: 'Integration API for land-acquisition systems and government databases, API keys, security posture and audit integrity' },
   '/data': { title: 'Data & Model', subtitle: 'Corpus composition, data quality, model card and exports' },
   '/reports': { title: 'Reports', subtitle: 'MIS review packs and dataset exports' },
   '/documents': { title: 'Document Repository', subtitle: 'Notifications, awards, land records and survey documents by project, stage and case' },
@@ -234,7 +243,7 @@ function WarningBell() {
           <div className="border-b border-line px-4 py-3">
             <p className="font-display text-sm font-bold text-ink">Notifications</p>
             <p className="text-[11px] text-ink-3 num">
-              {notifications.data?.unreadAlerts ?? 0} unread alerts in your focus areas · {notifications.data?.openAssigned ?? 0} actions assigned to your role
+              {notifications.data?.unreadAlerts ?? 0} unread alerts in your focus areas · {notifications.data?.openAssigned ?? 0} actions assigned to your role · {notifications.data?.unreadMessages ?? 0} unread notifications
             </p>
           </div>
           <div className="max-h-[340px] overflow-y-auto">

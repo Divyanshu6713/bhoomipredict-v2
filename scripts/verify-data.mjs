@@ -235,7 +235,31 @@ function verifyModel(corpus) {
 
   const surrogate = JSON.parse(fs.readFileSync(path.join(modelDir, 'surrogate.json'), 'utf8'));
   check(surrogate.fidelity.logOddsR2 > 0.85, 'surrogate tracks the ensemble', `R2 ${surrogate.fidelity.logOddsR2}`);
-  check(Array.isArray(surrogate.features) && surrogate.features.length > 50, 'surrogate carries its feature spec', `${surrogate.features.length} features`);
+  check(Array.isArray(surrogate.features) && surrogate.features.length > 50, 'feature spec with training statistics published', `${surrogate.features.length} features`);
+  check(!surrogate.features.some((f) => ['state', 'authority'].includes(f.source) || ['latitude', 'longitude'].includes(f.name)), 'no state, authority or coordinate features (geography only through history)');
+
+  const ensemblePath = path.join(modelDir, 'ensemble.json');
+  check(fs.existsSync(ensemblePath), 'deployed ensemble exported (ensemble.json)');
+  if (fs.existsSync(ensemblePath)) {
+    const ens = JSON.parse(fs.readFileSync(ensemblePath, 'utf8'));
+    check(ens.classifier.trees.length === deployed.iterations, 'exported tree count equals the fitted iterations', `${ens.classifier.trees.length} trees`);
+    check(ens.exportParity.maxAbsProbabilityDiff < 1e-6, 'export reproduces scikit-learn probabilities', `max diff ${ens.exportParity.maxAbsProbabilityDiff}`);
+    check(ens.version === metrics.version && ens.features.length === surrogate.features.length, 'ensemble, metrics and feature spec are the same version', ens.version);
+    check(ens.projectRiskBands.critical > ens.projectRiskBands.high && ens.projectRiskBands.high > ens.projectRiskBands.medium, 'project-level risk bands published');
+  }
+  const registryPath = path.join(modelDir, 'registry.json');
+  if (fs.existsSync(registryPath)) {
+    const reg = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    check(reg.champion === metrics.version && fs.existsSync(path.join(modelDir, 'versions', reg.champion)), 'registry champion is the published model and is archived for rollback', reg.champion);
+    check(Boolean(metrics.gate?.reason), 'champion / challenger gate decision recorded', metrics.gate?.reason?.slice(0, 80));
+  } else {
+    check(false, 'model registry present');
+  }
+  const futurePath = path.join(DATA, 'simulation', 'future_outcomes.csv');
+  if (fs.existsSync(futurePath)) {
+    const futureRows = fs.readFileSync(futurePath, 'utf8').split('\n').filter(Boolean).length - 1;
+    check(futureRows === metrics.split.openRows + (metrics.learning?.outcomes?.applied ?? 0), 'withheld outcomes cover every open case (simulation of new data)', `${fmt(futureRows)} outcomes`);
+  }
 }
 
 /* ------------------------------------------------------------------- store */

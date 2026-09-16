@@ -34,6 +34,7 @@ import { ContributorBars, ContributorChips } from '@/components/explain/Contribu
 import { StageTimeline } from '@/components/lifecycle/StageTimeline';
 import { DependencyNetwork } from '@/components/network/DependencyNetwork';
 import { AlertRow, InterventionCard, RecommendationList } from '@/components/workflow';
+import { StageForecast } from '@/components/lifecycle/StageForecast';
 import { DocumentPanel } from '@/components/documents/DocumentPanel';
 import { AuditTimeline } from '@/components/workflow/AuditTimeline';
 import { IndiaGISMap } from '@/components/gis/IndiaGISMap';
@@ -318,8 +319,8 @@ export default function ProjectDetail() {
               <RiskGauge score={project.riskScore} label={project.riskBand} sublabel={`${Math.round(project.delayProbability * 100)}% chance ${project.currentStage} slips >30 days`} color={RISK_HEX[project.riskBand]} />
               {project.adjustment && (
                 <p className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[11.5px] leading-relaxed text-ink-2">
-                  Recorded edits ({project.adjustment.changedFields.join(', ') || `${project.adjustment.stageAdvances} stage advance`}) moved the risk from the ensemble's {project.previousEnsembleRisk}% by the surrogate's estimate
-                  ({project.adjustment.surrogateBefore}% → {project.adjustment.surrogateAfter}%). Case-level scores refresh at the next retraining.
+                  Recorded edits ({project.adjustment.changedFields.join(', ') || `${project.adjustment.stageAdvances} stage advance`}) moved the risk from the ensemble's {project.previousEnsembleRisk}% by the deployed model's estimate of the change on the project profile
+                  ({project.adjustment.profileBefore}% → {project.adjustment.profileAfter}%). Case-level scores refresh at the next retraining.
                 </p>
               )}
               <div className="mt-4 w-full">
@@ -344,7 +345,7 @@ export default function ProjectDetail() {
           <Card className="animate-fade-up">
             <CardHeader
               title="Why is it at risk?"
-              subtitle={project.contributorBasis === 'surrogate' ? 'Closed-form contributions of the surrogate on the project record' : 'TreeSHAP contributions of the deployed model, aggregated over open cases'}
+              subtitle={project.contributorBasis === 'treeshap-profile' ? 'Exact TreeSHAP of the deployed model on the project record' : project.contributorBasis === 'surrogate' ? 'Linear reference contributions on the project record' : 'TreeSHAP contributions of the deployed model, aggregated over open cases'}
               icon={<Sparkles className="h-4 w-4" />}
             />
             <div className="px-5 pb-5">
@@ -405,6 +406,8 @@ export default function ProjectDetail() {
         </div>
       </Card>
 
+      {project.forecast && <StageForecast className="animate-fade-up" forecast={project.forecast} />}
+
       {/* ------------------------------------ next milestone + workflow */}
       <section className="grid gap-4 xl:grid-cols-[1fr_1.6fr]">
         <Card className="animate-fade-up">
@@ -436,7 +439,7 @@ export default function ProjectDetail() {
         <Card className="animate-fade-up">
           <CardHeader
             title="Recommended actions"
-            subtitle="Every item is generated from a rule or model trigger on this project, with its owner"
+            subtitle="Generated from rule and model triggers, with owners — ranked by severity, then by the risk reduction the deployed model predicts for the action"
             icon={<ListChecks className="h-4 w-4" />}
             action={
               <Tabs

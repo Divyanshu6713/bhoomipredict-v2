@@ -1,9 +1,9 @@
 /** Product and team identity. One place, so no screen spells them differently. */
 export const BRAND = {
   product: 'LandPulse AI',
-  tagline: 'Anticipate Bottlenecks. Accelerate Infrastructure.',
+  tagline: 'Predict Delays. Enable Action.',
   descriptor: 'Land Acquisition Intelligence & Decision Support',
   team: 'RootStack',
   attribution: 'Built by RootStack',
-  version: 'v2.2',
+  version: 'v3.0',
 } as const;

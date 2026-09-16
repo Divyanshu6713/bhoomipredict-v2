@@ -338,11 +338,10 @@ export default function DataAndModel() {
                     : 'SHAP was unavailable at training time, so explanations fall back to the linear surrogate.'}
                 </p>
                 <p className="mt-2 text-[12px] leading-relaxed text-ink-2">
-                  Interactive what-if scoring uses a linear surrogate distilled from the ensemble. Its agreement is
-                  measured, not assumed: R² {metrics.surrogateFidelity.logOddsR2} on log-odds, Spearman{' '}
-                  {metrics.surrogateFidelity.spearman}, mean absolute probability difference{' '}
-                  {metrics.surrogateFidelity.meanAbsProbDiff}, and it lands in the same risk band{' '}
-                  {(metrics.surrogateFidelity.bandAgreement * 100).toFixed(0)}% of the time.
+                  Scenarios, edited projects and records sent through the integration API are scored by the deployed
+                  ensemble itself — its trees are exported and evaluated in the API, reproducing scikit-learn exactly — with
+                  exact TreeSHAP computed per request. A linear reference model is still distilled for transparency
+                  (log-odds R² {metrics.surrogateFidelity.logOddsR2}) but no longer scores anything.
                 </p>
               </div>
             </div>

@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { maskToCodes } from '../domain/registry.mjs';
+import { prepareEnsemble } from './ensemble.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -60,6 +61,10 @@ export function loadStore() {
   const geo = readJson(path.join(apiDir, 'geo.json'));
   const model = readJson(path.join(apiDir, 'model.json'));
   const surrogate = readJson(path.join(DATA, 'model', 'surrogate.json'));
+  const ensemblePath = path.join(DATA, 'model', 'ensemble.json');
+  const ensemble = fs.existsSync(ensemblePath) ? prepareEnsemble(readJson(ensemblePath)) : null;
+  const registryPath = path.join(DATA, 'model', 'registry.json');
+  const modelRegistry = fs.existsSync(registryPath) ? readJson(registryPath) : { champion: null, versions: [] };
 
   const projects = registry.projects;
   const projectById = new Map(projects.map((p, i) => [p.id, i]));
@@ -97,6 +102,8 @@ export function loadStore() {
     todayDay: meta.todayDay,
     bandNames: meta.bandNames,
     riskBands: meta.riskBands,
+    // Project-level bands apply to aggregated risk (the expected share of open parcels that slip).
+    projectRiskBands: meta.projectRiskBands ?? ensemble?.projectRiskBands ?? { medium: 0.3, high: 0.45, critical: 0.6 },
     stages: meta.stages,
     stageIndex,
     dicts: meta.dicts,
@@ -109,6 +116,9 @@ export function loadStore() {
     geo,
     model,
     surrogate,
+    ensemble,
+    modelRegistry,
+    modelVersion: ensemble?.version ?? model?.metrics?.version ?? null,
     featureSpec,
     loadMs: 0,
     bytes: buf.byteLength,

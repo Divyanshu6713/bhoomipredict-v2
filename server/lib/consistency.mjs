@@ -82,12 +82,24 @@ export function runConsistencyChecks(store) {
   }
   check('case-location-in-district', `Case coordinates fall inside their district polygon (sample of ${Math.ceil(store.rows / step)})`, caseFailures);
 
-  const cuts = store.riskBands;
-  check('risk-band-thresholds', 'Risk bands follow the deployed probability cut-offs',
+  const cuts = store.projectRiskBands;
+  check('risk-band-thresholds', 'Project risk bands follow the published project-level cut-offs',
     list.filter((p) => {
       const b = p.delayProbability >= cuts.critical ? 'Critical' : p.delayProbability >= cuts.high ? 'High' : p.delayProbability >= cuts.medium ? 'Medium' : 'Low';
       return b !== p.riskBand;
     }).map((p) => `${p.id}: p=${p.delayProbability} band ${p.riskBand}`));
+
+  check('forecast-coherent', 'Stage forecasts cover every remaining stage, with P80 on or after P50 and probabilities in range',
+    list.filter((p) => {
+      const f = p.forecast;
+      if (!f) return true;
+      const rem = f.stages.filter((s) => s.phase !== 'completed');
+      if (rem.length !== LIFECYCLE_STAGES.length - p.currentStageIndex) return true;
+      return rem.some((s) => s.delayProbability < 0 || s.delayProbability > 1 || s.p80Completion < s.p50Completion);
+    }).map((p) => p.id));
+
+  check('recommendation-impact', 'Every recommendation with an action category carries a model-estimated impact',
+    list.flatMap((p) => p.recommendations.filter((r) => r.category !== 'risk' && !r.impact && ['compensation', 'legal', 'documentation', 'approval', 'dependency', 'coordination', 'rr', 'stakeholder', 'schedule', 'backlog', 'possession'].includes(r.category)).map((r) => r.id)));
 
   const ids = new Set(list.map((p) => p.id));
   check('workflow-references', 'Every intervention and alert points at an existing project and a dependency in its network',

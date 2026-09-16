@@ -1,17 +1,21 @@
 /**
- * Retraining job runner.
+ * Model lifecycle jobs: retrain (with the champion / challenger gate) and rollback.
  *
- * Runs the existing offline pipeline — ml/train.py on the current corpus, then
- * scripts/build-store.mjs — as child processes, streams their output into a
- * bounded log, and on success asks the API to reload the store so new scores,
- * SHAP explanations and model metrics are served without a restart.
+ * Retrain runs ml/train.py on the corpus plus every newly recorded outcome
+ * (data/learning/outcomes.jsonl). The script compares the challenger with the
+ * serving champion on the same latest test window and publishes it only if it
+ * is not worse; the job then rebuilds the query store and hot-reloads the API.
+ * A rejected challenger leaves the champion serving and is recorded in the
+ * registry with the reason.
  *
- * Retraining needs Python 3.10+ with numpy, pandas, scikit-learn and shap on
- * the host. Where they are missing the job fails with that reason; nothing is
- * simulated. Projects added through the form or CSV upload carry no case
- * records, so they do not enter the training corpus.
+ * Rollback restores an archived version's artefacts (data/model/versions/<id>),
+ * rebuilds the store and reloads — no retraining.
+ *
+ * Retraining needs Python 3.10+ with numpy, pandas, scikit-learn and shap.
+ * Where they are missing the job fails with that reason; nothing is simulated.
  */
 import { spawn, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -60,55 +64,112 @@ export function jobStatus() {
   return { ...job, log: job.log.slice(-120) };
 }
 
-export function startRetrain(user, { onSuccess }) {
-  if (job.status === 'running') return { started: false, reason: 'A retraining job is already running', job: jobStatus() };
-  const py = pythonAvailable();
+const MODEL_DIR = path.join(ROOT, 'data', 'model');
+const readRegistry = () => {
+  const f = path.join(MODEL_DIR, 'registry.json');
+  return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : { champion: null, versions: [] };
+};
+
+function begin(kind, user, steps) {
   Object.assign(job, {
     id: `JOB-${Date.now()}`,
+    kind,
     status: 'running',
-    steps: [
-      { name: 'Train, evaluate and explain (ml/train.py)', status: 'pending' },
-      { name: 'Rebuild query store (scripts/build-store.mjs)', status: 'pending' },
-      { name: 'Reload the API store', status: 'pending' },
-    ],
+    steps: steps.map((name) => ({ name, status: 'pending' })),
     log: [],
     startedAt: new Date().toISOString(),
     finishedAt: null,
     startedBy: { id: user.id, name: user.name },
     error: null,
+    result: null,
   });
-  if (!py.ok) {
+}
+
+async function step(i, fn) {
+  job.steps[i].status = 'running';
+  await fn();
+  job.steps[i].status = 'done';
+}
+
+function finish(err) {
+  if (err) {
     job.status = 'failed';
-    job.error = `Python environment unavailable: ${py.detail}`;
+    job.error = err.message;
+    const running = job.steps.find((s) => s.status === 'running');
+    if (running) running.status = 'failed';
+    pushLog(`FAILED: ${err.message}`);
+  }
+  job.finishedAt = new Date().toISOString();
+}
+
+export const jobRunning = () => job.status === 'running';
+
+export function startRetrain(user, { onSuccess, onFinished, triggeredBy }) {
+  if (job.status === 'running') return { started: false, reason: 'A model job is already running', job: jobStatus() };
+  const py = pythonAvailable();
+  begin('retrain', user, ['Train challenger, compare with champion (ml/train.py)', 'Rebuild query store (scripts/build-store.mjs)', 'Reload the API store']);
+  if (!py.ok) {
+    finish(new Error(`Python environment unavailable: ${py.detail}`));
     job.steps[0].status = 'failed';
-    job.finishedAt = new Date().toISOString();
-    pushLog(job.error);
     return { started: false, reason: job.error, job: jobStatus() };
   }
-
   (async () => {
     try {
-      job.steps[0].status = 'running';
-      await run(PYTHON, [path.join('ml', 'train.py')]);
-      job.steps[0].status = 'done';
-      job.steps[1].status = 'running';
-      await run(process.execPath, [path.join('scripts', 'build-store.mjs')]);
-      job.steps[1].status = 'done';
-      job.steps[2].status = 'running';
-      await onSuccess();
-      job.steps[2].status = 'done';
-      job.status = 'succeeded';
-      pushLog('Store reloaded — new model artefacts are live.');
+      const before = readRegistry().versions.length;
+      await step(0, () => run(PYTHON, [path.join('ml', 'train.py'), '--triggered-by', triggeredBy ?? user.name]));
+      const reg = readRegistry();
+      const entry = reg.versions.length > before ? reg.versions[reg.versions.length - 1] : null;
+      job.result = entry;
+      if (entry && entry.status !== 'champion') {
+        job.steps[1].status = 'skipped';
+        job.steps[2].status = 'skipped';
+        job.status = 'rejected';
+        pushLog(`Challenger ${entry.id} rejected: ${entry.gate?.reason ?? ''} The champion keeps serving.`);
+      } else {
+        await step(1, () => run(process.execPath, [path.join('scripts', 'build-store.mjs')]));
+        await step(2, () => onSuccess());
+        job.status = 'succeeded';
+        pushLog(`Model ${entry?.id ?? ''} promoted and live.`);
+      }
+      finish(null);
     } catch (err) {
-      job.status = 'failed';
-      job.error = err.message;
-      const running = job.steps.find((s) => s.status === 'running');
-      if (running) running.status = 'failed';
-      pushLog(`FAILED: ${err.message}`);
-    } finally {
-      job.finishedAt = new Date().toISOString();
+      finish(err);
     }
+    onFinished?.(jobStatus());
   })();
+  return { started: true, job: jobStatus() };
+}
 
+export function startRollback(user, versionId, { onSuccess, onFinished }) {
+  if (job.status === 'running') return { started: false, reason: 'A model job is already running', job: jobStatus() };
+  const reg = readRegistry();
+  const target = reg.versions.find((v) => v.id === versionId);
+  const dir = path.join(MODEL_DIR, 'versions', String(versionId));
+  if (!target || !fs.existsSync(dir)) return { started: false, reason: `Version ${versionId} is not archived`, job: jobStatus() };
+  if (reg.champion === versionId) return { started: false, reason: `${versionId} is already the champion`, job: jobStatus() };
+  begin('rollback', user, [`Restore artefacts of ${versionId}`, 'Rebuild query store (scripts/build-store.mjs)', 'Reload the API store']);
+  (async () => {
+    try {
+      await step(0, async () => {
+        for (const f of fs.readdirSync(dir)) fs.copyFileSync(path.join(dir, f), path.join(MODEL_DIR, f));
+        for (const v of reg.versions) if (v.status === 'champion') v.status = 'archived';
+        target.status = 'champion';
+        target.restoredAt = new Date().toISOString();
+        target.restoredBy = user.name;
+        reg.champion = versionId;
+        fs.writeFileSync(path.join(MODEL_DIR, 'registry.json'), JSON.stringify(reg, null, 1));
+        pushLog(`Restored ${fs.readdirSync(dir).length} artefacts from ${versionId}`);
+      });
+      await step(1, () => run(process.execPath, [path.join('scripts', 'build-store.mjs')]));
+      await step(2, () => onSuccess());
+      job.status = 'succeeded';
+      job.result = target;
+      pushLog(`Rolled back to ${versionId}.`);
+      finish(null);
+    } catch (err) {
+      finish(err);
+    }
+    onFinished?.(jobStatus());
+  })();
   return { started: true, job: jobStatus() };
 }

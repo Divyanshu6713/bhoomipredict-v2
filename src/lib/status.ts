@@ -83,9 +83,11 @@ export const CATEGORY_LABEL: Record<string, string> = {
 };
 
 export const RISK_BASIS_LABEL: Record<string, string> = {
-  ensemble: 'Deployed ensemble — mean over open cases in the current stage',
-  'ensemble+adjustment': 'Deployed ensemble, adjusted by the surrogate for recorded edits',
-  surrogate: 'Surrogate model on the project-level record (no case records attached)',
+  ensemble: 'Deployed ensemble — expected share of open current-stage parcels that slip > 30 days',
+  'ensemble+adjustment': 'Deployed ensemble, moved by the model’s estimate of recorded edits',
+  'ensemble-profile': 'Deployed ensemble on the project-level record (no case records attached)',
+  'next-milestone': 'Deployed ensemble — expected share of open current-stage parcels that slip > 30 days',
+  surrogate: 'Linear reference model on the project-level record (legacy)',
 };
 
 export const BASIS_LABEL: Record<string, string> = {

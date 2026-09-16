@@ -57,8 +57,32 @@ const datasetMeta = JSON.parse(fs.readFileSync(path.join(DATA, 'dataset-meta.jso
 const registryRaw = JSON.parse(fs.readFileSync(path.join(DATA, 'projects.raw.json'), 'utf8'));
 
 const BANDS = metrics.riskBands ?? surrogate.riskBands ?? { medium: 0.3, high: 0.55, critical: 0.78 };
+// Aggregates (project, stage, state) are a mean of case probabilities — the
+// expected share of open parcels that slip — so they use project-level bands.
+const PROJECT_BANDS = metrics.projectRiskBands ?? { medium: 0.3, high: 0.45, critical: 0.6 };
 const BAND_NAMES = ['Low', 'Medium', 'High', 'Critical'];
 const bandOf = (p) => (p >= BANDS.critical ? 3 : p >= BANDS.high ? 2 : p >= BANDS.medium ? 1 : 0);
+const projectBandOf = (p) => (p >= PROJECT_BANDS.critical ? 3 : p >= PROJECT_BANDS.high ? 2 : p >= PROJECT_BANDS.medium ? 1 : 0);
+
+/* ------------------------------------------------- newly recorded outcomes */
+// Outcomes recorded after the corpus snapshot (officer entries, CSV / API
+// ingestion, simulation releases) turn open cases into labelled ones, exactly
+// as ml/train.py applies them before training.
+const OUTCOMES = new Map();
+{
+  const file = path.join(DATA, 'learning', 'outcomes.jsonl');
+  if (fs.existsSync(file)) {
+    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+      if (!line.trim()) continue;
+      try {
+        const r = JSON.parse(line);
+        if (r.caseId) OUTCOMES.set(r.caseId, r);
+      } catch {
+        /* torn line */
+      }
+    }
+  }
+}
 
 /* ------------------------------------------------------------ dictionaries */
 
@@ -279,6 +303,7 @@ async function readCorpus() {
   const qualityHist = new Array(10).fill(0);
   const missingCount = Object.fromEntries(MISSING_FIELDS.map((f) => [f, 0]));
   let openCount = 0;
+  let outcomesApplied = 0;
 
   const featureSpec = surrogate.features ?? [];
   const featureGroup = featureSpec.map((f) => f.group ?? 'Other');
@@ -359,12 +384,19 @@ async function readCorpus() {
     col.assessDay[row] = dayFromISO(cells[ix.assessment_date]);
     col.observed[row] = Number(cells[ix.label_observed]);
     col.delayed[row] = cells[ix.next_milestone_delayed] === '' ? -1 : Number(cells[ix.next_milestone_delayed]);
+    const recorded = OUTCOMES.size ? OUTCOMES.get(cells[ix.case_id]) : undefined;
     col.truthBand[row] = cells[ix.delay_risk_category] === ''
       ? -1
       : BAND_NAMES.indexOf(cells[ix.delay_risk_category]);
     col.actualDelay[row] = cells[ix.actual_stage_delay_days] === ''
       ? -9999
       : Number(cells[ix.actual_stage_delay_days]);
+    if (recorded && col.observed[row] === 0) {
+      col.observed[row] = 1;
+      col.delayed[row] = recorded.delayed ? 1 : 0;
+      col.actualDelay[row] = recorded.actualDelayDays === null || recorded.actualDelayDays === undefined ? -9999 : Math.round(recorded.actualDelayDays);
+      outcomesApplied++;
+    }
     col.score[row] = score;
     col.riskBand[row] = band;
     col.quality[row] = quality;
@@ -554,7 +586,7 @@ async function readCorpus() {
     process.exit(1);
   }
 
-  return { districtAgg, stateAgg, stageAgg, projectAgg, contributorAgg, monthAgg, scoreHist, qualityHist, missingCount, openCount, dependencyAgg };
+  return { districtAgg, stateAgg, stageAgg, projectAgg, contributorAgg, monthAgg, scoreHist, qualityHist, missingCount, openCount, dependencyAgg, outcomesApplied };
 }
 
 /* ------------------------------------------------------------------- build */
@@ -617,6 +649,9 @@ async function main() {
       shapValOffset,
       totalBytes: offset,
       riskBands: BANDS,
+      projectRiskBands: PROJECT_BANDS,
+      outcomesApplied: agg.outcomesApplied,
+      modelVersion: metrics.version ?? null,
       bandNames: BAND_NAMES,
       stages: LIFECYCLE_STAGES,
       dicts: Object.fromEntries(Object.entries(dicts).map(([k, d]) => [k, d.values])),
@@ -650,7 +685,7 @@ async function main() {
         index: si,
         openCases: ps.n,
         riskScore: hasOpen ? Math.round((ps.scoreSum / ps.n) * 100) : null,
-        band: hasOpen ? BAND_NAMES[bandOf(ps.scoreSum / ps.n)] : null,
+        band: hasOpen ? BAND_NAMES[projectBandOf(ps.scoreSum / ps.n)] : null,
         mix: ps.band,
         basis: hasOpen ? 'model' : s.actualCompletion ? 'observed' : 'no-open-cases',
       };
@@ -717,6 +752,8 @@ async function main() {
       },
       rrStatus: !p.rrRequiredParcels ? 'Not Applicable' : p.currentStageIndex < 6 ? 'Not Started' : (rrDue ?? 0) > 95 ? 'Complete' : (rrDue ?? 0) > 5 ? 'In Progress' : 'Not Started',
     };
+    // Open-case counts per stage come from the store, so newly recorded outcomes are reflected.
+    p.stages = p.stages.map((s, si) => ({ ...s, openCases: pa.stageOpen[si].n }));
     const lifecycle = deriveLifecycle(p, { todayDay: TODAY_DAY, stageRisk, stageDependency });
     const currentOpen = pa.stageOpen[p.currentStageIndex].n;
     const predictedDelayDays = currentOpen
@@ -756,7 +793,7 @@ async function main() {
       },
       predictedDelayDays,
       riskScore: Math.round(headlineProb * 100),
-      riskBand: BAND_NAMES[bandOf(headlineProb)],
+      riskBand: BAND_NAMES[projectBandOf(headlineProb)],
       delayProbability: Number(headlineProb.toFixed(4)),
       riskBasis: currentStageRisk && currentStageRisk.openCases > 0 ? 'next-milestone' : 'open-book-mean',
       portfolioRiskScore: riskScore,
@@ -790,7 +827,7 @@ async function main() {
     cases: s.cases,
     openCases: s.open,
     riskScore: s.open ? Math.round((s.scoreSum / s.open) * 100) : 0,
-    riskBand: BAND_NAMES[bandOf(s.open ? s.scoreSum / s.open : 0)],
+    riskBand: BAND_NAMES[projectBandOf(s.open ? s.scoreSum / s.open : 0)],
     mix: { Low: s.band[0], Medium: s.band[1], High: s.band[2], Critical: s.band[3] },
     highRiskCases: s.band[2] + s.band[3],
     areaHa: Number(s.areaHa.toFixed(1)),
@@ -806,7 +843,7 @@ async function main() {
       cases: s.cases,
       openCases: s.open,
       riskScore: s.open ? Math.round((s.openScoreSum / s.open) * 100) : 0,
-      riskBand: BAND_NAMES[bandOf(s.open ? s.openScoreSum / s.open : 0)],
+      riskBand: BAND_NAMES[projectBandOf(s.open ? s.openScoreSum / s.open : 0)],
       mix: { Low: s.band[0], Medium: s.band[1], High: s.band[2], Critical: s.band[3] },
       observedCases: s.observed,
       observedDelayRate: s.observed ? Number((s.delayed / s.observed).toFixed(4)) : 0,
@@ -893,6 +930,9 @@ async function main() {
       deployed: metrics.deployed,
       operatingThreshold: metrics.operatingThreshold,
       riskBands: BANDS,
+      projectRiskBands: PROJECT_BANDS,
+      version: metrics.version ?? null,
+      gate: metrics.gate ?? null,
       test: metrics.models[metrics.deployed].test,
       validation: metrics.models[metrics.deployed].validation,
       baseline: metrics.models.logistic_regression.test,

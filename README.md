@@ -2,7 +2,7 @@
 
 # LandPulse AI
 
-**Anticipate Bottlenecks. Accelerate Infrastructure.**
+**Predict Delays. Enable Action.**
 
 Land Acquisition Intelligence · Delay-Risk Prediction · Decision Support — for infrastructure projects
 across India, from central ministries to district offices. Built by **RootStack**.
@@ -28,6 +28,10 @@ npm run data        # one-time: generate → train → store → PDF (~10 min, n
 npm run dev         # API (5179) + Vite (5178): http://localhost:5178
 ```
 
+**Sign-in.** Every profile needs a password. Directory profiles start on the deployment's demo password
+(`LANDPULSE_DEMO_PASSWORD`, default `LandPulse@2026`) and can set their own under *My Profile*. Five failed
+attempts lock a profile for five minutes; sessions expire after 60 idle minutes or 8 hours.
+
 Sign in with a **directory profile** (national coordination cell, MoRTH, DoLR, MoEFCC, NHAI, Southern Railway,
 POWERGRID, and state / district officers in Karnataka, Maharashtra, Uttar Pradesh, Tamil Nadu and Bihar) or
 **configure a position** anywhere in the national hierarchy — any ministry or central organisation, any of the
@@ -39,8 +43,8 @@ jurisdiction; the role decides permissions; the API enforces both.
 | `npm run dev` | API + Vite dev server (the API is pinned to 5179 even if `PORT` is set) |
 | `npm run build` | type-check + production bundle |
 | `npm start` | single process: API + built front end on `PORT` (default 5179) |
-| `npm run test:smoke` | 147 end-to-end functional tests against an isolated API instance |
-| `npm run data:verify` | 40 checks across corpus, model, store and deliverables |
+| `npm run test:smoke` | 211 end-to-end functional tests against an isolated API instance |
+| `npm run data:verify` | 56 checks across corpus, model, registry, store and deliverables |
 | `npm run data` | full data pipeline |
 | `npm run data:geo` | rebuild boundary layers from source (downloads ~100 MB, uses mapshaper via npx) |
 
@@ -69,6 +73,14 @@ Python 3.10+ with `numpy`, `pandas`, `scikit-learn`, `shap` is needed for traini
 | `/admin` | CSV upload & validation, retraining job, model metrics, consistency validation, deleted-project restore |
 | `/audit`, `/profile` | Audit trail; administrative position (hierarchy ladder), scope, portfolio KPIs, role, official information, assignments |
 | `/risk`, `/analytics`, `/reports`, `/data`, `/about` | Model decomposition, analytics, MIS reports, model card, methodology |
+| `/trends` | State-wise and district-wise delay trends (observed history, then model forecast — never overlapping), direction of travel, performance league tables for authorities, offices, districts and States |
+| `/learning` | Model Lifecycle: recorded outcomes, prospective monitoring and calibration, PSI drift, simulation clock, CSV outcome ingestion, gated retraining, automatic retraining, model registry and rollback |
+| `/integrations` | APIs & Security: API clients (scoped, rate-limited keys with jurisdiction and webhooks), OpenAPI v1 endpoints, security posture, audit hash-chain verification |
+
+Project pages add a **stage-wise delay forecast** (P(late > 30 days) per remaining stage, P50 / P80 dates,
+probability of missing the target) and recommendations carry the **risk reduction the deployed model predicts**
+for each action. Case pages let officers **record milestone outcomes**. The alert centre shows **notifications and
+deliveries** from the scheduled scanner.
 
 ---
 
@@ -93,7 +105,16 @@ server/
 │  └─ validation.mjs         field validation shared by form, edit and CSV upload
 └─ lib/
    ├─ store.mjs, query.mjs   columnar case store and query engine
-   ├─ scorer.mjs             linear surrogate: probability, closed-form Shapley values, expected slip days
+   ├─ ensemble.mjs           exported deployed trees: probability, expected slip, exact TreeSHAP
+   ├─ scorer.mjs             model input contract; scores records with the ensemble
+   ├─ forecast.mjs           stage-wise Monte Carlo delay forecast
+   ├─ impact.mjs             predicted risk reduction per recommended action
+   ├─ analytics.mjs          delay trends and performance indicators
+   ├─ learning.mjs           outcomes, simulation clock, monitoring, drift, registry
+   ├─ notifications.mjs      scheduled alert scans, escalation, delivery channels
+   ├─ security.mjs           passwords, lockout, sessions, CORS and headers
+   ├─ apiClients.mjs         API keys, scopes, jurisdiction, rate limits
+   ├─ externalApi.mjs        /api/v1 integration API and OpenAPI contract
    ├─ projects.mjs           effective projects = corpus + edits + additions − deletions (single source of truth)
    ├─ workflow.mjs           interventions & alerts with persisted status
    ├─ scenario.mjs           scenario scoring through the registry
@@ -245,26 +266,78 @@ that tier (a Land Acquisition Officer cannot be national).
 stage and project. **Expected slip days** = P(delay) × a conditional slip regressor trained on delayed,
 resolved milestones.
 
-**Split.** Chronological on `assessment_date`: earliest 70% train, next 15% validation, last 15% test.
+**Split.** Chronological on `assessment_date`: earliest 70% train, next 15% validation, last 15% test. The
+metrics below come from the fit on the training window; after passing the gate the same configuration is
+refitted on every labelled row, and that refit is what is served.
 
 | Model | ROC-AUC | PR-AUC | Precision | Recall | F1 | Brier |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Gradient boosting (deployed) | 0.835 | 0.730 | 0.623 | 0.710 | 0.664 | 0.149 |
-| Logistic regression (baseline) | 0.811 | 0.717 | 0.609 | 0.702 | 0.652 | 0.155 |
-| Random forest (comparison) | 0.817 | 0.703 | 0.634 | 0.644 | 0.639 | 0.161 |
+| Gradient boosting (deployed) | 0.834 | 0.716 | 0.610 | 0.707 | 0.655 | 0.146 |
+| Logistic regression (baseline) | 0.830 | 0.712 | 0.589 | 0.725 | 0.650 | 0.148 |
+| Random forest (comparison) | 0.817 | 0.689 | 0.597 | 0.674 | 0.633 | 0.155 |
 
-Threshold 0.348 chosen on validation. 239 features, now including **authority dependency count, pending
-department actions, approval delay and inter-department coordination** — pending department actions is the
-fifth-largest mean |SHAP| feature. Surrogate fidelity: log-odds R² 0.951, Spearman 0.977, band agreement
-86%. Conditional slip MAE 26.9 days vs 29.1 for a median baseline (right-censored; understates real error).
+Serving model `v20260914-071608` · 83 features · threshold 0.3337 chosen on validation.
+State, authority and coordinates are **not** features: geography acts only through recorded district / authority
+history, so an unseen State or district is scored on its signals. Conditional slip MAE
+55.45 days vs 58.31 for a median baseline (right-censored).
 
-**Explainability.** TreeSHAP on the deployed ensemble for all 350,000 cases (top six per case); scenario
-and project-edit contributions are the surrogate's closed-form Shapley values and are labelled as such.
-A contribution explains a prediction; it is not a finding of cause.
+**Served from exported trees.** `ml/train.py` exports the deployed classifier and slip regressor to
+`data/model/ensemble.json` (parity with scikit-learn checked before publishing: max difference
+0.0). The API scores scenarios, edits, form / CSV / API projects with the
+real model — no surrogate, no Python at serve time.
 
-**Risk basis on projects.** Unedited corpus projects: ensemble mean over the current stage's open cases.
-Edited projects: ensemble figure moved by the surrogate's estimate of the edit. Projects added by form or
-CSV: surrogate on the project record. The basis is shown wherever the figure is.
+**Explainability.** TreeSHAP on the deployed model for all 350,000 cases (top six per case) and exact TreeSHAP
+computed in the API for any new record (a port of the reference algorithm, verified against the SHAP library
+to 1e-7). A contribution explains a prediction; it is not a finding of cause.
+
+**Risk bands.** Case risk (one parcel's probability): Medium ≥ 0.3, High ≥ 0.55,
+Critical ≥ 0.78. Project risk is the expected share of open current-stage parcels that slip (the
+mean case probability), with its own bands: Medium ≥ 0.3, High ≥ 0.45,
+Critical ≥ 0.6.
+
+**Stage-wise forecast** (`server/lib/forecast.mjs`). The current stage uses the model's risk; later stages use each
+stage's observed delay rate shifted by the project's risk (log-odds effect, decaying ×0.8 per stage). A seeded
+2,000-run Monte Carlo draws late / on-time and slip days from the observed distributions and chains them on planned
+durations → P(late) per stage, P50 / P80 completion, probability of missing the target.
+
+**Predictive recommendations** (`server/lib/impact.mjs`). Rules decide which actions apply and who owns them
+(with framework- and type-specific threshold overrides); each action's change is applied to the project inputs and
+re-scored with the deployed model, and actions are ranked by severity and predicted risk reduction.
+
+### Continuous learning
+
+```
+outcome (officer entry · CSV · API v1 · simulation release)
+  → validated against the case, stored with the prediction made before it (data/learning/outcomes.jsonl)
+  → prospective monitoring (live ROC-AUC, precision / recall, Brier, calibration) + PSI drift
+  → retrain (manual, or automatic past an outcome threshold)
+  → challenger vs champion on the same latest test window (PR-AUC and Brier tolerance 0.01)
+  → promote → refit on all labelled rows → export, SHAP, store rebuild, hot reload
+  → registry (data/model/registry.json) + archived versions (data/model/versions/) → rollback
+```
+
+`data/simulation/future_outcomes.csv` holds the withheld outcomes of the open cases; advancing the simulation clock
+releases those that would have become knowable — labelled `simulation` everywhere. 2 model version(s)
+are currently registered; champion `v20260914-071608`.
+
+### Alerts and notifications
+
+A scheduler (`LANDPULSE_ALERT_SCAN_MINUTES`, default 15) evaluates every rule, notifies the owning officers of new
+alerts, escalates overdue interventions one level up (LAO → District Administrator → State Administrator → National),
+and delivers one digest per officer: in-app (delivered), email and SMS (rendered to `data/runtime/outbox/` — no
+gateway connected), webhooks (real HTTP POST to `LANDPULSE_WEBHOOK_URL` and to API clients that registered one).
+
+### Integration API and security
+
+`/api/v1` (OpenAPI 3 at `/api/v1/openapi.json`): list projects with risk, risk + drivers + forecast +
+recommendations, push project status updates (re-scored immediately), create projects, score a record, record
+outcomes, read alerts and interventions. Keys are `X-API-Key`, stored as SHA-256 hashes, with scopes, a jurisdiction
+(the same position model as users) and a per-key rate limit.
+
+Passwords are scrypt-hashed with lockout; bearer tokens are 256-bit, hash-stored, header-only, with idle and absolute
+expiry; export links use a separate download-only token; CORS is an allowlist (`LANDPULSE_CORS_ORIGINS`); the audit
+log is SHA-256 hash-chained and verifiable (`/api/audit/verify`), and records failed sign-ins, exports, downloads and
+API writes.
 
 ---
 
@@ -281,13 +354,15 @@ Everything is seeded and byte-identical on every run.
 ## Verification
 
 ```bash
-npm run data:verify   # 40 corpus / model / store / deliverable checks
-npm run test:smoke    # 147 functional checks: hierarchy & positions, drill-down, issues, integration, roles, CRUD, CSV, documents, workflow, audit, consistency
+npm run data:verify   # 56 corpus / model / registry / store / deliverable checks
+npm run test:smoke    # 211 functional checks: hierarchy & positions, drill-down, issues, integration, roles, CRUD, CSV, documents, workflow,
+                      # security, exported model & TreeSHAP, stage forecast, recommendation impact, trends & KPIs, notifications,
+                      # continuous learning, API v1, audit chain, consistency
 ```
 
-The Administration screen runs the same 14 consistency checks live (case counts equal the store, no
+The Administration screen runs the same 16 consistency checks live (case counts equal the store, no
 aviation bodies outside airports, state-specific authority sets, coordinates inside state and district,
-stage-status order, residual backlog explained, risk bands on cut-offs, workflow references valid).
+stage-status order, residual backlog explained, project risk bands on cut-offs, stage forecasts coherent, recommendation impacts present, workflow references valid).
 
 ## Stack
 
@@ -296,4 +371,4 @@ React 18 · TypeScript · Vite 5 · Tailwind CSS 3 · Recharts · Lucide · Reac
 
 ---
 
-**LandPulse AI** · Anticipate Bottlenecks. Accelerate Infrastructure. · Built by **RootStack**
+**LandPulse AI** · Predict Delays. Enable Action. · Built by **RootStack**

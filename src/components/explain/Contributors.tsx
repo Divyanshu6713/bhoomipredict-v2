@@ -8,7 +8,7 @@ import type { Contributor } from '@/data/types';
  *
  * Case-level contributions are SHAP values computed on the deployed ensemble;
  * scenario contributions are the closed-form Shapley values of the linear
- * surrogate. Either way a bar is a statement about what moved the model, which
+ * deployed model on the project record. Either way a bar is a statement about what moved the model, which
  * is why the caveat travels with the panel rather than living in a footnote.
  */
 export function ContributorBars({

@@ -16,10 +16,10 @@
  *   ensemble            corpus project, unedited: mean deployed-model probability
  *                       over the open cases of the current stage
  *   ensemble+adjustment corpus project with recorded edits: the ensemble figure
- *                       moved by the surrogate's estimate of the edit (difference
- *                       in surrogate log-odds between edited and original profile)
- *   surrogate           project added without case records: the surrogate scored
- *                       on the project-level profile
+ *                       moved by the ensemble's estimate of the edit (difference
+ *                       in log-odds between the edited and original profile)
+ *   ensemble-profile    project added without case records: the deployed ensemble
+ *                       scored on the project-level profile
  */
 import {
   LIFECYCLE_STAGES,
@@ -31,7 +31,9 @@ import {
 import { deriveLifecycle, dayFromISO, isoFromDay } from '../domain/lifecycle.mjs';
 import { evaluateProject } from '../domain/rules.mjs';
 import { validateProject } from '../domain/validation.mjs';
-import { scoreRecord } from './scorer.mjs';
+import { scoreModel } from './scorer.mjs';
+import { forecastProject } from './forecast.mjs';
+import { attachImpact } from './impact.mjs';
 import { getState, saveState, recordAudit } from './persistence.mjs';
 import { districtIndex } from '../domain/geography.mjs';
 
@@ -55,8 +57,9 @@ export const touchProjects = () => {
   cache = null;
 };
 
+/** Project risk is an aggregate (expected share of open parcels that slip), so it uses the project bands. */
 const bandOfProb = (p) => {
-  const b = store.riskBands;
+  const b = store.projectRiskBands;
   return p >= b.critical ? 'Critical' : p >= b.high ? 'High' : p >= b.medium ? 'Medium' : 'Low';
 };
 const logit = (p) => Math.log(Math.max(1e-6, Math.min(1 - 1e-6, p)) / (1 - Math.max(1e-6, Math.min(1 - 1e-6, p))));
@@ -307,9 +310,9 @@ function materialiseCorpus(base, override) {
 
   const edited = Object.keys(fields).some((k) => MODEL_FIELDS.includes(k)) || (override?.stageAdvances?.length ?? 0) > 0;
   if (edited) {
-    // Move the ensemble figure by the surrogate's estimate of what changed.
-    const before = scoreRecord(store.surrogate, projectRecord(base));
-    const after = scoreRecord(store.surrogate, projectRecord(p));
+    // Move the ensemble figure by the model's estimate of what changed.
+    const before = scoreModel(store, projectRecord(base), { explain: false, level: 'project' });
+    const after = scoreModel(store, projectRecord(p), { explain: false, level: 'project' });
     const prob = sigmoid(logit(base.delayProbability) + (after.logOdds - before.logOdds));
     p.previousEnsembleRisk = base.riskScore;
     p.delayProbability = Number(prob.toFixed(4));
@@ -318,8 +321,8 @@ function materialiseCorpus(base, override) {
     p.predictedDelayDays = Math.max(0, Math.round((base.predictedDelayDays ?? 0) + ((after.predictedDelayDays ?? 0) - (before.predictedDelayDays ?? 0))));
     p.riskBasis = 'ensemble+adjustment';
     p.adjustment = {
-      surrogateBefore: before.riskScore,
-      surrogateAfter: after.riskScore,
+      profileBefore: before.riskScore,
+      profileAfter: after.riskScore,
       logOddsDelta: Number((after.logOdds - before.logOdds).toFixed(4)),
       changedFields: Object.keys(fields),
       stageAdvances: override?.stageAdvances?.length ?? 0,
@@ -382,14 +385,14 @@ function materialiseUser(raw) {
   p.milestoneDeadline = p.stages[p.currentStageIndex].expectedCompletion;
   p.progressPct = progressOf(p);
 
-  const scored = scoreRecord(store.surrogate, projectRecord(p));
+  const scored = scoreModel(store, projectRecord(p), { level: 'project' });
   p.delayProbability = scored.probability;
   p.riskScore = scored.riskScore;
   p.riskBand = scored.riskBand;
   p.predictedDelayDays = scored.predictedDelayDays ?? 0;
-  p.riskBasis = 'surrogate';
+  p.riskBasis = store.ensemble ? 'ensemble-profile' : 'surrogate';
   p.contributors = scored.increasing.slice(0, 6).map((g) => ({ group: g.group, value: g.value, share: g.share }));
-  p.contributorBasis = 'surrogate';
+  p.contributorBasis = store.ensemble ? 'treeshap-profile' : 'surrogate';
   p.topContributor = p.contributors[0]?.group ?? null;
   return p;
 }
@@ -438,11 +441,14 @@ export function effectiveProjects() {
     const snap = snapshot(state, p);
     snapshotsChanged ||= snap.changed;
     p.riskSnapshots = snap.history;
-    p.recommendations = evaluateProject(p, {
+    const recommendations = evaluateProject(p, {
       previousRisk: snap.previous,
       rejectedDocuments: docsRejected.get(p.id) ?? 0,
       caseSamples: p.storeIndex !== undefined ? samplesFor(p.storeIndex) : undefined,
+      bands: store.projectRiskBands,
     });
+    p.recommendations = attachImpact(p, recommendations, projectRecord(p), (r) => scoreModel(store, r, { explain: false, level: 'project' }));
+    p.forecast = forecastProject(store, p);
   }
   if (snapshotsChanged) saveState();
 

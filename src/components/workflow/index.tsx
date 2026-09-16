@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, CalendarClock, CheckCircle2, ChevronDown, ChevronRight, Target, UserCheck } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, CalendarClock, CheckCircle2, ChevronDown, ChevronRight, Target, TrendingDown, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge, Button } from '@/components/ui';
 import { Modal, Field, inputClass } from '@/components/ui/Modal';
@@ -47,6 +47,19 @@ export function RecommendationList({ items, max = 20, emptyText = 'No rule is tr
                 {r.responsibleAuthority && (
                   <span className="mt-1 flex items-center gap-1 text-[11px] text-ink-3">
                     <UserCheck className="h-3 w-3" /> {r.responsibleAuthority.name}
+                  </span>
+                )}
+                {'impact' in r && r.impact && (
+                  <span className={cn('mt-1.5 inline-flex flex-wrap items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px]', r.impact.material ? 'border-emerald-500/30 bg-emerald-500/[0.07] text-emerald-700 dark:text-emerald-400' : 'border-line bg-surface-2 text-ink-3')} title={r.impact.basis}>
+                    <TrendingDown className="h-3 w-3" />
+                    {r.impact.material ? (
+                      <>
+                        Predicted risk −{r.impact.riskPointsReduction} pts → {r.impact.projectedRiskScore}
+                      </>
+                    ) : (
+                      <>No material change predicted</>
+                    )}
+                    <span className="text-ink-3">· if {r.impact.change.charAt(0).toLowerCase() + r.impact.change.slice(1)}</span>
                   </span>
                 )}
               </span>
@@ -165,6 +178,11 @@ export function InterventionCard({ item, canUpdate, onChanged, showProject = tru
             {item.overdue && (
               <Badge className="border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400">
                 <AlertTriangle className="h-3 w-3" /> overdue
+              </Badge>
+            )}
+            {(item.escalationLevel ?? 0) > 0 && (
+              <Badge className="border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                <ArrowUpRight className="h-3 w-3" /> escalated to {item.escalatedToLabel}
               </Badge>
             )}
           </div>

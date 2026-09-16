@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Building2, Check, Info, Landmark, Loader2, Search, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
+import { ArrowRight, Building2, Check, Info, KeyRound, Landmark, Loader2, Search, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge, Button, DemoDataBadge, Select } from '@/components/ui';
 import { Logo } from '@/components/layout/Logo';
@@ -22,16 +22,20 @@ const TIER_FILTERS: Array<{ id: 'all' | AuthorityTier; label: string }> = [
 ];
 
 /**
- * Sign-in for the demonstration. There is no identity provider in the
- * prototype, so a user either picks a directory profile or configures a
- * position anywhere in the national hierarchy. Either way the API enforces
- * the jurisdiction and permissions that come with it.
+ * Sign-in. A user picks a directory profile or configures a position anywhere
+ * in the national hierarchy and authenticates with a password (scrypt-hashed
+ * on the server, 5-attempt lockout, expiring sessions). Directory profiles
+ * start on the deployment's demo password and can set their own; a production
+ * deployment replaces this step with government SSO. Either way the API
+ * enforces the jurisdiction and permissions that come with the position.
  */
 export default function Login() {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const [mode, setMode] = useState<Mode>((params.get('mode') as Mode) === 'configure' ? 'configure' : 'directory');
   const next = params.get('next') || '/dashboard';
+  const [password, setPassword] = useState('');
+  const [showHint, setShowHint] = useState(false);
 
   if (user) return <Navigate to={next} replace />;
 
@@ -53,6 +57,30 @@ export default function Login() {
           </p>
         </div>
 
+        <div className="mt-6 flex max-w-3xl flex-wrap items-end gap-3">
+          <label className="block w-full sm:w-80">
+            <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white/50">
+              <KeyRound className="h-3.5 w-3.5" /> Password
+            </span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password, then choose a profile"
+              className="h-10 w-full rounded-xl border border-white/15 bg-white/[0.06] px-3 text-[13.5px] text-white placeholder:text-white/35 focus-ring"
+            />
+          </label>
+          <button type="button" onClick={() => setShowHint((v) => !v)} className="h-10 text-[12px] font-semibold text-white/50 hover:text-white">
+            {showHint ? 'Hide demo access' : 'Demo access?'}
+          </button>
+          {showHint && (
+            <p className="w-full rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-[12px] leading-relaxed text-amber-100/90">
+              Demonstration deployment: every directory profile starts on the shared demo password <code className="rounded bg-black/30 px-1.5 py-0.5 font-mono text-white">LandPulse@2026</code> (set <code className="font-mono">LANDPULSE_DEMO_PASSWORD</code> to change it) and can set its own from My Profile. Five wrong attempts lock a profile for five minutes; sessions expire after 60 idle minutes.
+            </p>
+          )}
+        </div>
+
         <div className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/[0.04] p-1" role="tablist">
           {(
             [
@@ -72,14 +100,14 @@ export default function Login() {
           ))}
         </div>
 
-        <div className="mt-6">{mode === 'directory' ? <Directory next={next} /> : <Configure next={next} />}</div>
+        <div className="mt-6">{mode === 'directory' ? <Directory next={next} password={password} /> : <Configure next={next} password={password} />}</div>
       </div>
 
       <footer className="border-t border-white/[0.07]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-[11.5px] text-white/40">
           <p className="flex items-start gap-2">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400/80" />
-            Demonstration profiles and synthetic data. Names are illustrative personas, not real officials; no government identity system is connected.
+            Demonstration profiles and synthetic data. Names are illustrative personas, not real officials; no government identity system (SSO) is connected.
           </p>
           <p>
             {BRAND.product} · <span className="font-semibold text-white/60">{BRAND.attribution}</span>
@@ -92,7 +120,7 @@ export default function Login() {
 
 /* ---------------------------------------------------------------- directory */
 
-function Directory({ next }: { next: string }) {
+function Directory({ next, password }: { next: string; password: string }) {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const users = useApi((signal) => fetchDemoUsers(signal), []);
@@ -123,10 +151,14 @@ function Directory({ next }: { next: string }) {
   }, [list, tier, query]);
 
   const choose = async (id: string) => {
+    if (!password) {
+      setError('Enter your password first.');
+      return;
+    }
     setBusy(id);
     setError(null);
     try {
-      await signIn(id);
+      await signIn(id, password);
       navigate(next, { replace: true });
     } catch (err) {
       setError((err as Error).message);
@@ -201,7 +233,7 @@ function Directory({ next }: { next: string }) {
 
 type Government = 'central' | 'state';
 
-function Configure({ next }: { next: string }) {
+function Configure({ next, password }: { next: string; password: string }) {
   const { signInWithPosition } = useAuth();
   const navigate = useNavigate();
   const config = useApi((signal) => fetchHierarchy(signal), []);
@@ -239,10 +271,14 @@ function Configure({ next }: { next: string }) {
 
   const submit = async () => {
     if (!orgId || !role) return;
+    if (!password) {
+      setError('Enter the password at the top of the page first.');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await signInWithPosition(role, { orgId, units });
+      await signInWithPosition(role, { orgId, units }, password);
       navigate(next, { replace: true });
     } catch (err) {
       setError((err as Error).message);
