@@ -65,6 +65,12 @@ export function jobStatus() {
 }
 
 const MODEL_DIR = path.join(ROOT, 'data', 'model');
+// What a published version consists of (mirrors ARTEFACTS in ml/train.py). A
+// rollback copies only the files its archive holds, so a missing one would leave
+// the outgoing champion's copy in data/model and serve a model whose scores,
+// explanations or metrics belong to a different version.
+const VERSION_ARTEFACTS = ['ensemble.json', 'metrics.json', 'importance.json', 'surrogate.json',
+  'feature-spec.json', 'scores.f32', 'delay_days.f32', 'shap_top.bin'];
 const readRegistry = () => {
   const f = path.join(MODEL_DIR, 'registry.json');
   return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : { champion: null, versions: [] };
@@ -147,6 +153,8 @@ export function startRollback(user, versionId, { onSuccess, onFinished }) {
   const dir = path.join(MODEL_DIR, 'versions', String(versionId));
   if (!target || !fs.existsSync(dir)) return { started: false, reason: `Version ${versionId} is not archived`, job: jobStatus() };
   if (reg.champion === versionId) return { started: false, reason: `${versionId} is already the champion`, job: jobStatus() };
+  const absent = VERSION_ARTEFACTS.filter((f) => !fs.existsSync(path.join(dir, f)));
+  if (absent.length) return { started: false, reason: `The archive of ${versionId} is incomplete — ${absent.join(', ')} missing`, job: jobStatus() };
   begin('rollback', user, [`Restore artefacts of ${versionId}`, 'Rebuild query store (scripts/build-store.mjs)', 'Reload the API store']);
   (async () => {
     try {

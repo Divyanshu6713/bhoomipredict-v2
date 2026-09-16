@@ -9,6 +9,11 @@ data/*.pdf
 data/store/
 data/model/*.f32
 data/model/*.bin
+# ...except the champion's per-row TreeSHAP contributors. Every other artefact here
+# is cheap to rebuild, but this pass takes over two hours (see metrics.json
+# `shap.seconds`), so no deployment build can produce it: it ships with the model.
+# ml/train.py re-derives scores.f32 / delay_days.f32 from ensemble.json instead.
+!data/model/shap_top.bin
 
 # Raw boundary downloads (~100 MB). Rebuild the compact layers with `node scripts/build-geo.mjs`.
 data/geo/source/

@@ -12,7 +12,9 @@ explains it and publishes every artefact the application serves.
                        [--promote auto|always|never]
                        [--sample 0] [--no-rf] [--shap-rows 0]
 
-Outputs (data/model/, only when promoted):
+Outputs (data/model/, only when promoted — except that a rejected challenger
+leaves the champion deployed, so the champion's per-row artefacts are restored
+from its archive, or re-derived from its exported trees, if they are absent):
     ensemble.json       the deployed trees (classifier + slip regressor), scored
                         by the API directly — no Python needed at serve time
     metrics.json        split sizes, per-model metrics, curves, calibration, gate
@@ -86,6 +88,11 @@ GATE = {"prAucTolerance": 0.01, "brierTolerance": 0.01}
 
 ARTEFACTS = ["ensemble.json", "metrics.json", "importance.json", "surrogate.json", "feature-spec.json",
              "scores.f32", "delay_days.f32", "shap_top.bin"]
+
+# The per-row artefacts: one value (or top-K SHAP row) per corpus row. scores.f32
+# and delay_days.f32 are git-ignored because they are cheap to re-derive from the
+# exported trees, so a fresh checkout — a deployment build — starts without them.
+ROW_ARTEFACTS = ["scores.f32", "delay_days.f32", "shap_top.bin"]
 
 # ----------------------------------------------------------------- features
 # Geography enters only through history (district / authority delay rates), not
@@ -398,6 +405,97 @@ def sigmoid(z):
     return 1.0 / (1.0 + np.exp(-z))
 
 
+# ------------------------------------------------- champion rehydration
+
+def score_corpus_with(model: dict, df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    """Per-row probability and expected slip from a published model's own trees.
+
+    ensemble.json carries the feature spec it was fitted with and is parity
+    checked against scikit-learn to 1e-6 before publication, so this reproduces
+    the scores.f32 / delay_days.f32 that model published — the same numbers the
+    API serves for those rows — without refitting anything.
+    """
+    Xc = matrix_from_spec(df, model["features"])
+    n = len(Xc)
+    scores = np.zeros(n, dtype=np.float32)
+    delay_days = np.zeros(n, dtype=np.float32)
+    slip = model.get("slip")
+    step = 50000
+    for s in range(0, n, step):
+        chunk = Xc[s: s + step]
+        p = sigmoid(predict_raw(model["classifier"], chunk)).astype(np.float32)
+        scores[s: s + step] = p
+        if slip:
+            cond = np.clip(predict_raw(slip, chunk), slip.get("floor", DELAY_THRESHOLD_DAYS + 1), slip.get("cap", 400))
+            delay_days[s: s + step] = (p * cond).astype(np.float32)
+    return scores, delay_days
+
+
+def keep_champion_servable(df: pd.DataFrame, champ: dict | None, registry: dict, sampled: bool) -> None:
+    """A rejected challenger leaves the champion deployed, so the champion is
+    what has to be servable, and that takes more than ensemble.json:
+    scripts/build-store.mjs needs its per-row artefacts to build the case store,
+    and a rollback needs it archived. Both are derived and git-ignored, so a
+    fresh checkout — a deployment build — has neither. Restore them from the
+    champion's archive when it is there, re-derive the per-row artefacts from
+    the published ensemble otherwise, and archive the champion if it is not.
+    """
+    if not (MODEL / "ensemble.json").exists():
+        return  # nothing is published yet; there is no champion to keep servable
+    champion_id = registry.get("champion")
+    missing = [name for name in ROW_ARTEFACTS if not (MODEL / name).exists()]
+
+    if champion_id and missing:
+        archive = VERSIONS / champion_id
+        for name in list(missing):
+            if (archive / name).exists():
+                shutil.copy2(archive / name, MODEL / name)
+                missing.remove(name)
+                log(f"restored {name} from the archive of champion {champion_id}")
+
+    if [name for name in missing if name.endswith(".f32")]:
+        if sampled:
+            log(f"the champion's per-row artefacts are missing, but --sample loaded only {len(df):,} rows; "
+                "re-run without --sample so they cover the whole corpus")
+        else:
+            if champ is None:
+                champ = json.loads((MODEL / "ensemble.json").read_text(encoding="utf-8"))
+            log(f"re-deriving the champion's per-row artefacts from its exported trees ({len(df):,} rows)…")
+            t0 = time.time()
+            scores, delay_days = score_corpus_with(champ, df)
+            (MODEL / "scores.f32").write_bytes(scores.tobytes())
+            (MODEL / "delay_days.f32").write_bytes(delay_days.tobytes())
+            for name in ("scores.f32", "delay_days.f32"):
+                if name in missing:
+                    missing.remove(name)
+            log(f"  scores.f32 + delay_days.f32 rebuilt in {time.time() - t0:.1f}s · mean probability {float(scores.mean()):.4f}")
+
+    if "shap_top.bin" in missing:
+        log("  shap_top.bin is not recoverable from exported trees; precomputed contributor attribution "
+            "stays unavailable until the champion is republished from a full training run")
+
+    # Archive the champion so a rollback has a version to return to: a fresh
+    # checkout has no versions/ at all. startRollback copies whatever it finds in
+    # an archive, so a partial one would restore a model whose per-row artefacts
+    # belong to a different version — only a complete set is worth writing.
+    if champion_id:
+        archive = VERSIONS / champion_id
+        have = [name for name in ARTEFACTS if (MODEL / name).exists()]
+        if len(have) < len(ARTEFACTS):
+            if not archive.exists():
+                log(f"champion {champion_id} is not archived for rollback; "
+                    f"{', '.join(name for name in ARTEFACTS if name not in have)} missing")
+        elif added := [name for name in have if not (archive / name).exists()]:
+            archive.mkdir(parents=True, exist_ok=True)
+            for name in added:
+                shutil.copy2(MODEL / name, archive / name)
+            for v in registry["versions"]:
+                if v["id"] == champion_id:
+                    v["archived"] = True
+            save_registry(registry)
+            log(f"archived champion {champion_id} for rollback ({len(added)} artefacts)")
+
+
 # ----------------------------------------------------------------- metrics
 
 def metrics_at(y_true, prob, threshold: float) -> dict:
@@ -603,9 +701,11 @@ def main() -> int:
     gate = {"tolerance": GATE, "challenger": {k: challenger_test[k] for k in ("rocAuc", "prAuc", "brier")},
             "testWindow": split_info["test"]}
     champion_meta = None
+    champion_model = None
     if champion_file.exists():
         try:
             champ = json.loads(champion_file.read_text(encoding="utf-8"))
+            champion_model = champ
             champ_spec = champ["features"]
             Xc = matrix_from_spec(df.iloc[te], champ_spec)
             champ_prob = sigmoid(predict_raw(champ["classifier"], Xc))
@@ -652,6 +752,7 @@ def main() -> int:
         (STAGING / "evaluation.json").write_text(json.dumps({"version": version_id, "gate": gate, "models": models}, indent=1), encoding="utf-8")
         registry["versions"].append(entry)
         save_registry(registry)
+        keep_champion_servable(df, champion_model, registry, bool(args.sample))
         log(f"challenger {version_id} not promoted; champion unchanged. ({time.time() - t_start:.1f}s)")
         return 0
 
