@@ -4,6 +4,7 @@ import { Badge, Button, Card, CardHeader, DemoDataBadge, Tabs } from '@/componen
 import { ErrorState } from '@/components/ui/primitives';
 import { FilterBar, allOption, toOptions } from '@/components/ui/FilterBar';
 import { AlertRow } from '@/components/workflow';
+import { NotificationPanel } from '@/components/workflow/NotificationPanel';
 import { useApi, useFilters } from '@/hooks';
 import { useAuth } from '@/auth/AuthContext';
 import { fetchAlerts, fetchFacets } from '@/api/client';
@@ -108,6 +109,8 @@ export default function Alerts() {
         )}
         <p className="border-t border-line px-5 py-3 text-[11px] text-ink-3">Alert status is stored and audited. Opening an alert's link from an unread alert marks it acknowledged. An alert disappears from the active list when its trigger condition no longer holds.</p>
       </Card>
+
+      <NotificationPanel />
     </div>
   );
 }

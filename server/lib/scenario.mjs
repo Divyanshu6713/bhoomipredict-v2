@@ -10,19 +10,19 @@
  *   context → dependency network → authority_dependency_count,
  *             pending_dependency_actions, department_coordination_score,
  *             district / authority historical delay rates, framework
- *           → surrogate of the deployed ensemble → probability, band,
- *             expected slip days, closed-form contributions
+ *           → deployed ensemble → probability, band, expected slip days,
+ *             exact TreeSHAP contributions
  *           → rules → recommendations with named owners
  *
  * Each dependency reports why it exists, who owns it, which stages it gates,
- * whether an action is pending, and its exact contribution to the score
- * (the surrogate is linear, so a pending action adds exactly coef/sd log-odds).
+ * whether an action is pending, and the model's marginal response to one more
+ * (or one fewer) pending action, measured by re-scoring the ensemble.
  */
 import { PROJECT_TYPES, LIFECYCLE_STAGES, authorityOptions, buildDependencyNetwork, coordinationScore } from '../domain/registry.mjs';
 import { districtIndex, resolveDistrict } from '../domain/geography.mjs';
 import { evaluateScenario } from '../domain/rules.mjs';
 import { issueProfile } from '../domain/issues.mjs';
-import { scoreRecord, defaultRecord } from './scorer.mjs';
+import { scoreModel, defaultRecord } from './scorer.mjs';
 import { ServiceError, projectRecord, getProject } from './projects.mjs';
 import { dayFromISO, isoFromDay } from '../domain/lifecycle.mjs';
 
@@ -107,10 +107,6 @@ function resolveContext(store, ctx = {}) {
   };
 }
 
-function featureSpec(store, name) {
-  return store.surrogate.features.find((f) => f.name === name) ?? null;
-}
-
 /** Build the full model record for a resolved context and user signals. */
 function assemble(store, context, network, pendingCodes, signals, seedRecord) {
   const base = { ...defaultRecord(store), ...(seedRecord ?? {}) };
@@ -145,13 +141,15 @@ function assemble(store, context, network, pendingCodes, signals, seedRecord) {
   return { record, pending, relevant, coordination };
 }
 
-function describeNetwork(store, network, context, pending, relevant, result) {
-  const pendSpec = featureSpec(store, 'pending_dependency_actions');
-  const countSpec = featureSpec(store, 'authority_dependency_count');
-  const perPending = pendSpec ? pendSpec.coef / (pendSpec.std || 1) : 0;
-  const perNode = countSpec ? countSpec.coef / (countSpec.std || 1) : 0;
+function describeNetwork(store, network, context, pending, relevant, result, record) {
+  // Marginal model response, measured on the ensemble rather than read off a coefficient.
   const p = result.probability;
-  const toPoints = (logOdds) => Number((p * (1 - p) * logOdds * 100).toFixed(2));
+  const rescore = (patch) => scoreModel(store, { ...record, ...patch }, { explain: false }).probability;
+  const pts = (q) => Number(((q - p) * 100).toFixed(2));
+  const pendingNow = Number(record.pending_dependency_actions ?? 0);
+  const pointsIfOneMorePending = pts(rescore({ pending_dependency_actions: pendingNow + 1 }));
+  const pointsIfOneCleared = pendingNow > 0 ? pts(rescore({ pending_dependency_actions: pendingNow - 1 })) : 0;
+  const pointsPerDependency = pts(rescore({ authority_dependency_count: Number(record.authority_dependency_count ?? 0) + 1 }));
   return network.nodes.map((n) => {
     const isPending = pending.includes(n.code);
     return {
@@ -159,15 +157,16 @@ function describeNetwork(store, network, context, pending, relevant, result) {
       relevantToStage: relevant.has(n.code),
       pending: isPending,
       influence: {
-        presenceLogOdds: Number(perNode.toFixed(4)),
-        pendingLogOdds: isPending ? Number(perPending.toFixed(4)) : 0,
-        pointsIfPending: toPoints(perPending),
-        currentPoints: toPoints(perNode + (isPending ? perPending : 0)),
+        pointsIfPending: pointsIfOneMorePending,
+        pointsIfCleared: isPending ? pointsIfOneCleared : 0,
+        pointsPerAdditionalDependency: pointsPerDependency,
+        currentPoints: isPending ? -pointsIfOneCleared : 0,
+        basis: 'ensemble re-scored with one more / one fewer pending action',
       },
       explanation: `${n.why} ${
         relevant.has(n.code)
           ? isPending
-            ? `An action is pending at ${context.stage}: ${n.pendingActionText.toLowerCase()}. Each pending department action adds ${perPending >= 0 ? '+' : ''}${perPending.toFixed(2)} log-odds (about ${toPoints(perPending)} percentage points here).`
+            ? `An action is pending at ${context.stage}: ${n.pendingActionText.toLowerCase()}. Clearing one pending department action changes the predicted risk by ${pointsIfOneCleared >= 0 ? '+' : ''}${pointsIfOneCleared} points on the deployed model.`
             : `It gates ${context.stage}; no action is marked pending.`
           : `It does not gate ${context.stage}, so it cannot hold this stage.`
       }`,
@@ -191,7 +190,7 @@ export function scoreScenario(store, body) {
   const pendingCodes = Array.isArray(body.pending) ? body.pending.map(String) : [];
   const signals = sanitizeSignals(body.signals ?? {});
   const { record, pending, relevant, coordination } = assemble(store, context, network, pendingCodes, signals, seedRecord);
-  const result = scoreRecord(store.surrogate, record);
+  const result = scoreModel(store, record);
 
   let baseline = null;
   let delta = null;
@@ -199,7 +198,7 @@ export function scoreScenario(store, body) {
     const bctx = resolveContext(store, body.baseline.context ?? body.context);
     const bnet = buildDependencyNetwork({ ...bctx });
     const b = assemble(store, bctx, bnet, Array.isArray(body.baseline.pending) ? body.baseline.pending : [], sanitizeSignals(body.baseline.signals ?? {}), seedRecord);
-    baseline = scoreRecord(store.surrogate, b.record);
+    baseline = scoreModel(store, b.record);
     delta = {
       probability: Number((result.probability - baseline.probability).toFixed(4)),
       riskScore: Number(((result.probability - baseline.probability) * 100).toFixed(1)),
@@ -210,7 +209,7 @@ export function scoreScenario(store, body) {
     };
   }
 
-  const nodes = describeNetwork(store, network, context, pending, relevant, result);
+  const nodes = describeNetwork(store, network, context, pending, relevant, result, record);
   const stageIndex = LIFECYCLE_STAGES.indexOf(context.stage);
   const today = store.today;
 
@@ -267,7 +266,7 @@ export function scoreScenario(store, body) {
     result,
     baseline,
     delta,
-    recommendations: evaluateScenario(pseudo),
+    recommendations: evaluateScenario(pseudo, { bands: store.riskBands }),
     issues: issueProfile({ projectType: context.projectType, stage: context.stage, framework: network.framework, nodes, record }),
     seedProject: seedProject ? { id: seedProject.id, name: seedProject.name, riskScore: seedProject.riskScore, riskBasis: seedProject.riskBasis } : null,
   };

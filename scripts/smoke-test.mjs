@@ -21,6 +21,8 @@ const ROOT = path.resolve(__dirname, '..');
 const PORT = Number(process.env.BP_TEST_PORT ?? 5199);
 const BASE = `http://localhost:${PORT}/api`;
 const runtime = fs.mkdtempSync(path.join(os.tmpdir(), 'bp-smoke-'));
+const learningDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bp-learning-'));
+const PASSWORD = process.env.LANDPULSE_DEMO_PASSWORD ?? 'LandPulse@2026';
 
 let passed = 0;
 let failed = 0;
@@ -37,9 +39,11 @@ const ok = (cond, label, detail = '') => {
 };
 const section = (t) => console.log(`\n\x1b[1m${t}\x1b[0m`);
 
-async function call(method, p, { token, body, raw, type } = {}) {
+async function call(method, p, { token, body, raw, type, apiKey, origin } = {}) {
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (apiKey) headers['X-API-Key'] = apiKey;
+  if (origin) headers.Origin = origin;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (raw !== undefined) headers['Content-Type'] = type ?? 'application/octet-stream';
   const res = await fetch(`${BASE}${p}`, { method, headers, body: raw ?? (body !== undefined ? JSON.stringify(body) : undefined) });
@@ -50,13 +54,15 @@ async function call(method, p, { token, body, raw, type } = {}) {
   } catch {
     /* CSV or binary */
   }
-  return { status: res.status, json, text };
+  return { status: res.status, json, text, headers: res.headers };
 }
 const get = (p, token) => call('GET', p, { token });
 
-async function login(userId) {
-  const r = await call('POST', '/auth/login', { body: { userId } });
+const sessions = new Map();
+async function login(userId, password = PASSWORD) {
+  const r = await call('POST', '/auth/login', { body: { userId, password } });
   if (!r.json?.token) throw new Error(`login failed for ${userId}: ${r.text}`);
+  sessions.set(r.json.token, r.json);
   return r.json.token;
 }
 
@@ -66,7 +72,7 @@ const node = (p, code) => p.network.nodes.find((n) => n.code === code);
 async function main() {
   const server = spawn(process.execPath, [path.join(ROOT, 'server', 'index.mjs')], {
     cwd: ROOT,
-    env: { ...process.env, BP_API_PORT: String(PORT), BP_RUNTIME_DIR: runtime },
+    env: { ...process.env, BP_API_PORT: String(PORT), BP_RUNTIME_DIR: runtime, LANDPULSE_LEARNING_DIR: learningDir, LANDPULSE_DISABLE_SCHEDULER: '1' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   server.stderr.on('data', (d) => process.stderr.write(`[api] ${d}`));
@@ -87,6 +93,7 @@ async function main() {
   } finally {
     stop();
     fs.rmSync(runtime, { recursive: true, force: true });
+    fs.rmSync(learningDir, { recursive: true, force: true });
   }
 
   console.log(`\n${failed === 0 ? '\x1b[32m' : '\x1b[31m'}${passed} passed, ${failed} failed\x1b[0m`);
@@ -180,7 +187,8 @@ async function run() {
   ok(Boolean(crit), 'at least one Critical project', crit?.id);
   if (crit) {
     const d = await detail(crit.id);
-    ok(d.project.delayProbability >= 0.78, 'probability respects the Critical cut-off', String(d.project.delayProbability));
+    const bands = (await get('/metrics', admin)).json.metrics.projectRiskBands;
+    ok(d.project.delayProbability >= bands.critical, 'project risk respects the project-level Critical cut-off', `${d.project.delayProbability} >= ${bands.critical}`);
     ok(d.alerts.some((a) => a.code === 'CRITICAL_RISK' && a.severity === 'Critical'), 'Critical risk raises a Critical alert');
     const mapRow = (await get('/projects/map', admin)).json.projects.find((m) => m.id === crit.id);
     ok(mapRow?.riskScore === d.project.riskScore, 'GIS marker uses the same risk as the project page');
@@ -262,16 +270,16 @@ async function run() {
   const tnRoads = await scoped('u-tn-highways');
   ok(tnRoads.every((pr) => pr.state === 'Tamil Nadu' && ['National Highway', 'Expressway'].includes(pr.type)), 'a state roads department sees its state road projects only', `${tnRoads.length}`);
 
-  const wb = await call('POST', '/auth/login', { body: { role: 'DISTRICT_ADMIN', position: { orgId: 'st:WB:revenue', units: { state: 'West Bengal', district: 'Hugli' } } } });
+  const wb = await call('POST', '/auth/login', { body: { password: PASSWORD, role: 'DISTRICT_ADMIN', position: { orgId: 'st:WB:revenue', units: { state: 'West Bengal', district: 'Hugli' } } } });
   ok(wb.status === 200 && wb.json.user.position.tier === 'district' && wb.json.user.scopeLabel === 'Hugli, West Bengal', 'a district position can be configured in any State', wb.json?.user?.scopeLabel);
   const wbList = (await get('/projects?pageSize=500', wb.json.token)).json.projects;
   ok(wbList.every((pr) => pr.state === 'West Bengal' && pr.districts.includes('Hugli')), 'configured position is enforced by the API', `${wbList.length}`);
-  const od = await call('POST', '/auth/login', { body: { role: 'STATE_ADMIN', position: { orgId: 'st:OD:revenue', units: {} } } });
+  const od = await call('POST', '/auth/login', { body: { password: PASSWORD, role: 'STATE_ADMIN', position: { orgId: 'st:OD:revenue', units: {} } } });
   const odList = (await get('/projects?pageSize=500', od.json.token)).json.projects;
   ok(od.status === 200 && odList.length > 0 && odList.every((pr) => pr.state === 'Odisha'), 'configured Odisha state position', `${odList.length}`);
-  const badTier = await call('POST', '/auth/login', { body: { role: 'LAND_ACQUISITION_OFFICER', position: { orgId: 'in:morth', units: {} } } });
+  const badTier = await call('POST', '/auth/login', { body: { password: PASSWORD, role: 'LAND_ACQUISITION_OFFICER', position: { orgId: 'in:morth', units: {} } } });
   ok(badTier.status === 422, 'a role not held at the tier is refused', badTier.json?.error);
-  const noAdmin = await call('POST', '/auth/login', { body: { role: 'NATIONAL_ADMIN', position: { orgId: 'in:lacc', units: {} } } });
+  const noAdmin = await call('POST', '/auth/login', { body: { password: PASSWORD, role: 'NATIONAL_ADMIN', position: { orgId: 'in:lacc', units: {} } } });
   ok(noAdmin.status === 422, 'national administration cannot be self-configured');
 
   const natProfile = (await get('/profile', admin)).json;
@@ -347,7 +355,7 @@ async function run() {
   const newId = created.json?.project?.id;
   if (newId) {
     const before = await detail(newId);
-    ok(before.project.riskBasis === 'surrogate' && before.project.network.dependencyCount > 0, 'new project scored and networked', `${before.project.riskScore}%`);
+    ok(before.project.riskBasis === 'ensemble-profile' && before.project.network.dependencyCount > 0, 'new project scored by the deployed ensemble and networked', `${before.project.riskScore}%`);
     const edit = await call('PUT', `/projects/${newId}`, { token: admin, body: { legalCases: 900, avgDocumentCompleteness: 30 } });
     const after = await detail(newId);
     ok(edit.status === 200 && after.project.riskScore > before.project.riskScore, 'edit re-scores the project', `${before.project.riskScore} → ${after.project.riskScore}`);
@@ -395,14 +403,153 @@ async function run() {
     ok(rej.status === 200 && rej.json.document.status === 'REJECTED', 'district admin rejects with a note');
     const d = await detail('LAP-1000', dc);
     ok(d.recommendations.some((r) => r.code === 'DOCUMENT_REJECTED'), 'a rejected document feeds the documentation rule');
-    const dl = await fetch(`${BASE}/documents/${id}/download?token=${dc}`);
-    ok(dl.status === 200 && (await dl.text()).startsWith('%PDF'), 'document downloads');
+    const dl = await fetch(`${BASE}/documents/${id}/download?dl=${sessions.get(dc).downloadToken}`);
+    ok(dl.status === 200 && (await dl.text()).startsWith('%PDF'), 'document downloads with the download-only token');
+    ok((await fetch(`${BASE}/documents/${id}/download?token=${dc}`)).status === 401, 'a session token in the URL is refused');
+    ok((await fetch(`${BASE}/projects?dl=${sessions.get(dc).downloadToken}`)).status === 401, 'the download token cannot read data endpoints');
   }
 
   section('Case status');
   const cs = await call('PATCH', '/cases/LAC-500001/status', { token: slao, body: { status: 'ESCALATED', note: 'Referred to LARR Authority' } });
   ok(cs.status === 200, 'LAO escalates a case');
   ok((await get('/cases/LAC-500001', slao)).json.case.caseStatus === 'ESCALATED', 'case status persists');
+
+  section('Security');
+  const wrong = await call('POST', '/auth/login', { body: { userId: 'u-br-patna-dm', password: 'wrong-password' } });
+  ok(wrong.status === 401, 'a wrong password is refused', wrong.json?.error);
+  ok((await call('POST', '/auth/login', { body: { userId: 'u-br-patna-dm' } })).status === 401, 'a missing password is refused');
+  let lockedStatus = 0;
+  for (let i = 0; i < 6; i++) lockedStatus = (await call('POST', '/auth/login', { body: { userId: 'u-br-patna-dm', password: `bad-${i}` } })).status;
+  ok(lockedStatus === 423, 'repeated failures lock the profile', String(lockedStatus));
+  ok((await call('POST', '/auth/login', { body: { userId: 'u-br-patna-dm', password: PASSWORD } })).status === 423, 'a locked profile refuses even the right password');
+  const sess = sessions.get(admin);
+  ok(/^[0-9a-f]{64}$/.test(sess.token) && sess.expiresAt && sess.downloadToken, 'sessions are 256-bit tokens with an expiry and a separate download token');
+  ok((await fetch(`${BASE}/projects?token=${admin}`)).status === 401, 'bearer tokens are not accepted in the query string');
+  const evil = await call('GET', '/health', { origin: 'https://evil.example' });
+  ok(!evil.headers.get('access-control-allow-origin'), 'CORS does not allow an unknown origin');
+  const good0 = await call('GET', '/health', { origin: 'http://localhost:5178' });
+  ok(good0.headers.get('access-control-allow-origin') === 'http://localhost:5178' && good0.headers.get('x-frame-options') === 'DENY', 'the app origin is allowed and security headers are set');
+  const brState = await login('u-br-state');
+  ok((await call('POST', '/auth/password', { token: brState, body: { currentPassword: PASSWORD, newPassword: 'short1' } })).status === 422, 'password policy is enforced');
+  ok((await call('POST', '/auth/password', { token: brState, body: { currentPassword: PASSWORD, newPassword: 'Bihar-LA-2026-secure' } })).status === 200, 'a profile sets its own password');
+  ok((await call('POST', '/auth/login', { body: { userId: 'u-br-state', password: PASSWORD } })).status === 401 && (await call('POST', '/auth/login', { body: { userId: 'u-br-state', password: 'Bihar-LA-2026-secure' } })).status === 200, 'the old password stops working, the new one works');
+  const other = (await get('/cases?pageSize=1&state=Uttar%20Pradesh', admin)).json.rows[0];
+  ok((await get(`/predict/case?caseId=${other.caseId}`, dc)).status === 403, 'case scoring respects jurisdiction');
+  const logoutTok = await login('u-policy');
+  await call('POST', '/auth/logout', { token: logoutTok });
+  ok((await get('/profile', logoutTok)).status === 401, 'a signed-out token is dead');
+
+  section('Deployed model served from exported trees');
+  ok(Boolean(health.json.modelVersion), 'health reports the serving model version', health.json.modelVersion);
+  const pc = (await get('/predict/case?caseId=LAC-500001', admin)).json;
+  ok(Math.abs(pc.live.probability - pc.ensemble.probability) < 0.001, 'live ensemble score equals the stored corpus score', `${pc.live.probability} vs ${pc.ensemble.probability}`);
+  const shapSum = pc.live.increasing.reduce((a, g) => a + g.value, 0) + pc.live.reducing.reduce((a, g) => a + g.value, 0) + pc.live.baseValue;
+  ok(Math.abs(shapSum - pc.live.logOdds) < 0.01, 'TreeSHAP contributions add up to the model log-odds', `${shapSum.toFixed(3)} vs ${pc.live.logOdds}`);
+  ok(/ensemble/.test(irr.result.scorer), 'scenarios are scored by the deployed ensemble', irr.result.scorer);
+  const spec = (await get('/predict/spec', admin)).json;
+  ok(!spec.categorical.some((c) => ['state', 'authority'].includes(c.field)), 'state and authority are not model features (national generalisation)');
+
+  section('Stage-wise forecast & predictive recommendations');
+  const fc = A.project.forecast;
+  const remaining = fc.stages.filter((x) => x.phase !== 'completed');
+  ok(remaining.length === 9 - A.project.currentStageIndex && remaining.every((x) => x.delayProbability >= 0 && x.delayProbability <= 1 && x.p80Completion >= x.p50Completion), 'every remaining stage has a delay probability and P50 / P80 dates', `${remaining.length} stages`);
+  ok(fc.completion.probabilityMissTarget >= 0 && fc.completion.probabilityMissTarget <= 1 && fc.runs === 2000, 'project completion forecast with probability of missing target', `${fc.completion.probabilityMissTarget}`);
+  const withImpact = list.slice(0, 60);
+  let impactRec = null;
+  for (const pr of withImpact) {
+    const d = await detail(pr.id);
+    impactRec = d.recommendations.find((r) => r.impact && r.impact.riskPointsReduction > 0);
+    if (impactRec) break;
+  }
+  ok(Boolean(impactRec) && typeof impactRec.impact.projectedRiskScore === 'number' && impactRec.impact.change.length > 5, 'recommendations carry a model-estimated risk reduction', impactRec ? `${impactRec.code}: −${impactRec.impact.riskPointsReduction} pts (${impactRec.impact.change})` : '');
+  const highList = list.filter((pr) => ['High', 'Critical'].includes(pr.riskBand));
+  let driverAction = null;
+  for (const pr of highList.slice(0, 25)) {
+    const d = await detail(pr.id);
+    driverAction = d.recommendations.find((r) => r.code === 'MODEL_CONTRIBUTOR' && r.intervention);
+    if (driverAction) break;
+  }
+  ok(Boolean(driverAction) && driverAction.severity === 'Medium', 'the leading model driver of a High/Critical project becomes an intervention', driverAction?.title);
+  const pipeline = (await get('/registry', admin)).json.ruleThresholdOverrides;
+  ok(pipeline.some((o) => o.match.frameworkMode === 'right_of_user') && pipeline.every((o) => o.reason.length > 20), 'rule thresholds have documented framework / type overrides');
+
+  section('Delay trends & performance indicators');
+  const tr = (await get('/analytics/trends?level=state', admin)).json;
+  ok(tr.series.some((x) => x.phase === 'observed' && x.overall.observed !== null) && tr.series.some((x) => x.phase === 'forecast' && x.overall.forecast !== null), 'state trends separate observed history from the model forecast');
+  ok(tr.series.every((x) => (x.phase === 'observed' ? x.overall.forecast === null : x.overall.observed === null)), 'observed and forecast never overlap');
+  const dtr = (await get('/analytics/trends?level=district&state=Karnataka', admin)).json;
+  ok(dtr.groups.length > 0 && dtr.summary.every((g) => ['worsening', 'improving', 'steady', 'n/a'].includes(g.direction)), 'district trends within a state with direction', dtr.groups.slice(0, 3).join(', '));
+  const dcTr = (await get('/analytics/trends?level=district', dc)).json;
+  ok(dcTr.groups.every((g) => g === 'Mandya' || dcList.projects.some((pr) => pr.districts.includes(g))), 'trends respect jurisdiction');
+  const perf = (await get('/analytics/performance', admin)).json;
+  ok(perf.byAuthority.length > 0 && perf.byOffice.length > 0 && typeof perf.kpis.onTrackShare === 'number', 'performance indicators by authority, office, district and state', `${perf.byAuthority.length} authorities`);
+
+  section('Automated alerts, escalation & notifications');
+  const scanR = await call('POST', '/notifications/scan', { token: admin });
+  ok(scanR.status === 200 && scanR.json.scan.alertsEvaluated > 0 && scanR.json.scan.digests > 0, 'alert scan evaluates rules and delivers digests', `${scanR.json?.scan?.newAlerts} new · ${scanR.json?.scan?.digests} digests`);
+  const allFeed = (await get('/notifications/feed?all=1', admin)).json;
+  const sample = allFeed.items[0];
+  ok(sample && sample.channels.some((c) => c.channel === 'in_app' && c.status === 'DELIVERED') && sample.channels.some((c) => c.channel === 'email' && c.status === 'QUEUED_OUTBOX'), 'each digest is delivered in-app and queued to the email outbox');
+  ok(allFeed.channels.find((c) => c.id === 'email').connected === false, 'the email channel is honestly reported as not connected');
+  const recipientTok = await login(sample.recipient.id);
+  const myFeed = (await get('/notifications/feed', recipientTok)).json;
+  ok(myFeed.items.length > 0 && myFeed.items.every((x) => x.recipient.id === sample.recipient.id), 'recipients see their own notifications');
+  ok((await get('/notifications/feed?all=1', dc)).status === 403, 'only notification managers see every delivery');
+  const second = (await call('POST', '/notifications/scan', { token: admin })).json.scan;
+  ok(second.newAlerts === 0, 'a repeat scan does not re-notify the same alerts');
+
+  section('Continuous learning');
+  const openCase = (await get('/projects/LAP-1000/cases?status=open&pageSize=5', admin)).json.rows.find((r) => !r.labelObserved);
+  const caseD = (await get(`/cases/${openCase.caseId}`, slao)).json;
+  ok(caseD.permissions.recordOutcome === true, 'the Land Acquisition Officer may record a milestone outcome');
+  const rec1 = await call('POST', `/cases/${openCase.caseId}/outcome`, { token: slao, body: { completedOn: caseD.outcomeRecordingDate } });
+  ok(rec1.status === 201 && typeof rec1.json.outcome.predictedProbability === 'number' && rec1.json.outcome.source === 'officer', 'outcome recorded with the prediction made before it', `delayed=${rec1.json?.outcome?.delayed}`);
+  ok((await call('POST', `/cases/${openCase.caseId}/outcome`, { token: slao, body: { completedOn: caseD.outcomeRecordingDate } })).status === 422, 'an outcome cannot be recorded twice');
+  ok((await call('POST', `/cases/${openCase.caseId}/outcome`, { token: viewer, body: { completedOn: caseD.outcomeRecordingDate } })).status === 403, 'a policy viewer cannot record outcomes');
+  const badCsv = 'case_id,completed_on\nLAC-500000,2026-01-01\nLAC-9999999,2026-01-01\n';
+  const dry = await call('POST', '/learning/outcomes?commit=0', { token: admin, raw: badCsv, type: 'text/csv' });
+  ok(dry.status === 200 && dry.json.summary.invalid === 2 && dry.json.errors.length === 2, 'CSV outcome ingestion validates every row', dry.json?.errors?.map((e) => e.error).join(' | '));
+  const sim = await call('POST', '/learning/simulate', { token: admin, body: { days: 150 } });
+  ok(sim.status === 200 && sim.json.released > 0, 'advancing the simulation clock releases withheld outcomes', `${sim.json?.released} released`);
+  const ls = (await get('/learning/status', admin)).json;
+  ok(ls.live.all.outcomes === sim.json.released + 1 && ls.live.all.rocAuc > 0.6 && ls.live.bySource.simulation === sim.json.released, 'live monitoring scores the model on outcomes it had not seen', `ROC-AUC ${ls.live.all.rocAuc} on ${ls.live.all.outcomes}`);
+  ok(ls.registry.champion === health.json.modelVersion && ls.registry.versions.length >= 1, 'the registry names the serving champion', ls.registry.champion);
+  const drift = (await get('/learning/drift', admin)).json;
+  ok(drift.features.length >= 8 && drift.features.every((f) => f.psi === null || f.psi >= 0) && ['stable', 'watch', 'significant'].includes(drift.overall), 'drift report computes PSI per feature', drift.overall);
+  ok((await call('POST', '/learning/rollback/does-not-exist', { token: admin })).status === 409, 'rollback refuses a version that is not archived');
+  ok((await call('POST', '/learning/simulate', { token: dc, body: { days: 30 } })).status === 403, 'only model administrators move the simulation clock');
+
+  section('External integration API (v1)');
+  const oas = await call('GET', '/v1/openapi.json');
+  ok(oas.status === 200 && oas.json.openapi.startsWith('3.') && Object.keys(oas.json.paths).length >= 6, 'OpenAPI contract is published', `${Object.keys(oas.json?.paths ?? {}).length} paths`);
+  ok((await call('GET', '/v1/projects')).status === 401, 'v1 requires an API key');
+  const cl = await call('POST', '/integrations/clients', { token: admin, body: { name: 'Karnataka Revenue LA System', scopes: ['read:projects', 'read:risk', 'score', 'write:outcomes'], position: { orgId: 'st:KA:revenue', units: { state: 'Karnataka' } }, rateLimitPerMinute: 10 } });
+  ok(cl.status === 201 && /^lp_[0-9a-f]{6}_/.test(cl.json.key) && !JSON.stringify(cl.json.client).includes(cl.json.key), 'API client created; the key is shown once and not stored in clear');
+  const key = cl.json.key;
+  const v1list = await call('GET', '/v1/projects?limit=500', { apiKey: key });
+  ok(v1list.status === 200 && v1list.json.total > 0 && v1list.json.projects.every((pr) => pr.state === 'Karnataka'), 'the key reads only its jurisdiction', `${v1list.json?.total}`);
+  ok((await call('GET', '/v1/projects/LAP-1002/risk', { apiKey: key })).status === 403, 'the key cannot read another state');
+  const v1risk = await call('GET', '/v1/projects/LAP-1000/risk', { apiKey: key });
+  ok(v1risk.status === 200 && v1risk.json.forecast && Array.isArray(v1risk.json.recommendations), 'risk, drivers, forecast and recommendations over the API');
+  ok((await call('POST', '/v1/projects', { apiKey: key, body: {} })).status === 403, 'a missing scope is refused');
+  const v1score = await call('POST', '/v1/score', { apiKey: key, body: { legal_case_count: 6, document_completeness: 35, current_stage: 'Compensation' } });
+  ok(v1score.status === 200 && v1score.json.result.probability > 0, 'external systems can score a record', `${v1score.json?.result?.riskScore}`);
+  let limited = 0;
+  for (let i = 0; i < 8; i++) limited = (await call('GET', '/v1/alerts', { apiKey: key })).status;
+  ok(limited === 429, 'per-key rate limiting', String(limited));
+  const revoke = await call('DELETE', `/integrations/clients/${cl.json.client.id}`, { token: admin });
+  ok(revoke.status === 200 && (await call('GET', '/v1/openapi.json')).status === 200, 'client revoked');
+  await new Promise((r) => setTimeout(r, 50));
+  ok((await call('GET', '/v1/projects', { apiKey: key })).status === 401, 'a revoked key is refused');
+  ok((await call('POST', '/integrations/clients', { token: dc, body: { name: 'x', scopes: ['score'] } })).status === 403, 'district administrators cannot issue API keys');
+
+  section('Audit trail integrity');
+  const chain = (await get('/audit/verify', admin)).json;
+  ok(chain.valid && chain.chained > 20, 'the audit log hash chain verifies', `${chain.chained} chained entries`);
+  const failedLogins = (await get('/audit?action=session.login_failed', admin)).json;
+  ok(failedLogins.total >= 5, 'failed sign-ins are audited', `${failedLogins.total}`);
+  const exportsAudit = (await get('/audit?action=document.downloaded', admin)).json;
+  ok(exportsAudit.total >= 1, 'downloads are audited');
 
   section('Consistency validation');
   const v = (await get('/validation', admin)).json;

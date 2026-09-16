@@ -1,0 +1,56 @@
+{
+ "champion": "v20260914-071608",
+ "versions": [
+  {
+   "id": "v20260914-063926",
+   "createdAt": "2026-09-14T06:39:42Z",
+   "triggeredBy": "initial v3 pipeline",
+   "status": "archived",
+   "corpusRows": 350000,
+   "observedRows": 237746,
+   "outcomesApplied": 0,
+   "dataHash": "16f1a1f9f0ce1896",
+   "features": 83,
+   "test": {
+    "rocAuc": 0.8344,
+    "prAuc": 0.7301,
+    "brier": 0.1489
+   },
+   "gate": {
+    "passed": true,
+    "promoted": true,
+    "reason": "No champion model is published yet; the challenger becomes the first champion.",
+    "champion": null
+   },
+   "archived": true
+  },
+  {
+   "id": "v20260914-071608",
+   "createdAt": "2026-09-14T07:16:50Z",
+   "triggeredBy": "R. Menon",
+   "status": "champion",
+   "corpusRows": 350000,
+   "observedRows": 292077,
+   "outcomesApplied": 54331,
+   "dataHash": "ca92246b29452621",
+   "features": 83,
+   "test": {
+    "rocAuc": 0.8339,
+    "prAuc": 0.7155,
+    "brier": 0.1462
+   },
+   "gate": {
+    "passed": true,
+    "promoted": true,
+    "reason": "Challenger PR-AUC 0.7155 vs champion 0.7204; Brier 0.1462 vs 0.1449. Within tolerance \u2014 promoted.",
+    "champion": {
+     "version": "v20260914-063926",
+     "rocAuc": 0.8365,
+     "prAuc": 0.7204,
+     "brier": 0.1449
+    }
+   },
+   "archived": true
+  }
+ ]
+}

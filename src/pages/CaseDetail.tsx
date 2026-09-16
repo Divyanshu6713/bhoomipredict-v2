@@ -33,6 +33,7 @@ import { formatDate, formatNumber } from '@/lib/format';
 import { useApi } from '@/hooks';
 import { fetchCase } from '@/api/client';
 import { ParcelSources } from '@/components/integration/ParcelSources';
+import { OutcomeRecorder } from '@/components/workflow/OutcomeRecorder';
 
 export default function CaseDetail() {
   const { id = '' } = useParams();
@@ -199,6 +200,7 @@ export default function CaseDetail() {
                 </Button>
               )}
             </div>
+            <OutcomeRecorder caseId={c.caseId} dueDate={c.milestoneDueDate} today={detail.data.outcomeRecordingDate ?? c.assessmentDate} canRecord={Boolean(permissions.recordOutcome)} recorded={detail.data.recordedOutcome} onRecorded={detail.reload} />
             <Link to={`/predict?project=${c.projectId}`} className="block">
               <Button className="w-full gap-2">
                 <TrendingUp className="h-4 w-4" /> Scenario scoring for this project

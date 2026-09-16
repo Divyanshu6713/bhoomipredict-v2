@@ -314,7 +314,7 @@ export default function Prediction() {
               title="Model-based scenario estimate"
               subtitle={seed.data ? `Baseline is ${seed.data.project.name} as recorded` : 'Baseline is the starting scenario'}
               icon={<Sparkles className="h-4 w-4" />}
-              action={<InfoDot text="Scored by the linear surrogate of the deployed ensemble, so every contribution — including each pending department action — is exact. It is an estimate, not a guaranteed outcome." />}
+              action={<InfoDot text="Scored by the deployed gradient-boosted ensemble with exact TreeSHAP contributions; the effect of a pending department action is measured by re-scoring. It is an estimate, not a guaranteed outcome." />}
             />
             {r ? (
               <div className="grid gap-5 px-5 pb-5 lg:grid-cols-[1fr_1fr_1.1fr]">

@@ -3,12 +3,14 @@ import type { RiskLevel } from '@/data/types';
 /**
  * Risk banding.
  *
- * The cut-offs are the deployed model's calibrated-probability thresholds
- * (ml/train.py RISK_BAND_THRESHOLDS), expressed on the 0-100 score the UI shows.
- * The API bands every record itself; these helpers are for values the UI derives
- * locally, such as an aggregate it has just computed.
+ * The API bands every record itself. These helpers are for values the UI
+ * colours locally, which are all aggregates — mean project risk of a state,
+ * district, type or stage — so they use the project-level cut-offs
+ * (ml/train.py PROJECT_RISK_BAND_THRESHOLDS). A single case uses
+ * CASE_RISK_BAND_CUTS (RISK_BAND_THRESHOLDS).
  */
-export const RISK_BAND_CUTS = { medium: 30, high: 55, critical: 78 } as const;
+export const RISK_BAND_CUTS = { medium: 30, high: 45, critical: 60 } as const;
+export const CASE_RISK_BAND_CUTS = { medium: 30, high: 55, critical: 78 } as const;
 
 export const riskFromScore = (score: number): RiskLevel =>
   score >= RISK_BAND_CUTS.critical

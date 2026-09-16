@@ -48,7 +48,7 @@ export type CompensationStatus = 'Not Initiated' | 'Assessed' | 'Awarded' | 'Par
 export type PossessionStatus = 'Not Initiated' | 'Notice Issued' | 'Partial' | 'Complete';
 export type RRStatus = 'Not Applicable' | 'Not Started' | 'In Progress' | 'Complete';
 export type Severity = 'Low' | 'Medium' | 'High' | 'Critical';
-export type RiskBasis = 'ensemble' | 'ensemble+adjustment' | 'surrogate';
+export type RiskBasis = 'ensemble' | 'ensemble+adjustment' | 'ensemble-profile' | 'next-milestone' | 'open-book-mean' | 'surrogate';
 
 /* ------------------------------------------------------------ authorities */
 
@@ -204,6 +204,15 @@ export interface Recommendation {
   caseIds: string[];
   alert?: boolean;
   intervention?: boolean;
+  impact?: RecommendationImpact;
+}
+
+export interface RecommendationImpact {
+  riskPointsReduction: number;
+  projectedRiskScore: number;
+  change: string;
+  material: boolean;
+  basis: string;
 }
 
 export type InterventionStatus = 'OPEN' | 'ACKNOWLEDGED' | 'IN_PROGRESS' | 'RESOLVED' | 'DISMISSED';
@@ -247,6 +256,10 @@ export interface InterventionItem {
   note: string | null;
   updatedAt: string | null;
   updatedBy: string | null;
+  escalationLevel?: number;
+  escalatedTo?: string | null;
+  escalatedToLabel?: string | null;
+  escalatedAt?: string | null;
 }
 
 export interface CountRow {
@@ -389,6 +402,7 @@ export interface User {
 export interface Notifications {
   unreadAlerts: number;
   openAssigned: number;
+  unreadMessages?: number;
   total: number;
 }
 
@@ -541,13 +555,14 @@ export interface ProjectFull {
   riskBasis: RiskBasis;
   predictedDelayDays: number | null;
   previousEnsembleRisk?: number;
-  adjustment?: { surrogateBefore: number; surrogateAfter: number; logOddsDelta: number; changedFields: string[]; stageAdvances: number };
+  adjustment?: { profileBefore: number; profileAfter: number; logOddsDelta: number; changedFields: string[]; stageAdvances: number };
   highRiskCases: number;
   criticalCases: number;
   riskMix: Record<RiskLevel, number>;
   dataQuality: number | null;
   contributors: Contributor[];
-  contributorBasis?: 'surrogate';
+  contributorBasis?: 'surrogate' | 'treeshap-profile';
+  forecast?: ProjectForecast;
   topContributor: string | null;
   riskTrend: Array<{ month: string; riskScore: number; cases: number; observedDelayRate: number | null }>;
   source: 'corpus' | 'user' | 'upload';
@@ -709,8 +724,10 @@ export interface CaseDetailResponse {
   recommendations: CaseRecommendation[];
   documents: DocumentRecord[];
   activity: AuditEntry[];
-  permissions: { updateCase: boolean };
+  permissions: { updateCase: boolean; recordOutcome?: boolean };
   explanation: { basis: string; unit: string; baseValue: number | null; caveat: string };
+  recordedOutcome?: RecordedOutcome | null;
+  outcomeRecordingDate?: string;
 }
 
 export interface ProjectQueryResult {
@@ -826,6 +843,8 @@ export interface DashboardSummary {
     affectedFamilies: number;
     landRequirementHa: number;
     averagePredictedDelayDays: number;
+    likelyToMissTarget?: number;
+    severeOverrunLikely?: number;
   };
   riskDistribution: Array<{ key: RiskLevel; projects: number }>;
   caseRiskDistribution: Array<{ key: RiskLevel; cases: number }>;
@@ -872,7 +891,7 @@ export interface ScenarioOptions {
 export interface ScenarioNode extends DependencyNode {
   relevantToStage: boolean;
   pending: boolean;
-  influence: { presenceLogOdds: number; pendingLogOdds: number; pointsIfPending: number; currentPoints: number };
+  influence: { pointsIfPending: number; pointsIfCleared: number; pointsPerAdditionalDependency: number; currentPoints: number; basis: string };
   explanation: string;
 }
 
@@ -938,6 +957,8 @@ export interface DistrictSummary {
 }
 
 export interface ModelSnapshot {
+  version?: string | null;
+  projectRiskBands?: { medium: number; high: number; critical: number };
   deployed: string;
   operatingThreshold: number;
   riskBands: { medium: number; high: number; critical: number };
@@ -1191,7 +1212,9 @@ export interface UploadResult {
 export interface RetrainStatus {
   job: {
     id: string | null;
-    status: 'idle' | 'running' | 'succeeded' | 'failed';
+    status: 'idle' | 'running' | 'succeeded' | 'failed' | 'rejected';
+    kind?: 'retrain' | 'rollback';
+    result?: ModelVersion | null;
     steps: Array<{ name: string; status: string }>;
     log: string[];
     startedAt: string | null;
@@ -1201,6 +1224,7 @@ export interface RetrainStatus {
   };
   environment: { ok: boolean; detail: string };
   model: string | null;
+  modelVersion?: string | null;
 }
 
 export interface RegistryOverview {
@@ -1429,4 +1453,250 @@ export interface ParcelDataView {
     compensation: Envelope<Record<string, string | number | null>>;
     gis: Envelope<{ point: [number, number]; boundaryKey: string; geometry: string }>;
   };
+}
+
+/* ------------------------------------------------------------ forecasting */
+
+export interface StageForecast {
+  stage: StageName;
+  index: number;
+  phase: 'completed' | 'current' | 'future';
+  actualCompletion?: string | null;
+  delayProbability: number | null;
+  modelProbability?: number;
+  basis?: string;
+  historicalDelayRate?: number;
+  expectedSlipDays?: number;
+  plannedCompletion?: string;
+  p50Completion?: string;
+  p80Completion?: string;
+}
+
+export interface ProjectForecast {
+  method: string;
+  runs: number;
+  projectEffectLogOdds: number;
+  effectDecay: number;
+  stages: StageForecast[];
+  completion: { targetCompletionDate: string; p50: string; p80: string; probabilityMissTarget: number; p50OverrunDays: number };
+  caveat: string;
+}
+
+/* ----------------------------------------------------- trends & performance */
+
+export interface TrendPoint {
+  observed: number | null;
+  forecast: number | null;
+  observedCases: number;
+  openCases: number;
+}
+
+export interface DelayTrends {
+  level: 'state' | 'district';
+  state: string | null;
+  district: string | null;
+  snapshotMonth: string;
+  groups: string[];
+  series: Array<{ month: string; phase: 'observed' | 'forecast'; overall: TrendPoint; groups: Record<string, TrendPoint> }>;
+  summary: Array<{
+    key: string;
+    cases: number;
+    observedDelayRate: number | null;
+    last6MonthsRate: number | null;
+    previous6MonthsRate: number | null;
+    direction: 'worsening' | 'improving' | 'steady' | 'n/a';
+    forecastDelayShare: number | null;
+    forecastOpenMilestones: number;
+  }>;
+  definitions: { observed: string; forecast: string };
+}
+
+export interface PerformanceRow {
+  key: string;
+  projects: number;
+  openCases: number;
+  observedDelayRate: number | null;
+  avgRisk: number;
+  highOrCriticalProjects: number;
+  delayedProjects: number;
+  blockedProjects: number;
+  avgApprovalDelayDays: number | null;
+  avgPredictedSlipDays: number;
+  interventionsOpen: number;
+  interventionsOverdue: number;
+  interventionsResolved: number;
+  meanResolutionDays: number | null;
+}
+
+export interface PerformanceIndicators {
+  scope: { projects: number };
+  kpis: {
+    projects: number;
+    onTrackShare: number | null;
+    observedDelayRate: number | null;
+    meanRisk: number | null;
+    medianForecastOverrunDays: number | null;
+    projectsLikelyToMissTarget: number;
+    severeOverrunLikely?: number;
+    interventionsOpen: number;
+    interventionsOverdue: number;
+    interventionsEscalated: number;
+    interventionResolutionRate: number | null;
+    meanResolutionDays: number | null;
+  };
+  byState: PerformanceRow[];
+  byDistrict: PerformanceRow[];
+  byAuthority: PerformanceRow[];
+  byOffice: Array<{ key: string; role: string; level: string; projects: number; openCasesPending: number; currentStagePending: number; interventionsOpen: number; interventionsOverdue: number; meanResolutionDays: number | null }>;
+}
+
+/* ------------------------------------------------------ continuous learning */
+
+export interface RecordedOutcome {
+  caseId: string;
+  projectId: string;
+  stage: StageName;
+  milestoneDueDate: string;
+  completedOn: string | null;
+  actualDelayDays: number | null;
+  delayed: boolean;
+  source: 'officer' | 'csv' | 'api' | 'simulation';
+  note: string | null;
+  recordedAt: string;
+  recordedBy: { id: string; name: string; role?: string };
+  predictedProbability: number;
+  predictedBand: RiskLevel;
+  modelVersion: string | null;
+}
+
+export interface ModelVersion {
+  id: string;
+  createdAt: string;
+  triggeredBy: string;
+  status: 'champion' | 'archived' | 'rejected';
+  corpusRows: number;
+  observedRows: number;
+  outcomesApplied: number;
+  dataHash: string;
+  features: number;
+  test: { rocAuc: number; prAuc: number; brier: number };
+  gate: { passed: boolean; promoted: boolean; reason: string; champion: { version: string; rocAuc: number; prAuc: number; brier: number } | null };
+  archived?: boolean;
+  restoredAt?: string;
+  restoredBy?: string;
+}
+
+export interface LiveMetrics {
+  outcomes: number;
+  delayedRate?: number;
+  meanPredicted?: number;
+  rocAuc?: number | null;
+  precision?: number | null;
+  recall?: number | null;
+  brier?: number;
+  calibration?: Array<{ bin: string; count: number; predicted: number | null; observed: number | null }>;
+}
+
+export interface LearningStatus {
+  snapshotDate: string;
+  simulationDate: string | null;
+  effectiveDate: string;
+  withheldOutcomesAvailable: boolean;
+  autoRetrain: boolean;
+  autoRetrainMinOutcomes: number;
+  lastAutoRetrainAt: string | null;
+  retrainRecommended: boolean;
+  retrainReasons: string[];
+  live: {
+    operatingThreshold: number;
+    championVersion: string | null;
+    all: LiveMetrics;
+    predictedByChampion: LiveMetrics;
+    bySource: Record<string, number>;
+    offlineTest: { rocAuc: number; prAuc: number; brier: number } | null;
+    rocAucDropVsTest: number | null;
+    appliedToChampion: number;
+    awaitingRetrain: number;
+    note: string;
+  };
+  registry: { champion: string | null; servingVersion: string | null; versions: ModelVersion[]; gate: Record<string, unknown> | null };
+  job: RetrainStatus['job'];
+  environment: { ok: boolean; detail: string };
+}
+
+export interface DriftReport {
+  reference: { label: string; rows: number };
+  recent: { label: string; rows: number };
+  features: Array<{ feature: string; label: string; psi: number | null; status?: 'stable' | 'watch' | 'significant'; referenceMean?: number; recentMean?: number }>;
+  stageMix: { psi: number; stages: Array<{ stage: string; reference: number; recent: number }> };
+  overall: 'stable' | 'watch' | 'significant';
+  note: string;
+}
+
+/* ------------------------------------------------------------ notifications */
+
+export interface NotificationItem {
+  id: string;
+  at: string;
+  scan: string;
+  recipient: { id: string; name: string; role: string; designation: string };
+  subject: string;
+  itemCount: number;
+  items: Array<{ kind: 'alert' | 'escalation'; id: string; severity: Severity; title: string; projectId: string; projectName: string; link: string; reason: string }>;
+  channels: Array<{ channel: string; status: string; detail: string }>;
+  read: boolean;
+}
+
+export interface NotificationFeed {
+  total: number;
+  unread: number;
+  page: number;
+  pages: number;
+  items: NotificationItem[];
+  channels: Array<{ id: string; label: string; adapter: string; connected: boolean; rule?: string }>;
+  deliveryCounts: Record<string, number>;
+  lastScan: { at: string; reason: string; alertsEvaluated: number; newAlerts: number; notified: number; overdue: number; escalations: number; digests: number; webhooks: Array<{ target: string; status: string; detail: string }> } | null;
+  scanIntervalMinutes: number;
+  scans: number;
+}
+
+/* ------------------------------------------------------------- integrations */
+
+export interface ApiClient {
+  id: string;
+  name: string;
+  prefix: string;
+  keyPreview: string;
+  scopes: string[];
+  jurisdiction: string;
+  rateLimitPerMinute: number;
+  webhookUrl: string | null;
+  createdAt: string;
+  createdBy: { id: string; name: string };
+  lastUsedAt: string | null;
+  requests: number;
+  revokedAt: string | null;
+  active: boolean;
+}
+
+export interface AuditVerification {
+  entries: number;
+  chained: number;
+  legacyUnchained: number;
+  unreadable: number;
+  valid: boolean;
+  brokenAt: { line: number; id: string; timestamp: string; reason: string } | null;
+  head: string;
+  verifiedAt: string;
+}
+
+export interface SecurityPosture {
+  authentication: string;
+  sessions: string;
+  downloads: string;
+  apiKeys: string;
+  transport: string;
+  audit: string;
+  demoPasswordConfigured: boolean;
+  sessionPolicy: { idleMinutes: number; absoluteHours: number; maxFailures: number; failureWindowMinutes: number; lockMinutes: number; passwordMinLength: number };
 }

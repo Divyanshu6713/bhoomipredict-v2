@@ -6,8 +6,8 @@ interface AuthState {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (userId: string) => Promise<void>;
-  signInWithPosition: (role: RoleId, position: { orgId: string; units: Record<string, string | undefined> }) => Promise<void>;
+  signIn: (userId: string, password: string) => Promise<void>;
+  signInWithPosition: (role: RoleId, position: { orgId: string; units: Record<string, string | undefined> }, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => void;
   can: (permission: string) => boolean;
@@ -55,15 +55,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = useCallback(async (userId: string) => {
-    const { token } = await apiLogin(userId);
-    setToken(token);
+  const signIn = useCallback(async (userId: string, password: string) => {
+    const { token, downloadToken } = await apiLogin(userId, password);
+    setToken(token, downloadToken);
     setNonce((n) => n + 1);
   }, []);
 
-  const signInWithPosition = useCallback(async (role: RoleId, position: { orgId: string; units: Record<string, string | undefined> }) => {
-    const { token } = await loginWithPosition(role, position);
-    setToken(token);
+  const signInWithPosition = useCallback(async (role: RoleId, position: { orgId: string; units: Record<string, string | undefined> }, password: string) => {
+    const { token, downloadToken } = await loginWithPosition(role, position, password);
+    setToken(token, downloadToken);
     setNonce((n) => n + 1);
   }, []);
 

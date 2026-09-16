@@ -18,6 +18,8 @@
  * changed together.
  */
 
+import { scoreWithEnsemble } from './ensemble.mjs';
+
 const sigmoid = (z) => 1 / (1 + Math.exp(-z));
 
 /** Missing-value handling that matches ml/train.py's feature builder. */
@@ -136,6 +138,20 @@ export function scoreRecord(surrogate, raw) {
 }
 
 /**
+ * Score a record with the deployed model. The exported ensemble is the default;
+ * the linear reference is used only when no ensemble has been published (a
+ * corpus built by an older pipeline), and the result says which one scored it.
+ * @param opts.level 'case' (default) or 'project' — which band cut-offs apply
+ */
+export function scoreModel(store, raw, { explain = true, level = 'case' } = {}) {
+  const bands = level === 'project' ? store.projectRiskBands : store.riskBands;
+  if (store.ensemble) return scoreWithEnsemble(store.ensemble, raw, { explain, bands });
+  const r = scoreRecord(store.surrogate, raw);
+  const p = r.probability;
+  return { ...r, riskBand: p >= bands.critical ? 'Critical' : p >= bands.high ? 'High' : p >= bands.medium ? 'Medium' : 'Low', modelVersion: null };
+}
+
+/**
  * Input contract for the interactive form: every field the surrogate reads,
  * with its options and a sensible default, derived from the model artefacts so
  * the form can never drift from the model.
@@ -214,9 +230,10 @@ export function predictionSpec(store) {
     hidden: ['latitude', 'longitude'],
     riskBands: surrogate.riskBands,
     fidelity: surrogate.fidelity,
-    note:
-      'Interactive scenarios are scored by the linear surrogate of the deployed ensemble. ' +
-      'Portfolio figures elsewhere come from the ensemble itself.',
+    modelVersion: store.ensemble?.version ?? null,
+    note: store.ensemble
+      ? 'Scenarios are scored by the deployed gradient-boosted ensemble itself (exported trees), with exact TreeSHAP explanations.'
+      : 'No exported ensemble is published; scenarios fall back to the linear reference model.',
   };
 }
 

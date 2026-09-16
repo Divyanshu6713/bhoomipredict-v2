@@ -33,6 +33,9 @@ export const PERMISSIONS = [
   'document.review',
   'audit.view',
   'admin.view',
+  'learning.record',
+  'notification.manage',
+  'integration.manage',
 ];
 
 /** Intervention / alert categories. */
@@ -73,21 +76,21 @@ export const ROLES = {
   STATE_ADMIN: {
     label: 'State Administrator',
     tiers: ['state'],
-    permissions: ['project.create', 'project.edit', 'project.advanceStage', 'data.upload', 'intervention.update', 'intervention.assign', 'alert.update', 'case.update', 'document.upload', 'document.review', 'audit.view', 'admin.view'],
+    permissions: ['project.create', 'project.edit', 'project.advanceStage', 'data.upload', 'intervention.update', 'intervention.assign', 'alert.update', 'case.update', 'document.upload', 'document.review', 'audit.view', 'admin.view', 'learning.record', 'notification.manage', 'integration.manage'],
     focus: ['risk', 'schedule', 'dependency', 'coordination', 'approval', 'legal'],
     summary: 'State portfolio, cross-district bottlenecks and state-level approvals.',
   },
   DISTRICT_ADMIN: {
     label: 'District Administrator',
     tiers: ['division', 'district'],
-    permissions: ['project.edit', 'project.advanceStage', 'intervention.update', 'intervention.assign', 'alert.update', 'case.update', 'document.upload', 'document.review', 'audit.view'],
+    permissions: ['project.edit', 'project.advanceStage', 'intervention.update', 'intervention.assign', 'alert.update', 'case.update', 'document.upload', 'document.review', 'audit.view', 'learning.record'],
     focus: ['risk', 'schedule', 'dependency', 'coordination', 'approval', 'rr', 'backlog'],
     summary: 'Cross-department bottlenecks, escalations and high-risk projects in the district.',
   },
   LAND_ACQUISITION_OFFICER: {
     label: 'Land Acquisition Officer',
     tiers: ['district'],
-    permissions: ['project.advanceStage', 'intervention.update', 'alert.update', 'case.update', 'document.upload'],
+    permissions: ['project.advanceStage', 'intervention.update', 'alert.update', 'case.update', 'document.upload', 'learning.record'],
     focus: ['compensation', 'backlog', 'possession', 'schedule', 'legal'],
     summary: 'Notifications, awards, compensation, case resolution and possession.',
   },
@@ -118,6 +121,13 @@ export const ROLES = {
     permissions: ['intervention.update', 'case.update', 'document.upload'],
     focus: ['stakeholder', 'possession', 'documentation'],
     summary: 'Field verification, stakeholder follow-up and possession on the ground.',
+  },
+  API_CLIENT: {
+    label: 'System integration (API key)',
+    tiers: ['national', 'region', 'state', 'division', 'district'],
+    permissions: [],
+    focus: CATEGORIES,
+    summary: 'A connected system acting through a scoped API key; its scopes, not a role, decide what it may do.',
   },
   POLICY_VIEWER: {
     label: 'Policy Viewer (read-only)',
@@ -182,7 +192,7 @@ export const userById = (id) => {
 /** Roles that can be held at a tier when configuring a demo position. */
 export const rolesForTier = (tier) =>
   Object.entries(ROLES)
-    .filter(([id, r]) => id !== 'NATIONAL_ADMIN' && r.tiers.includes(tier))
+    .filter(([id, r]) => id !== 'NATIONAL_ADMIN' && id !== 'API_CLIENT' && r.tiers.includes(tier))
     // Administrators of the tier first, then roles specific to few tiers before broad ones.
     .sort(([a, ra], [b, rb]) => Number(b.endsWith('_ADMIN')) - Number(a.endsWith('_ADMIN')) || ra.tiers.length - rb.tiers.length)
     .map(([id, r]) => ({ id, label: r.label, summary: r.summary, permissions: r.permissions.length }));

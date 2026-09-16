@@ -14,7 +14,6 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { loadStore, caseAt, isoFromDay, featureContributionsFor, DATA } from './lib/store.mjs';
 import {
@@ -27,8 +26,8 @@ import {
   contributorsFor,
   clearCache,
 } from './lib/query.mjs';
-import { scoreRecord, predictionSpec, defaultRecord, recordFromCase } from './lib/scorer.mjs';
-import { loadState, getState, saveState, flushState, recordAudit, queryAudit } from './lib/persistence.mjs';
+import { scoreModel, predictionSpec, defaultRecord, recordFromCase } from './lib/scorer.mjs';
+import { loadState, getState, saveState, flushState, recordAudit, queryAudit, verifyAuditChain } from './lib/persistence.mjs';
 import {
   attachStore,
   effectiveProjects,
@@ -49,7 +48,13 @@ import { scoreScenario, scenarioOptions, scenarioSeedForProject } from './lib/sc
 import { dashboardSummary, scopedProjects } from './lib/dashboard.mjs';
 import { uploadDocument, addVersion, reviewDocument, listDocuments, documentFile, DOCUMENT_TYPES, MAX_BYTES } from './lib/documents.mjs';
 import { processUpload, csvTemplate } from './lib/upload.mjs';
-import { startRetrain, jobStatus, pythonAvailable } from './lib/jobs.mjs';
+import { startRetrain, startRollback, jobStatus, jobRunning, pythonAvailable } from './lib/jobs.mjs';
+import { createSession, sessionForToken, sessionForDownloadToken, endSession, verifyPassword, lockStatus, recordFailure, clearFailures, passwordPolicyErrors, setPassword, applyTransportHeaders, securityPosture, purgeExpiredSessions, SESSION_POLICY } from './lib/security.mjs';
+import { recordOutcome, ingestOutcomes, parseOutcomeCsv, advanceSimulation, learningStatus, driftReport, modelRegistry, setLearningSettings, outcomeFor, resetOutcomeCache, effectiveToday } from './lib/learning.mjs';
+import { runAlertScan, startScheduler, notificationFeed, markNotificationsRead } from './lib/notifications.mjs';
+import { createApiClient, revokeApiClient, listApiClients, apiClientWebhooks, API_SCOPES } from './lib/apiClients.mjs';
+import { handleV1 } from './lib/externalApi.mjs';
+import { delayTrends, performanceIndicators } from './lib/analytics.mjs';
 import { runConsistencyChecks } from './lib/consistency.mjs';
 import { USERS, ROLES, userById, can, inScope, describeUser, CATEGORIES, configuredUser, isUnrestricted, rolesForTier } from './domain/roles.mjs';
 import { hierarchyConfig, levelOptions, organisationById, resolvePosition, templateLevels, projectInPosition, SECTORS } from './domain/hierarchy.mjs';
@@ -57,7 +62,7 @@ import { STATES_AND_UTS } from './domain/india.mjs';
 import { projectIssueProfile, typeIssueMatrix, issueCatalogue } from './domain/issues.mjs';
 import { configureIntegrations, integrationStatus, parcelDataView, projectDataView } from './integration/index.mjs';
 import { portfolioDrilldown, positionPortfolio } from './lib/portfolio.mjs';
-import { evaluateCase, RULE_THRESHOLDS } from './domain/rules.mjs';
+import { evaluateCase, RULE_THRESHOLDS, RULE_THRESHOLD_OVERRIDES } from './domain/rules.mjs';
 import { FRAMEWORKS, PROJECT_TYPES, PROFILED_STATES, REGISTRY_NOTE, DEPENDENCY_META, authorityOptions, dependencyMatrix } from './domain/registry.mjs';
 import { GEO_DIR, districtIndex } from './domain/geography.mjs';
 import { LIFECYCLE_RULES } from './domain/lifecycle.mjs';
@@ -94,6 +99,7 @@ configureIntegrations({
 function reloadStore() {
   store = loadStore();
   clearCache();
+  resetOutcomeCache();
   attachStore(store);
   touchProjects();
   effectiveProjects();
@@ -147,11 +153,12 @@ async function readBody(req) {
 
 /* -------------------------------------------------------------------- auth */
 
-function sessionUser(req, url) {
+/** Bearer token (header only), or, on read-only download endpoints, the download token. */
+function sessionUser(req, url, { allowDownloadToken = false } = {}) {
   const header = req.headers.authorization ?? '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : url.searchParams.get('token');
-  if (!token) return null;
-  const session = getState().sessions[token];
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  let session = token ? sessionForToken(token) : null;
+  if (!session && allowDownloadToken && req.method === 'GET') session = sessionForDownloadToken(url.searchParams.get('dl'));
   if (!session) return null;
   if (session.configured) {
     try {
@@ -163,8 +170,10 @@ function sessionUser(req, url) {
   return userById(session.userId);
 }
 
+const DOWNLOAD_PATH = /^\/api\/(export\/|upload\/template$|learning\/outcomes\/template$|documents\/[^/]+\/download$)/;
+
 function requireUser(req, url) {
-  const user = sessionUser(req, url);
+  const user = sessionUser(req, url, { allowDownloadToken: DOWNLOAD_PATH.test(url.pathname) });
   if (!user) throw new ServiceError('Sign in required', 401);
   return user;
 }
@@ -385,6 +394,7 @@ function registryOverview() {
     sectors: SECTORS,
     lifecycleRules: LIFECYCLE_RULES,
     ruleThresholds: RULE_THRESHOLDS,
+    ruleThresholdOverrides: RULE_THRESHOLD_OVERRIDES,
   };
 }
 
@@ -528,6 +538,7 @@ async function handle(req, res, url) {
       storeBytes: store.bytes,
       shap: store.meta.shapAvailable,
       model: store.model?.metrics?.generatedAt ?? null,
+      modelVersion: store.modelVersion,
       uptimeSeconds: Math.round(process.uptime()),
     });
   }
@@ -585,21 +596,28 @@ async function handle(req, res, url) {
       user = userById(body.userId);
     }
     if (!user) throw new ServiceError('Unknown profile', 404);
-    const token = crypto.randomBytes(24).toString('hex');
-    getState().sessions[token] = { userId: user.id, ...(configured ? { configured } : {}), createdAt: new Date().toISOString() };
-    saveState();
-    recordAudit({ user, action: 'session.signed_in', entity: 'user', entityId: user.id });
-    return json(res, { token, user: describeUser(user) });
+    // Configured demo positions are session-only and share the demo credential.
+    const principalId = configured ? 'configured-position' : user.id;
+    const lock = lockStatus(user.id);
+    if (lock.locked) {
+      res.setHeader('Retry-After', String(lock.retryAfterSeconds));
+      throw new ServiceError(`Too many failed attempts. Try again in ${Math.ceil(lock.retryAfterSeconds / 60)} minute(s).`, 423);
+    }
+    if (!verifyPassword(principalId, body.password)) {
+      const f = recordFailure(user.id);
+      recordAudit({ user: null, action: 'session.login_failed', entity: 'user', entityId: user.id, note: f.locked ? 'Profile locked after repeated failures' : `${f.attemptsLeft} attempt(s) left` });
+      throw new ServiceError(f.locked ? 'Too many failed attempts. The profile is locked for 5 minutes.' : 'Incorrect password', 401, { attemptsLeft: f.attemptsLeft });
+    }
+    clearFailures(user.id);
+    const session = createSession({ userId: user.id, ...(configured ? { configured } : {}) });
+    recordAudit({ user, action: 'session.signed_in', entity: 'user', entityId: user.id, newValue: { expiresAt: session.expiresAt } });
+    return json(res, { ...session, user: describeUser(user) });
   }
   if (at('POST', '/api/auth/logout')) {
     const header = req.headers.authorization ?? '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     const user = sessionUser(req, url);
-    if (token && getState().sessions[token]) {
-      delete getState().sessions[token];
-      saveState();
-      if (user) recordAudit({ user, action: 'session.signed_out', entity: 'user', entityId: user.id });
-    }
+    if (token && endSession(token) && user) recordAudit({ user, action: 'session.signed_out', entity: 'user', entityId: user.id });
     return json(res, { ok: true });
   }
   if (at('GET', '/api/summary')) return json(res, { ...store.summary, store: { rows: store.rows, bytes: store.bytes, loadMs: store.loadMs } });
@@ -611,6 +629,21 @@ async function handle(req, res, url) {
 
   /* ------------------------------------------------------ authenticated */
   const user = requireUser(req, url);
+
+  if (at('POST', '/api/auth/password')) {
+    if (user.configured) throw new ServiceError('Configured demo positions are session-only and have no stored credential', 409);
+    const body = await readBody(req);
+    if (!verifyPassword(user.id, body.currentPassword)) {
+      recordFailure(user.id);
+      throw new ServiceError('Current password is incorrect', 401);
+    }
+    const problems = passwordPolicyErrors(body.newPassword);
+    if (problems.length) throw new ServiceError(`The new password needs ${problems.join(', ')}`, 422);
+    setPassword(user.id, body.newPassword);
+    recordAudit({ user, action: 'session.password_changed', entity: 'user', entityId: user.id });
+    return json(res, { ok: true });
+  }
+  if (at('GET', '/api/security/posture')) return json(res, { ...securityPosture(), sessionPolicy: SESSION_POLICY });
 
   if (at('GET', '/api/auth/me') || at('GET', '/api/profile')) {
     const projects = scopedProjects(user);
@@ -760,7 +793,9 @@ async function handle(req, res, url) {
       recommendations: evaluateCase(withStatus, project),
       documents: listDocuments(user, { caseId: detail.caseId }, effectiveProjects().byId).documents,
       activity: queryAudit({ entity: 'case', entityId: detail.caseId, pageSize: 20 }).entries,
-      permissions: { updateCase: can(user, 'case.update') },
+      permissions: { updateCase: can(user, 'case.update'), recordOutcome: can(user, 'learning.record') && !detail.labelObserved && !outcomeFor(detail.caseId) },
+      recordedOutcome: outcomeFor(detail.caseId),
+      outcomeRecordingDate: effectiveToday(store),
       explanation: {
         basis: store.meta.shapAvailable ? 'TreeSHAP on the deployed ensemble' : 'linear surrogate',
         unit: 'log-odds contribution to the predicted risk',
@@ -800,7 +835,10 @@ async function handle(req, res, url) {
     const mm = /^LAC-(\d+)$/i.exec(p.caseId ?? '');
     const row = mm ? Number(mm[1]) - 500000 : -1;
     if (!(row >= 0 && row < store.rows)) throw new ServiceError('Case not found', 404);
+    const caseProject = getProject(store.projects[store.col.projectIdx[row]].id);
+    if (!caseProject || !inScope(user, caseProject)) throw new ServiceError('This case is outside your jurisdiction', 403);
     const record = recordFromCase(store, row);
+    const live = scoreModel(store, record);
     return json(res, {
       record,
       ensemble: {
@@ -808,7 +846,9 @@ async function handle(req, res, url) {
         riskScore: Math.min(99, Math.max(1, Math.round(store.col.score[row] * 100))),
         contributors: contributorsFor(store, row),
       },
-      surrogate: scoreRecord(store.surrogate, record),
+      // Re-scored live from the record with the exported trees; equals the stored score.
+      surrogate: live,
+      live,
     });
   }
   if (at('POST', '/api/predict')) {
@@ -823,8 +863,8 @@ async function handle(req, res, url) {
         throw new ServiceError(`"${record.authority}" is not an eligible acquiring body for ${record.project_type} in ${record.state}`, 422, { eligible: options });
       }
     }
-    const result = scoreRecord(store.surrogate, record);
-    const baseline = body.baseline ? scoreRecord(store.surrogate, { ...defaultRecord(store), ...body.baseline }) : null;
+    const result = scoreModel(store, record);
+    const baseline = body.baseline ? scoreModel(store, { ...defaultRecord(store), ...body.baseline }) : null;
     return json(res, {
       record,
       result,
@@ -880,6 +920,7 @@ async function handle(req, res, url) {
   }
   if ((m = at('GET', /^\/api\/documents\/([^/]+)\/download$/))) {
     const f = documentFile(user, m[0], p.version);
+    recordAudit({ user, action: 'document.downloaded', entity: 'document', entityId: m[0], newValue: { version: p.version ?? 'latest' } });
     res.writeHead(200, { 'Content-Type': f.contentType, 'Content-Disposition': `attachment; filename="${f.fileName}"`, 'Cache-Control': 'no-store' });
     return fs.createReadStream(f.file).pipe(res);
   }
@@ -899,14 +940,113 @@ async function handle(req, res, url) {
   }
   if (at('POST', '/api/retrain')) {
     requirePermission(user, 'model.retrain');
-    const result = startRetrain(user, { onSuccess: async () => reloadStore() });
+    const result = startRetrain(user, { onSuccess: async () => reloadStore(), onFinished: () => runAlertScan({ reason: 'after-retrain', apiClientWebhooks: apiClientWebhooks() }).catch(() => {}) });
     recordAudit({ user, action: result.started ? 'model.retrain_started' : 'model.retrain_refused', entity: 'model', entityId: result.job.id ?? 'retrain', note: result.reason ?? null });
     return json(res, result, result.started ? 202 : 409);
   }
   if (at('GET', '/api/retrain/status')) {
     requirePermission(user, 'admin.view');
-    return json(res, { job: jobStatus(), environment: pythonAvailable(), model: store.model?.metrics?.generatedAt ?? null });
+    return json(res, { job: jobStatus(), environment: pythonAvailable(), model: store.model?.metrics?.generatedAt ?? null, modelVersion: store.modelVersion });
   }
+  /* ------------------------------------------------- trends & performance */
+  if (at('GET', '/api/analytics/trends')) {
+    return json(res, delayTrends(store, user, { level: p.level === 'district' ? 'district' : 'state', state: p.state || undefined, district: p.district || undefined, months: Math.min(36, Number(p.months ?? 18)), top: Math.min(15, Number(p.top ?? 8)) }));
+  }
+  if (at('GET', '/api/analytics/performance')) {
+    return json(res, performanceIndicators(store, user, { state: p.state || undefined, district: p.district || undefined, projectType: p.projectType || undefined, sector: p.sector || undefined }));
+  }
+
+  /* ---------------------------------------------------- continuous learning */
+  if (at('GET', '/api/learning/status')) {
+    requirePermission(user, 'admin.view');
+    return json(res, { ...learningStatus(store), registry: modelRegistry(store), job: jobStatus(), environment: pythonAvailable() });
+  }
+  if (at('GET', '/api/learning/drift')) {
+    requirePermission(user, 'admin.view');
+    return json(res, driftReport(store, { recentDays: Math.min(365, Math.max(30, Number(p.days ?? 120))) }));
+  }
+  if ((m = at('POST', /^\/api\/cases\/([^/]+)\/outcome$/))) {
+    requirePermission(user, 'learning.record');
+    const mm = /^LAC-(\d+)$/i.exec(m[0]);
+    const row = mm ? Number(mm[1]) - 500000 : -1;
+    if (!(row >= 0 && row < store.rows)) throw new ServiceError('Case not found', 404);
+    const project = getProject(store.projects[store.col.projectIdx[row]].id);
+    if (!project || !inScope(user, project)) throw new ServiceError('This case is outside your jurisdiction', 403);
+    const body = await readBody(req);
+    return json(res, { outcome: recordOutcome(store, user, { ...body, caseId: m[0] }, 'officer') }, 201);
+  }
+  if (at('GET', '/api/learning/outcomes/template')) {
+    res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="landpulse-outcomes-template.csv"' });
+    return res.end('case_id,completed_on,still_pending_on,next_milestone_delayed,actual_stage_delay_days\nLAC-812345,2026-09-02,,,\n');
+  }
+  if (at('POST', '/api/learning/outcomes')) {
+    requirePermission(user, 'learning.record');
+    const text = (await readRaw(req, 5 * 1024 * 1024)).toString('utf8');
+    const rows = parseOutcomeCsv(text);
+    if (!isUnrestricted(user)) {
+      const outside = rows.filter((r) => {
+        const mm = /^LAC-(\d+)$/i.exec(String(r.case_id ?? r.caseId ?? ''));
+        const row = mm ? Number(mm[1]) - 500000 : -1;
+        if (row < 0 || row >= store.rows) return false;
+        const pr = getProject(store.projects[store.col.projectIdx[row]].id);
+        return !pr || !inScope(user, pr);
+      }).length;
+      if (outside) throw new ServiceError(`${outside} row(s) refer to cases outside your jurisdiction`, 403);
+    }
+    const result = ingestOutcomes(store, user, rows, { commit: p.commit === '1', source: 'csv' });
+    return json(res, result, result.summary.invalid && p.commit === '1' ? 422 : 200);
+  }
+  if (at('POST', '/api/learning/simulate')) {
+    requirePermission(user, 'model.retrain');
+    const body = await readBody(req);
+    const result = advanceSimulation(store, user, body.days);
+    const scan = await runAlertScan({ reason: 'simulation', user, apiClientWebhooks: apiClientWebhooks() });
+    return json(res, { ...result, scan });
+  }
+  if (at('PATCH', '/api/learning/settings')) {
+    requirePermission(user, 'model.retrain');
+    return json(res, { learning: setLearningSettings(user, await readBody(req)) });
+  }
+  if ((m = at('POST', /^\/api\/learning\/rollback\/([^/]+)$/))) {
+    requirePermission(user, 'model.retrain');
+    const result = startRollback(user, m[0], { onSuccess: async () => reloadStore() });
+    recordAudit({ user, action: result.started ? 'model.rollback_started' : 'model.rollback_refused', entity: 'model', entityId: m[0], note: result.reason ?? null });
+    return json(res, result, result.started ? 202 : 409);
+  }
+
+  /* ---------------------------------------------------------- notifications */
+  if (at('GET', '/api/notifications/feed')) {
+    const all = p.all === '1';
+    if (all) requirePermission(user, 'notification.manage');
+    return json(res, notificationFeed(user, { all, page: p.page, pageSize: p.pageSize, unread: p.unread }));
+  }
+  if (at('POST', '/api/notifications/read')) {
+    const body = await readBody(req);
+    return json(res, markNotificationsRead(user, Array.isArray(body.ids) ? body.ids : null));
+  }
+  if (at('POST', '/api/notifications/scan')) {
+    requirePermission(user, 'notification.manage');
+    return json(res, { scan: await runAlertScan({ reason: 'manual', user, apiClientWebhooks: apiClientWebhooks() }) });
+  }
+
+  /* ----------------------------------------------------------- integrations */
+  if (at('GET', '/api/integrations/clients')) {
+    requirePermission(user, 'integration.manage');
+    return json(res, { clients: listApiClients(user), scopes: API_SCOPES, openapi: '/api/v1/openapi.json' });
+  }
+  if (at('POST', '/api/integrations/clients')) {
+    requirePermission(user, 'integration.manage');
+    return json(res, createApiClient(user, await readBody(req)), 201);
+  }
+  if ((m = at('DELETE', /^\/api\/integrations\/clients\/([^/]+)$/))) {
+    requirePermission(user, 'integration.manage');
+    return json(res, { client: revokeApiClient(user, m[0]) });
+  }
+  if (at('GET', '/api/audit/verify')) {
+    requirePermission(user, 'audit.view');
+    return json(res, verifyAuditChain());
+  }
+
   if (at('GET', '/api/audit')) {
     requirePermission(user, 'audit.view');
     return json(res, queryAudit(p));
@@ -917,6 +1057,9 @@ async function handle(req, res, url) {
   }
 
   /* ------------------------------------------------------------- exports */
+  if (pathname.startsWith('/api/export/') && pathname !== '/api/export/manifest') {
+    recordAudit({ user, action: 'data.exported', entity: 'export', entityId: pathname.slice('/api/export/'.length), newValue: { filters: Object.fromEntries(Object.entries(p).filter(([k]) => k !== 'dl')) } });
+  }
   if (at('GET', '/api/export/cases.csv')) return exportCases(res, scopeFilter(user, p));
   if (at('GET', '/api/export/projects.csv')) return exportProjects(res, user, p);
   if (at('GET', '/api/export/dataset.csv')) return streamFile(req, res, path.join(DATA, 'land_acquisition_synthetic_350k.csv'), 'text/csv; charset=utf-8', 'land_acquisition_synthetic_350k.csv');
@@ -938,18 +1081,23 @@ async function handle(req, res, url) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  const transport = applyTransportHeaders(req, res);
   if (req.method === 'OPTIONS') {
-    res.writeHead(204);
+    res.writeHead(transport.allowed ? 204 : 403);
     return res.end();
   }
   try {
+    if (url.pathname.startsWith('/api/v1')) {
+      await handleV1(req, res, url, store, { json, readBody });
+      return;
+    }
     if (url.pathname.startsWith('/api/')) return await handle(req, res, url);
     return serveStatic(req, res, url.pathname);
   } catch (err) {
-    if (err instanceof ServiceError) return json(res, { error: err.message, details: err.details ?? undefined }, err.status);
+    if (err instanceof ServiceError) {
+      if (err.retryAfter) res.setHeader('Retry-After', String(err.retryAfter));
+      return json(res, { error: err.message, details: err.details ?? undefined }, err.status);
+    }
     console.error('[api]', err);
     return json(res, { error: err.message ?? 'Internal error' }, 500);
   }
@@ -965,7 +1113,28 @@ process.on('SIGTERM', () => {
 });
 
 server.listen(PORT, () => {
-  console.log(`[api] listening on http://localhost:${PORT}`);
+  console.log(`[api] listening on http://localhost:${PORT} · model ${store.modelVersion ?? 'legacy'}`);
 });
+
+// Automated alert scans and escalation; optional automatic retraining once enough outcomes arrive.
+if (process.env.LANDPULSE_DISABLE_SCHEDULER !== '1') {
+  startScheduler({
+    apiClientWebhooks,
+    onTick: async () => {
+      purgeExpiredSessions();
+      const s = getState().learning;
+      if (!s.autoRetrain || jobRunning()) return;
+      const status = learningStatus(store);
+      if (status.live.awaitingRetrain >= s.autoRetrainMinOutcomes) {
+        s.lastAutoRetrainAt = new Date().toISOString();
+        saveState();
+        const system = { id: 'system', name: 'Automatic retraining', role: 'NATIONAL_ADMIN' };
+        const r = startRetrain(system, { onSuccess: async () => reloadStore(), triggeredBy: `automatic (${status.live.awaitingRetrain} new outcomes)` });
+        recordAudit({ user: null, action: r.started ? 'model.retrain_started' : 'model.retrain_refused', entity: 'model', entityId: r.job.id ?? 'auto', note: `automatic: ${status.live.awaitingRetrain} outcomes awaiting` });
+      }
+    },
+  });
+}
+
 
 export { isoFromDay, allInterventions };

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { PasswordChange } from '@/components/workflow/PasswordChange';
 import { Bell, Briefcase, Building2, ContactRound, GitBranch, Layers, ListChecks, Network, ShieldCheck } from 'lucide-react';
 import { Badge, Button, Card, CardHeader, EmptyState, SkeletonCard } from '@/components/ui';
 import { ErrorState, RiskPill } from '@/components/ui/primitives';
@@ -189,6 +190,8 @@ export default function Profile() {
           </dl>
         </Card>
       </section>
+
+      <PasswordChange configured={user.configured} />
 
       <section className="grid gap-4 lg:grid-cols-2">
         <Card>

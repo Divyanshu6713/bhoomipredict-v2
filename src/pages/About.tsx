@@ -189,8 +189,8 @@ export default function About() {
                 </li>
               )}
               <li>
-                <span className="font-semibold text-ink">Interactive surrogate:</span> linear model distilled from the
-                ensemble for what-if scoring, log-odds R² {m.surrogateFidelity.logOddsR2}
+                <span className="font-semibold text-ink">Serving:</span> the deployed trees are exported and scored in the API
+                (verified identical to scikit-learn), so scenarios, edits and new projects use the real model with exact TreeSHAP
               </li>
             </ul>
           </div>
@@ -262,11 +262,10 @@ export default function About() {
               the stage, district and authority — because a reviewer needs the factor, not the encoding.
             </p>
             <p className="text-[12.5px] leading-relaxed text-ink-2">
-              For an ad-hoc scenario there is no stored row, so scoring runs through a linear surrogate distilled from
-              the ensemble. Its Shapley values are closed-form, so contributions always sum exactly to the score shown,
-              and its agreement with the ensemble is measured rather than assumed: log-odds R²{' '}
-              {m.surrogateFidelity.logOddsR2}, Spearman {m.surrogateFidelity.spearman}, same risk band{' '}
-              {(m.surrogateFidelity.bandAgreement * 100).toFixed(0)}% of the time.
+              For an ad-hoc scenario, an edited project or a record arriving through the API there is no stored row, so
+              the API scores it with the exported trees of the deployed ensemble and computes exact TreeSHAP on the spot
+              (path-dependent algorithm, the same one the SHAP library uses; verified to 1e-7 against it). Contributions
+              plus the base value sum exactly to the model's log-odds.
             </p>
             <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.07] p-3.5">
               <p className="text-[12px] font-bold text-amber-700 dark:text-amber-400">The standing caveat</p>

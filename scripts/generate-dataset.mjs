@@ -945,6 +945,15 @@ async function main() {
   let buffer = [];
   let caseSeq = 0;
 
+  // Outcomes of the open cases, withheld from the corpus. They let the platform
+  // demonstrate continuous learning honestly: "advancing the simulation clock"
+  // releases the outcomes that would have become knowable by then, exactly as
+  // newly completed milestones would arrive from the field. Writing this file
+  // does not consume random draws, so the corpus stays byte-identical.
+  const simDir = path.join(DATA_DIR, 'simulation');
+  fs.mkdirSync(simDir, { recursive: true });
+  const futureRows = ['case_id,milestone_due_date,outcome_knowable_date,next_milestone_delayed,actual_stage_delay_days'];
+
   for (const project of projects) {
     const agg = {
       parcels: 0,
@@ -993,6 +1002,9 @@ async function main() {
       const band = p >= RISK_BAND_CUTS.critical ? 'Critical' : p >= RISK_BAND_CUTS.high ? 'High' : p >= RISK_BAND_CUTS.medium ? 'Medium' : 'Low';
 
       const caseId = `LAC-${String(500000 + caseSeq)}`;
+      if (!observed) {
+        futureRows.push(`${caseId},${isoFromDay(c.milestoneDueDay)},${isoFromDay(c.milestoneDueDay + DELAY_THRESHOLD_DAYS + 1)},${delayed},${delayDays}`);
+      }
       const parcelId = `${project.stateCode}-${c.district.slice(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X')}-${String(10000 + (caseSeq % 89999))}`;
 
       const miss = (key) => rng() < MISSING_RATES[key];
@@ -1155,6 +1167,8 @@ async function main() {
 
   if (buffer.length) await write(`${buffer.join('\n')}\n`);
   await new Promise((r) => out.end(r));
+  fs.writeFileSync(path.join(simDir, 'future_outcomes.csv'), `${futureRows.join('\n')}\n`);
+  console.log(`[generate] ${(futureRows.length - 1).toLocaleString('en-IN')} withheld future outcomes → data/simulation/future_outcomes.csv`);
 
   /* --------------------------------------------------- project registry */
   // Stage statuses are not written here: the lifecycle engine

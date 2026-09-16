@@ -185,7 +185,7 @@ function ModelPanel({ canRetrain }: { canRetrain: boolean }) {
               { label: 'Test PR-AUC', value: m.test.prAuc.toFixed(3) },
               { label: 'F1 @ threshold', value: m.test.at_threshold.f1.toFixed(3), hint: `threshold ${m.operatingThreshold}` },
               { label: 'Brier', value: m.test.brier.toFixed(3) },
-              { label: 'Surrogate R²', value: m.surrogateFidelity.logOddsR2.toFixed(3), hint: `band agreement ${Math.round(m.surrogateFidelity.bandAgreement * 100)}%` },
+              { label: 'Serving model', value: m.version ?? '—', hint: 'exported trees, exact TreeSHAP' },
               { label: 'Slip MAE (if delayed)', value: m.slipModel ? `${m.slipModel.conditionalTestMae}d` : '—', hint: m.slipModel ? `median baseline ${m.slipModel.conditionalBaselineMae}d` : undefined },
             ]}
           />
@@ -193,7 +193,7 @@ function ModelPanel({ canRetrain }: { canRetrain: boolean }) {
         <div className="rounded-xl border border-line bg-surface-2 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-[12.5px] font-semibold text-ink">Retrain on the current corpus</p>
+              <p className="text-[12.5px] font-semibold text-ink">Retrain with newly recorded outcomes (gated against the champion)</p>
               <p className="text-[11px] text-ink-3">{status.data?.environment.ok ? `Environment: ${status.data.environment.detail}` : `Environment unavailable: ${status.data?.environment.detail ?? '…'}`}</p>
             </div>
             <Button
@@ -201,7 +201,7 @@ function ModelPanel({ canRetrain }: { canRetrain: boolean }) {
               disabled={!canRetrain || running || !status.data?.environment.ok}
               onClick={async () => {
                 const r = await startRetrain().catch((e: Error) => ({ started: false, reason: e.message }));
-                setMessage(r.started ? 'Retraining started — typically 8–10 minutes including TreeSHAP.' : r.reason ?? 'Could not start');
+                setMessage(r.started ? 'Retraining started — about 15–20 minutes including TreeSHAP on every case.' : r.reason ?? 'Could not start');
                 setTick((n) => n + 1);
               }}
               className="gap-1.5"
@@ -228,7 +228,7 @@ function ModelPanel({ canRetrain }: { canRetrain: boolean }) {
           )}
         </div>
         <p className="text-[11px] text-ink-3">
-          Full model card, calibration and feature importance: <Link to="/data" className="font-semibold text-brand hover:underline">Data & Model</Link>. Projects added by form or upload have no case records and are not part of the training corpus.
+          Continuous learning — new outcomes, live monitoring, drift, registry and rollback: <Link to="/learning" className="font-semibold text-brand hover:underline">Model Lifecycle</Link>. Full model card: <Link to="/data" className="font-semibold text-brand hover:underline">Data & Model</Link>.
         </p>
       </div>
     </Card>

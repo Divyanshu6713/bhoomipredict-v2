@@ -15,3 +15,10 @@ data/geo/source/
 
 # Runtime state written by the API (workflow, audit, documents, sessions).
 data/runtime/
+
+# Continuous learning artefacts: recorded outcomes, archived model versions (rollback) and
+# the withheld synthetic outcomes (rebuilt by `npm run data:generate`).
+data/learning/
+data/model/versions/
+data/model/staging/
+data/simulation/

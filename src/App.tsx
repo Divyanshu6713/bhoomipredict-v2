@@ -27,6 +27,9 @@ import Profile from '@/pages/Profile';
 import Registry from '@/pages/Registry';
 import PortfolioHierarchy from '@/pages/PortfolioHierarchy';
 import DataSources from '@/pages/DataSources';
+import Trends from '@/pages/Trends';
+import ModelLifecycle from '@/pages/ModelLifecycle';
+import Integrations from '@/pages/Integrations';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -91,6 +94,9 @@ function Shell() {
         <Route path="/interventions" element={<Navigate to="/queue" replace />} />
         <Route path="/map" element={<GeographicMap />} />
         <Route path="/analytics" element={<Analytics />} />
+        <Route path="/trends" element={<Trends />} />
+        <Route path="/learning" element={<RequirePermission permission="admin.view"><ModelLifecycle /></RequirePermission>} />
+        <Route path="/integrations" element={<Integrations />} />
         <Route path="/data" element={<DataAndModel />} />
         <Route path="/alerts" element={<Alerts />} />
         <Route path="/reports" element={<Reports />} />

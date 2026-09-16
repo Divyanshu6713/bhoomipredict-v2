@@ -370,7 +370,7 @@ export default function Projects() {
         Next-milestone risk is the model's probability that the project's current stage misses its next milestone by
         more than 30 days. It is a predicted risk, not a determination — and it is one input to a human review, not a
         decision.{' '}
-        Risk basis: {RISK_BASIS_LABEL.ensemble.toLowerCase()}; edited projects are adjusted by the surrogate and added projects are scored on their project record.
+        Risk basis: {RISK_BASIS_LABEL.ensemble.toLowerCase()}; edited projects are moved by the model’s estimate of the edit and added projects are scored by the ensemble on their project record.
       </p>
     </div>
   );
