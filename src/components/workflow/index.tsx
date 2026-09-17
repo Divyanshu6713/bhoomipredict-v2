@@ -16,7 +16,7 @@ export function SeverityBadge({ severity, className }: { severity: string; class
 export function TriggerLine({ trigger }: { trigger: Trigger }) {
   const value = typeof trigger.value === 'number' ? (Number.isInteger(trigger.value) ? trigger.value : trigger.value.toFixed(2)) : trigger.value;
   return (
-    <p className="font-mono text-[10.5px] text-ink-3">
+    <p className="font-mono text-xs text-ink-3">
       trigger · {trigger.source} · {trigger.metric} = {String(value)}
       {trigger.threshold !== null && trigger.operator !== 'top' ? ` (${trigger.operator} ${trigger.threshold})` : ''}
     </p>
@@ -26,31 +26,32 @@ export function TriggerLine({ trigger }: { trigger: Trigger }) {
 /** Recommendations with reason, trigger, responsible authority, priority and expected action. */
 export function RecommendationList({ items, max = 20, emptyText = 'No rule is triggered for this project right now.' }: { items: Array<Recommendation | CaseRecommendation>; max?: number; emptyText?: string }) {
   const [open, setOpen] = useState<string | null>(null);
-  if (!items.length) return <p className="px-1 py-4 text-[12px] text-ink-3">{emptyText}</p>;
+  if (!items.length) return <p className="rounded-lg border border-dashed border-line px-4 py-6 text-center text-sm text-ink-3">{emptyText}</p>;
   return (
-    <div className="divide-y divide-line overflow-hidden rounded-xl border border-line">
+    <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line">
       {items.slice(0, max).map((r) => {
         const id = 'id' in r ? r.id : r.code;
         const expanded = open === id;
         return (
-          <div key={id} className="bg-surface">
-            <button onClick={() => setOpen(expanded ? null : id)} className="flex w-full items-start gap-3 px-3.5 py-3 text-left hover:bg-surface-2">
-              <span className="mt-0.5 text-ink-3">{expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</span>
+          <li key={id} className="bg-surface">
+            <button type="button" aria-expanded={expanded} onClick={() => setOpen(expanded ? null : id)} className="flex w-full items-start gap-3 px-3.5 py-3 text-left transition-colors hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none">
+              <span className="mt-0.5 text-ink-3" aria-hidden>{expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</span>
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-1.5">
                   <SeverityBadge severity={r.severity} />
-                  <Badge className="border-line bg-surface-2 text-ink-3">{r.priority}</Badge>
-                  <span className="text-[10.5px] font-semibold uppercase tracking-wider text-ink-3">{CATEGORY_LABEL[r.category] ?? r.category}</span>
+                  <span className="text-xs text-ink-3">
+                    {r.priority} · {CATEGORY_LABEL[r.category] ?? r.category}
+                  </span>
                 </span>
-                <span className="mt-1 block text-[13px] font-bold leading-snug text-ink">{r.title}</span>
-                <span className="mt-0.5 block text-[11.5px] leading-relaxed text-ink-2">{r.recommendedAction}</span>
+                <span className="mt-1 block text-sm font-medium text-ink">{r.title}</span>
+                <span className="mt-0.5 block text-sm text-ink-2">{r.recommendedAction}</span>
                 {r.responsibleAuthority && (
-                  <span className="mt-1 flex items-center gap-1 text-[11px] text-ink-3">
+                  <span className="mt-1 flex items-center gap-1 text-xs text-ink-3">
                     <UserCheck className="h-3 w-3" /> {r.responsibleAuthority.name}
                   </span>
                 )}
                 {'impact' in r && r.impact && (
-                  <span className={cn('mt-1.5 inline-flex flex-wrap items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px]', r.impact.material ? 'border-emerald-500/30 bg-emerald-500/[0.07] text-emerald-700 dark:text-emerald-400' : 'border-line bg-surface-2 text-ink-3')} title={r.impact.basis}>
+                  <span className={cn('mt-1.5 inline-flex flex-wrap items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs', r.impact.material ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300' : 'border-line bg-surface-2 text-ink-3')} title={r.impact.basis}>
                     <TrendingDown className="h-3 w-3" />
                     {r.impact.material ? (
                       <>
@@ -65,7 +66,7 @@ export function RecommendationList({ items, max = 20, emptyText = 'No rule is tr
               </span>
             </button>
             {expanded && (
-              <div className="space-y-1.5 border-t border-line bg-surface-2 px-10 py-3 text-[11.5px] leading-relaxed text-ink-2">
+              <div className="space-y-1.5 border-t border-line bg-surface-2 px-10 py-3 text-xs text-ink-2">
                 <p>
                   <span className="font-semibold text-ink">Reason: </span>
                   {r.reason}
@@ -91,7 +92,7 @@ export function RecommendationList({ items, max = 20, emptyText = 'No rule is tr
                   <p className="flex flex-wrap items-center gap-1.5">
                     <span className="font-semibold text-ink">Cases driving this:</span>
                     {r.caseIds.map((c) => (
-                      <Link key={c} to={`/cases/${c}`} className="font-mono text-[11px] text-brand hover:underline">
+                      <Link key={c} to={`/cases/${c}`} className="font-mono text-xs text-brand hover:underline">
                         {c}
                       </Link>
                     ))}
@@ -99,10 +100,10 @@ export function RecommendationList({ items, max = 20, emptyText = 'No rule is tr
                 )}
               </div>
             )}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }
 
@@ -149,16 +150,20 @@ export function InterventionActions({ item, canUpdate, onChanged }: { item: Inte
             <Button variant="ghost" onClick={() => setTarget(null)}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={busy || (needsNote && note.trim().length < 3)}>
-              {busy ? 'Saving…' : 'Confirm'}
+            <Button onClick={submit} loading={busy} disabled={needsNote && note.trim().length < 3}>
+              Confirm
             </Button>
           </>
         }
       >
-        <Field label={needsNote ? 'Note (required)' : 'Note (optional)'} hint="Recorded in the audit trail with your name and role.">
+        <Field label={needsNote ? 'Note' : 'Note (optional)'} required={needsNote} hint="Recorded in the audit trail with your name and role.">
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className={cn(inputClass, 'h-auto py-2')} placeholder="What was done, or why this is being closed" />
         </Field>
-        {error && <p className="mt-2 text-[12px] font-medium text-rose-600">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-300">
+            {error}
+          </p>
+        )}
       </Modal>
     </div>
   );
@@ -170,36 +175,37 @@ export function InterventionCard({ item, canUpdate, onChanged, showProject = tru
   return (
     <div className="px-5 py-4">
       <div className="flex flex-wrap items-start gap-4">
-        <div className="min-w-[260px] flex-1">
+        <div className="min-w-0 flex-1 basis-[260px]">
           <div className="flex flex-wrap items-center gap-1.5">
             <SeverityBadge severity={item.severity} />
-            <Badge className="border-line bg-surface-2 text-ink-3">{item.priority}</Badge>
-            <span className="text-[10.5px] font-semibold uppercase tracking-wider text-ink-3">{CATEGORY_LABEL[item.category] ?? item.category}</span>
+            <span className="text-xs text-ink-3">
+              {item.priority} · {CATEGORY_LABEL[item.category] ?? item.category}
+            </span>
             {item.overdue && (
-              <Badge className="border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400">
+              <Badge className="border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300">
                 <AlertTriangle className="h-3 w-3" /> overdue
               </Badge>
             )}
             {(item.escalationLevel ?? 0) > 0 && (
-              <Badge className="border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400">
+              <Badge className="border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300">
                 <ArrowUpRight className="h-3 w-3" /> escalated to {item.escalatedToLabel}
               </Badge>
             )}
           </div>
-          <p className="mt-1.5 text-[13.5px] font-bold leading-snug text-ink">{item.title}</p>
+          <p className="mt-1.5 text-base font-medium text-ink">{item.title}</p>
           {showProject && (
-            <Link to={`/projects/${item.projectId}`} className="text-[12px] font-semibold text-brand hover:underline">
+            <Link to={`/projects/${item.projectId}`} className="text-xs font-semibold text-brand hover:underline">
               {item.projectName}
             </Link>
           )}
-          <p className="mt-0.5 text-[11px] text-ink-3">
+          <p className="mt-0.5 text-xs text-ink-3">
             {item.district}, {item.state} · {item.stage} · risk {item.risk_score}%
           </p>
-          <p className="mt-1.5 text-[12px] leading-relaxed text-ink-2">{item.recommended_action}</p>
+          <p className="mt-1.5 text-xs text-ink-2">{item.recommended_action}</p>
         </div>
-        <div className="min-w-[220px] max-w-sm flex-1 text-[11.5px]">
-          <p className="label-xs">Responsible</p>
-          <p className="mt-0.5 font-semibold leading-snug text-ink">{item.responsible_department}</p>
+        <div className="min-w-0 max-w-sm flex-1 basis-[220px] text-xs">
+          <p className="text-xs text-ink-3">Responsible</p>
+          <p className="mt-0.5 text-sm font-medium text-ink">{item.responsible_department}</p>
           <p className="mt-1 text-ink-3">
             Assigned to {item.assigneeName ? `${item.assigneeName} (${item.assignedRoleLabel})` : item.assignedRoleLabel}
           </p>
@@ -207,15 +213,15 @@ export function InterventionCard({ item, canUpdate, onChanged, showProject = tru
             <CalendarClock className="h-3 w-3" /> raised {formatDate(item.created_at)} · due {formatDate(item.due_date)}
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
+        <div className="flex flex-col items-start gap-2 sm:shrink-0 sm:items-end">
           <InterventionActions item={item} canUpdate={canUpdate} onChanged={onChanged} />
-          <button onClick={() => setOpen((o) => !o)} className="text-[11px] font-semibold text-ink-3 hover:text-brand">
+          <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="text-xs font-medium text-ink-3 hover:text-brand">
             {open ? 'Hide detail' : 'Why & trigger'}
           </button>
         </div>
       </div>
       {open && (
-        <div className="mt-3 space-y-1.5 rounded-xl border border-line bg-surface-2 px-4 py-3 text-[11.5px] leading-relaxed text-ink-2">
+        <div className="mt-3 space-y-1.5 rounded-lg border border-line bg-surface-2 px-4 py-3 text-xs text-ink-2">
           <p>
             <span className="font-semibold text-ink">Reason: </span>
             {item.reason}
@@ -265,16 +271,16 @@ export function AlertRow({ alert, canUpdate, onChanged }: { alert: AlertItem; ca
   };
   return (
     <div className={cn('flex flex-wrap items-start gap-4 px-5 py-3.5', alert.status === 'UNREAD' && 'bg-brand/[0.03]')}>
-      <div className="min-w-[260px] flex-1">
+      <div className="min-w-0 flex-1 basis-[260px]">
         <div className="flex flex-wrap items-center gap-1.5">
           <SeverityBadge severity={alert.severity} />
           <Badge className={ALERT_STATUS_CLASS[alert.status]}>{humanise(alert.status)}</Badge>
-          <span className="text-[10.5px] font-semibold uppercase tracking-wider text-ink-3">{CATEGORY_LABEL[alert.category] ?? alert.category}</span>
+          <span className="text-xs text-ink-3">{CATEGORY_LABEL[alert.category] ?? alert.category}</span>
         </div>
-        <Link to={alert.link} onClick={() => alert.status === 'UNREAD' && canUpdate && void set('ACKNOWLEDGED')} className="mt-1 block text-[13px] font-bold leading-snug text-ink hover:text-brand">
+        <Link to={alert.link} onClick={() => alert.status === 'UNREAD' && canUpdate && void set('ACKNOWLEDGED')} className="mt-1 block text-sm font-medium text-ink hover:text-brand">
           {alert.title}
         </Link>
-        <p className="text-[11.5px] text-ink-3">
+        <p className="text-xs text-ink-3">
           <Link to={`/projects/${alert.projectId}`} className="font-semibold text-ink-2 hover:text-brand">
             {alert.project.name}
           </Link>{' '}
@@ -289,12 +295,12 @@ export function AlertRow({ alert, canUpdate, onChanged }: { alert: AlertItem; ca
             </>
           )}
         </p>
-        <p className="mt-1 text-[11.5px] leading-relaxed text-ink-2">{alert.reason}</p>
+        <p className="mt-1 text-xs text-ink-2">{alert.reason}</p>
         <TriggerLine trigger={alert.triggered_by} />
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-1.5 text-right">
-        <p className="text-[10.5px] text-ink-3 num">{formatDate(alert.date)}</p>
-        <p className="max-w-[220px] text-[11px] text-ink-3">{alert.responsibleAuthority}</p>
+      <div className="flex flex-col items-start gap-1.5 sm:shrink-0 sm:items-end sm:text-right">
+        <p className="text-xs text-ink-3 num">{formatDate(alert.date)}</p>
+        <p className="max-w-[220px] text-xs text-ink-3">{alert.responsibleAuthority}</p>
         {canUpdate && alert.status !== 'RESOLVED' && (
           <div className="flex gap-1.5">
             {alert.status === 'UNREAD' && (

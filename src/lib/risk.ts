@@ -1,4 +1,6 @@
+import { CircleCheck, CircleAlert, TriangleAlert, OctagonAlert, type LucideIcon } from 'lucide-react';
 import type { RiskLevel } from '@/data/types';
+import { TONE_CHIP, TONE_DOT, TONE_PANEL, TONE_TEXT, type Tone } from './tone';
 
 /**
  * Risk banding.
@@ -23,76 +25,78 @@ export const riskFromScore = (score: number): RiskLevel =>
 
 export const RISK_ORDER: RiskLevel[] = ['Low', 'Medium', 'High', 'Critical'];
 
+/** Chart fills. Muted enough to sit together; red is reserved for Critical. */
 export const RISK_HEX: Record<RiskLevel, string> = {
-  Low: '#10B981',
-  Medium: '#F59E0B',
-  High: '#F97316',
-  Critical: '#E11D48',
+  Low: '#2F9E6E',
+  Medium: '#D99A1E',
+  High: '#E0702A',
+  Critical: '#D43D3D',
+};
+
+export const RISK_TONE: Record<RiskLevel, Tone> = {
+  Low: 'success',
+  Medium: 'warning',
+  High: 'orange',
+  Critical: 'danger',
+};
+
+/** Risk is never communicated by colour alone: each band has its own glyph. */
+export const RISK_ICON: Record<RiskLevel, LucideIcon> = {
+  Low: CircleCheck,
+  Medium: CircleAlert,
+  High: TriangleAlert,
+  Critical: OctagonAlert,
+};
+
+/** Plain-language reading of each band, for result panels. */
+export const RISK_MEANING: Record<RiskLevel, string> = {
+  Low: 'The next milestone is likely to be met. Routine monitoring is sufficient.',
+  Medium: 'A slip is possible. Review the leading factors at the next progress meeting.',
+  High: 'A slip is more likely than not for many parcels. Assign owners to the leading factors now.',
+  Critical: 'A slip is expected for most open parcels. Escalate and act on the top factors immediately.',
 };
 
 /** Tailwind class bundles for each risk level (chips, dots, bars). */
-export const RISK_CLASS: Record<RiskLevel, { chip: string; dot: string; bar: string; text: string; ring: string }> = {
-  Low: {
-    chip: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25',
-    dot: 'bg-emerald-500',
-    bar: 'bg-emerald-500',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    ring: 'ring-emerald-500/30',
-  },
-  Medium: {
-    chip: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25',
-    dot: 'bg-amber-500',
-    bar: 'bg-amber-500',
-    text: 'text-amber-600 dark:text-amber-400',
-    ring: 'ring-amber-500/30',
-  },
-  High: {
-    chip: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/25',
-    dot: 'bg-orange-500',
-    bar: 'bg-orange-500',
-    text: 'text-orange-600 dark:text-orange-400',
-    ring: 'ring-orange-500/30',
-  },
-  Critical: {
-    chip: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25',
-    dot: 'bg-rose-500',
-    bar: 'bg-rose-500',
-    text: 'text-rose-600 dark:text-rose-400',
-    ring: 'ring-rose-500/30',
-  },
+export const RISK_CLASS: Record<RiskLevel, { chip: string; dot: string; bar: string; text: string; ring: string; panel: string }> = {
+  Low: { chip: TONE_CHIP.success, dot: TONE_DOT.success, bar: 'bg-[#2F9E6E]', text: TONE_TEXT.success, ring: 'ring-emerald-500/30', panel: TONE_PANEL.success },
+  Medium: { chip: TONE_CHIP.warning, dot: TONE_DOT.warning, bar: 'bg-[#D99A1E]', text: TONE_TEXT.warning, ring: 'ring-amber-500/30', panel: TONE_PANEL.warning },
+  High: { chip: TONE_CHIP.orange, dot: TONE_DOT.orange, bar: 'bg-[#E0702A]', text: TONE_TEXT.orange, ring: 'ring-orange-500/30', panel: TONE_PANEL.orange },
+  Critical: { chip: TONE_CHIP.danger, dot: TONE_DOT.danger, bar: 'bg-[#D43D3D]', text: TONE_TEXT.danger, ring: 'ring-red-500/30', panel: TONE_PANEL.danger },
 };
 
 /** Stage status colours live with the other workflow statuses. */
 export { STAGE_STATUS_CLASS } from './status';
 
 export const OUTCOME_CLASS: Record<string, string> = {
-  Delayed: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25',
-  'On time': 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25',
-  Pending: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/25',
+  Delayed: TONE_CHIP.danger,
+  'On time': TONE_CHIP.success,
+  Pending: TONE_CHIP.info,
 };
 
 export const PRIORITY_CLASS: Record<string, string> = {
-  Critical: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25',
-  Important: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25',
-  Routine: 'bg-slate-500/10 text-ink-3 border-line-strong',
+  Critical: TONE_CHIP.danger,
+  Important: TONE_CHIP.warning,
+  Routine: TONE_CHIP.neutral,
 };
 
+/** Chart palette: one accent, one neutral, and a few supporting hues used sparingly. */
 export const CHART_COLORS = {
-  brand: '#3B72F0',
-  brandLight: '#7BA4FF',
-  teal: '#0EA5A4',
-  violet: '#7C6CF5',
-  saffron: '#FF9933',
-  slate: '#94A3B8',
-  grid: 'rgba(148,163,184,0.18)',
+  brand: '#2563EB',
+  brandLight: '#9DB8F2',
+  teal: '#0E8C7F',
+  violet: '#6D63D6',
+  saffron: '#C98512',
+  slate: '#98A2B3',
+  grid: 'rgb(var(--c-line))',
 };
+
+/** Shared axis/tooltip styling so every Recharts chart reads the same way. */
+export const AXIS_TICK = { fill: 'rgb(var(--c-ink-3))', fontSize: 11 } as const;
+export const AXIS_TICK_STRONG = { fill: 'rgb(var(--c-ink-2))', fontSize: 12 } as const;
+export const CHART_CURSOR = { fill: 'rgb(var(--c-surface-3))', opacity: 0.6 } as const;
 
 /** Stable colour per contributor group, so a factor keeps its colour everywhere. */
-const GROUP_PALETTE = [
-  '#E11D48', '#F97316', '#F59E0B', '#3B72F0', '#0EA5A4', '#7C6CF5',
-  '#DB2777', '#0284C7', '#65A30D', '#9333EA', '#0891B2', '#B45309',
-  '#475569', '#16A34A', '#C026D3', '#64748B',
-];
+const GROUP_PALETTE = ['#2563EB', '#0E8C7F', '#C98512', '#6D63D6', '#D4573D', '#3E7CB1', '#5F8F3E', '#98A2B3', '#B4538A', '#4B5563'];
 
 const groupColorCache = new Map<string, string>();
 
@@ -105,3 +109,6 @@ export function groupColor(group: string): string {
   groupColorCache.set(group, color);
   return color;
 }
+
+/** First word of a lifecycle stage name, for axis ticks where the full name will not fit. */
+export const shortStage = (stage: string | number) => String(stage).split(/[\s/]/)[0];

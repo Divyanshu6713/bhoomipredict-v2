@@ -1,19 +1,19 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Bar, BarChart, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { AlertOctagon, Building2, Clock, Gauge, Gavel, Layers, Network, Percent, ShieldAlert, TrendingUp, TriangleAlert, Users, BadgeIndianRupee, CalendarClock } from 'lucide-react';
-import { Card, CardHeader, Select, SkeletonCard } from '@/components/ui';
-import { StatCard } from '@/components/ui/StatCard';
-import { ErrorState, KeyValue, PrototypeNotice, RiskPill } from '@/components/ui/primitives';
-import { ChartTooltip } from '@/components/charts';
-import { CHART_COLORS, RISK_HEX, groupColor, riskFromScore } from '@/lib/risk';
-import { STAGE_STATUS_CLASS, STAGE_STATUS_LABEL } from '@/lib/status';
+import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { ArrowRight, ChevronRight, FolderSearch } from 'lucide-react';
+import { Card, CardHeader, EmptyState, MetricStrip, PageSection, PageSkeleton, Select } from '@/components/ui';
+import { ErrorState, RiskPill } from '@/components/ui/primitives';
+import { ChartLegend, ChartTooltip } from '@/components/charts';
+import { AXIS_TICK, AXIS_TICK_STRONG, CHART_COLORS, CHART_CURSOR, RISK_CLASS, RISK_HEX, RISK_ICON, RISK_ORDER, riskFromScore } from '@/lib/risk';
+import { STAGE_STATUS_DOT, STAGE_STATUS_LABEL } from '@/lib/status';
 import { formatCompact, formatNumber } from '@/lib/format';
+import { cn } from '@/lib/cn';
 import { useApi, useFilters } from '@/hooks';
 import { useAuth } from '@/auth/AuthContext';
 import { fetchDashboard, fetchFacets, fetchTrends } from '@/api/client';
-import { Badge } from '@/components/ui';
+import type { DashboardSummary } from '@/data/types';
 
-const tick = { fill: 'rgb(var(--c-ink-3))', fontSize: 11 };
+const STAGE_COLORS = { inProgress: '#A9BEE8', delayed: RISK_HEX.Medium, blocked: RISK_HEX.Critical };
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -24,301 +24,398 @@ export default function Dashboard() {
   const trend = useApi((signal) => fetchTrends({ level: values.state !== 'all' ? 'district' : 'state', state: values.state, district: values.district, months: 15, top: 1 }, signal), [values.state, values.district]);
   const s = summary.data;
 
-  const go = (params: Record<string, string>) => navigate(`/projects?${new URLSearchParams({ ...(values.sector !== 'all' ? { sector: values.sector } : {}), ...(values.state !== 'all' ? { state: values.state } : {}), ...(values.projectType !== 'all' ? { projectType: values.projectType } : {}), ...params }).toString()}`);
+  const go = (params: Record<string, string>) =>
+    navigate(
+      `/projects?${new URLSearchParams({ ...(values.sector !== 'all' ? { sector: values.sector } : {}), ...(values.state !== 'all' ? { state: values.state } : {}), ...(values.projectType !== 'all' ? { projectType: values.projectType } : {}), ...params }).toString()}`,
+    );
+
+  const filters = (
+    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+      <Select hideLabel className="sm:w-[168px]" label="Sector" value={values.sector} onChange={(v) => set({ sector: v, projectType: 'all' })} options={[{ label: 'All sectors', value: 'all' }, ...(facets.data?.sectors ?? []).filter((x) => x.projectTypes.length).map((x) => ({ label: x.label, value: x.id }))]} />
+      <Select hideLabel className="sm:w-[156px]" label="State" value={values.state} onChange={(v) => set({ state: v, district: 'all' })} options={[{ label: 'All States in scope', value: 'all' }, ...(facets.data?.states ?? []).map((x) => ({ label: x, value: x }))]} />
+      <Select hideLabel className="sm:w-[156px]" label="District" disabled={values.state === 'all'} value={values.district} onChange={(v) => set({ district: v })} options={[{ label: values.state === 'all' ? 'All districts' : 'All districts', value: 'all' }, ...(facets.data?.districts ?? []).filter((d) => d.state === values.state).map((d) => ({ label: d.district, value: d.district }))]} />
+      <Select hideLabel className="sm:w-[168px]" label="Project type" value={values.projectType} onChange={(v) => set({ projectType: v })} options={[{ label: 'All project types', value: 'all' }, ...(facets.data?.projectTypes ?? []).filter((x) => values.sector === 'all' || facets.data?.sectors.find((sec) => sec.id === values.sector)?.projectTypes.includes(x)).map((x) => ({ label: x, value: x }))]} />
+    </div>
+  );
 
   if (summary.error) return <ErrorState error={summary.error} onRetry={summary.reload} />;
-  if (!s) {
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <SkeletonCard key={i} lines={3} />
-        ))}
-      </div>
-    );
-  }
+  if (!s) return <PageSkeleton blocks={2} />;
   const k = s.kpis;
+  const scopeName = values.district !== 'all' ? `${values.district}, ${values.state}` : values.state !== 'all' ? values.state : user?.scopeLabel ?? 'All in scope';
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <p className="label-xs">Administrative scope</p>
-          <p className="text-[13px] font-semibold text-ink">
-            {user?.position.organisation.name} · {user?.position.tierLabel}
-          </p>
-          <p className="text-[12px] text-ink-3">
-            {user?.scopeLabel} · {formatNumber(s.scope.projects)} projects in view ·{' '}
-            <Link to={`/hierarchy${values.sector !== 'all' ? `?sector=${values.sector}` : ''}`} className="font-semibold text-brand hover:underline">
-              Drill down India → sector → state → district
-            </Link>
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Select className="w-[190px]" label="Sector" value={values.sector} onChange={(v) => set({ sector: v, projectType: 'all' })} options={[{ label: 'All sectors', value: 'all' }, ...(facets.data?.sectors ?? []).filter((x) => x.projectTypes.length).map((x) => ({ label: x.label, value: x.id }))]} />
-          <Select className="w-[170px]" label="State" value={values.state} onChange={(v) => set({ state: v, district: 'all' })} options={[{ label: 'All in scope', value: 'all' }, ...(facets.data?.states ?? []).map((x) => ({ label: x, value: x }))]} />
-          <Select className="w-[170px]" label="District" value={values.district} onChange={(v) => set({ district: v })} options={[{ label: values.state === 'all' ? 'Choose a state' : 'All districts', value: 'all' }, ...(facets.data?.districts ?? []).filter((d) => d.state === values.state).map((d) => ({ label: d.district, value: d.district }))]} />
-          <Select className="w-[190px]" label="Project type" value={values.projectType} onChange={(v) => set({ projectType: v })} options={[{ label: 'All types', value: 'all' }, ...(facets.data?.projectTypes ?? []).filter((x) => values.sector === 'all' || facets.data?.sectors.find((sec) => sec.id === values.sector)?.projectTypes.includes(x)).map((x) => ({ label: x, value: x }))]} />
-        </div>
+    <div className={cn('space-y-8', summary.refreshing && 'opacity-80 transition-opacity')}>
+      {/* Scope and filters */}
+      <div className="-mt-2 flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
+        <p className="text-sm text-ink-3">
+          <span className="font-medium text-ink-2">{user?.position.organisation.name}</span> · {scopeName} · <span className="num">{formatNumber(s.scope.projects)}</span> projects in view ·{' '}
+          <Link to={`/hierarchy${values.sector !== 'all' ? `?sector=${values.sector}` : ''}`} className="link">
+            Drill down by geography
+          </Link>
+        </p>
+        {filters}
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        {[
-          { label: 'Total projects', value: k.totalProjects, icon: Building2, caption: `${formatCompact(k.openCases)} open cases`, accent: '#3B72F0', to: {} },
-          { label: 'High risk projects', value: k.highRiskProjects, icon: ShieldAlert, caption: '45–60% of open parcels expected to slip', accent: RISK_HEX.High, to: { risk: 'High' } },
-          { label: 'Critical risk projects', value: k.criticalRiskProjects, icon: TriangleAlert, caption: '≥ 60% of open parcels expected to slip', accent: RISK_HEX.Critical, to: { risk: 'Critical' } },
-          { label: 'Delayed projects', value: k.delayedProjects, icon: Clock, caption: `${k.blockedProjects} of them blocked by a dependency`, accent: '#F59E0B', to: { flag: 'delayed' } },
-          { label: 'Immediate action required', value: k.immediateActionRequired, icon: AlertOctagon, caption: 'with an open Critical (P1) intervention', accent: '#BE123C', to: { flag: 'action' } },
-          { label: 'Average delay probability', value: Math.round(k.averageDelayProbability * 100), unit: '%', icon: Percent, caption: `${k.severeOverrunLikely ?? 0} projects forecast > 6 months late · slip ${k.averagePredictedDelayDays}d`, accent: '#7C6CF5', to: { sort: 'risk' } },
-        ].map((c, i) => (
-          <button key={c.label} onClick={() => go(c.to as Record<string, string>)} className="text-left">
-            <StatCard index={i} label={c.label} value={c.value} unit={c.unit} icon={c.icon} caption={c.caption} accent={c.accent} />
-          </button>
-        ))}
-      </section>
-
-      <PrototypeNotice compact />
-
-      <section className="grid gap-4 lg:grid-cols-3">
+      {s.scope.projects === 0 ? (
         <Card>
-          <CardHeader title="Risk distribution" subtitle="Projects by risk category — click a slice to list them" icon={<Gauge className="h-4 w-4" />} />
-          <div className="h-[230px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={s.riskDistribution} dataKey="projects" nameKey="key" innerRadius={58} outerRadius={92} paddingAngle={2} onClick={(d: { key?: string }) => d?.key && go({ risk: d.key })} className="cursor-pointer">
-                  {s.riskDistribution.map((r) => (
-                    <Cell key={r.key} fill={RISK_HEX[r.key]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-4 gap-2 px-5 pb-5">
-            {s.riskDistribution.map((r) => (
-              <div key={r.key} className="rounded-lg border border-line bg-surface-2 p-2 text-center">
-                <p className="text-[9.5px] font-semibold uppercase" style={{ color: RISK_HEX[r.key] }}>
-                  {r.key}
-                </p>
-                <p className="font-display text-[15px] font-extrabold text-ink num">{r.projects}</p>
-                <p className="text-[9.5px] text-ink-3 num">{formatCompact(s.caseRiskDistribution.find((c) => c.key === r.key)?.cases ?? 0)} cases</p>
-              </div>
-            ))}
-          </div>
+          <EmptyState icon={<FolderSearch />} title="No projects in this view" description="Nothing in your jurisdiction matches these filters. Clear a filter or choose another State to see projects and their predicted risk." action={<Link to="/dashboard" className="link text-sm">Clear all filters</Link>} />
         </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader title="Stage distribution" subtitle="Projects by current stage and stage status — click to filter" icon={<Layers className="h-4 w-4" />} />
-          <div className="h-[290px] px-2 pb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={s.stageDistribution.map((d) => ({ ...d, short: d.key.split(' ')[0] }))} margin={{ top: 8, right: 16, left: -12, bottom: 4 }}>
-                <XAxis dataKey="short" tickLine={false} axisLine={false} tick={tick} interval={0} />
-                <YAxis tickLine={false} axisLine={false} tick={tick} allowDecimals={false} />
-                <Tooltip content={<ChartTooltip labelFormatter={(l) => s.stageDistribution.find((d) => d.key.startsWith(String(l)))?.key ?? l} />} cursor={{ fill: 'rgb(var(--c-surface-2))' }} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="inProgress" name="In progress" stackId="a" fill="#0EA5E9" className="cursor-pointer" onClick={(d: { key?: string }) => d?.key && go({ stage: d.key })} />
-                <Bar dataKey="delayed" name="Delayed" stackId="a" fill="#F59E0B" className="cursor-pointer" onClick={(d: { key?: string }) => d?.key && go({ stage: d.key, status: 'DELAYED' })} />
-                <Bar dataKey="blocked" name="Blocked" stackId="a" fill="#E11D48" radius={[4, 4, 0, 0]} className="cursor-pointer" onClick={(d: { key?: string }) => d?.key && go({ stage: d.key, status: 'BLOCKED' })} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader title="State-wise risk" subtitle="Mean project risk; bar label shows High + Critical count" icon={<TrendingUp className="h-4 w-4" />} />
-          <div className="px-2 pb-4" style={{ height: Math.max(220, s.stateRisk.length * 24 + 30) }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={s.stateRisk} layout="vertical" margin={{ top: 0, right: 30, left: 90, bottom: 0 }}>
-                <XAxis type="number" hide domain={[0, 100]} />
-                <YAxis type="category" dataKey="key" tickLine={false} axisLine={false} width={120} tick={{ ...tick, fill: 'rgb(var(--c-ink-2))' }} />
-                <Tooltip content={<ChartTooltip formatter={(v, n) => (n === 'Mean risk' ? `${v}%` : v)} />} cursor={{ fill: 'rgb(var(--c-surface-2))' }} />
-                <Bar dataKey="avgRisk" name="Mean risk" radius={[0, 5, 5, 0]} barSize={14} className="cursor-pointer" onClick={(d: { key?: string }) => d?.key && set({ state: d.key })}>
-                  {s.stateRisk.map((d) => (
-                    <Cell key={d.key} fill={RISK_HEX[riskFromScore(d.avgRisk)]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-        <Card>
-          <CardHeader title="District-wise risk" subtitle="Top 15 districts by mean project risk" icon={<TrendingUp className="h-4 w-4" />} />
-          <div className="divide-y divide-line">
-            {s.districtRisk.map((d) => (
-              <button key={d.key} onClick={() => go({ district: d.key.split(', ')[0], state: d.key.split(', ')[1] })} className="flex w-full items-center gap-3 px-5 py-2 text-left hover:bg-surface-2">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12.5px] font-semibold text-ink">{d.key}</span>
-                  <span className="block text-[10.5px] text-ink-3">
-                    {d.projects} project{d.projects === 1 ? '' : 's'} · {d.delayed} delayed · {d.blocked} blocked
-                  </span>
-                </span>
-                <RiskPill level={riskFromScore(d.avgRisk)} score={d.avgRisk} size="sm" />
-              </button>
-            ))}
-          </div>
-        </Card>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-3">
-        <Card>
-          <CardHeader title="Project-type risk" subtitle="Mean risk by type — click to filter" icon={<Building2 className="h-4 w-4" />} />
-          <div className="h-[300px] px-2 pb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={s.projectTypeRisk} layout="vertical" margin={{ top: 0, right: 24, left: 70, bottom: 0 }}>
-                <XAxis type="number" hide domain={[0, 100]} />
-                <YAxis type="category" dataKey="key" width={110} tickLine={false} axisLine={false} tick={{ ...tick, fill: 'rgb(var(--c-ink-2))' }} />
-                <Tooltip content={<ChartTooltip formatter={(v) => `${v}%`} />} cursor={{ fill: 'rgb(var(--c-surface-2))' }} />
-                <Bar dataKey="avgRisk" name="Mean risk" barSize={14} radius={[0, 5, 5, 0]} className="cursor-pointer" onClick={(d: { key?: string }) => d?.key && set({ projectType: d.key })}>
-                  {s.projectTypeRisk.map((d) => (
-                    <Cell key={d.key} fill={RISK_HEX[riskFromScore(d.avgRisk)]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-        <Card>
-          <CardHeader title="Delay drivers" subtitle="Share of risk-increasing SHAP contribution, weighted by open cases" icon={<ShieldAlert className="h-4 w-4" />} />
-          <div className="space-y-2.5 px-5 pb-5">
-            {s.delayDrivers.map((d) => (
-              <div key={d.key}>
-                <div className="flex justify-between text-[12px]">
-                  <span className="font-semibold text-ink">{d.key}</span>
-                  <span className="font-bold text-ink num">{Math.round(d.share * 100)}%</span>
-                </div>
-                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-3">
-                  <div className="h-full rounded-full" style={{ width: `${d.share * 100}%`, background: groupColor(d.key) }} />
-                </div>
-              </div>
-            ))}
-            <p className="border-t border-line pt-2 text-[10.5px] text-ink-3">Contributions explain predictions; they are not proof of cause.</p>
-          </div>
-        </Card>
-        <Card>
-          <CardHeader title="Department bottlenecks" subtitle="Current-stage cases waiting on each type of office" icon={<Network className="h-4 w-4" />} />
-          <div className="divide-y divide-line">
-            {s.departmentBottlenecks.byRole.slice(0, 8).map((d) => (
-              <div key={d.key} className="flex items-center gap-3 px-5 py-2">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12.5px] font-semibold text-ink">{d.key}</span>
-                  <span className="block text-[10.5px] text-ink-3">{d.projects} projects · {formatNumber(d.openCasesPending)} open cases across stages</span>
-                </span>
-                <span className="text-[13px] font-bold text-ink num">{formatNumber(d.currentStagePending)}</span>
-              </div>
-            ))}
-          </div>
-          <div className="border-t border-line px-5 py-2.5">
-            <p className="label-xs mb-1">Most-loaded named offices</p>
-            {s.departmentBottlenecks.byOffice.slice(0, 4).map((o) => (
-              <p key={o.key} className="truncate text-[11px] text-ink-2" title={o.key}>
-                <span className="font-bold num">{formatNumber(o.openCasesPending)}</span> · {o.key}
-              </p>
-            ))}
-          </div>
-        </Card>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-4">
-        <Card>
-          <CardHeader title="Compensation progress" subtitle={`${s.compensation.projectsAtOrPastCompensation} projects at or past Compensation`} icon={<BadgeIndianRupee className="h-4 w-4" />} />
-          <div className="space-y-3 px-5 pb-5">
-            <KeyValue columns={2} rows={[{ label: 'Mean completion', value: `${s.compensation.averageCompletionPct}%` }, { label: 'Backlog projects', value: s.compensation.backlogProjects }]} />
-            <MiniBars rows={s.compensation.buckets} color="#0EA5A4" />
-          </div>
-        </Card>
-        <Card>
-          <CardHeader title="Legal disputes" subtitle="Across projects in scope" icon={<Gavel className="h-4 w-4" />} />
-          <div className="space-y-3 px-5 pb-5">
-            <KeyValue columns={2} rows={[{ label: 'Legal cases', value: formatCompact(s.legal.legalCases) }, { label: 'Disputed parcels', value: formatCompact(s.legal.disputedParcels) }, { label: 'Escalation flagged', value: s.legal.projectsWithEscalation }]} />
-            <MiniBars rows={s.legal.byType.slice(0, 5).map((t) => ({ key: t.key, count: t.legalCases }))} color="#E11D48" />
-          </div>
-        </Card>
-        <Card>
-          <CardHeader title="R&R progress" subtitle={`${s.rr.projectsWithRR} projects with R&R due`} icon={<Users className="h-4 w-4" />} />
-          <div className="space-y-3 px-5 pb-5">
-            <KeyValue columns={2} rows={[{ label: 'Mean delivery', value: `${s.rr.averageProgressPct}%` }, { label: 'Affected families', value: formatCompact(s.rr.affectedFamilies) }]} />
-            <MiniBars rows={s.rr.buckets} color="#7C6CF5" />
-          </div>
-        </Card>
-        <Card>
-          <CardHeader title="Timeline adherence" subtitle="Current stage status and forecast overrun" icon={<CalendarClock className="h-4 w-4" />} />
-          <div className="space-y-3 px-5 pb-5">
-            <div className="flex flex-wrap gap-1.5">
-              {(['IN_PROGRESS', 'DELAYED', 'BLOCKED'] as const).map((st) => (
-                <button key={st} onClick={() => go({ status: st })}>
-                  <Badge className={STAGE_STATUS_CLASS[st]}>
-                    {STAGE_STATUS_LABEL[st]} <span className="num">{st === 'IN_PROGRESS' ? s.timeline.onTrack : st === 'DELAYED' ? s.timeline.delayed : s.timeline.blocked}</span>
-                  </Badge>
-                </button>
-              ))}
-            </div>
-            <MiniBars rows={s.timeline.overrunBuckets} color="#F59E0B" />
-          </div>
-        </Card>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <Card>
-          <CardHeader
-            title="Delay trend"
-            subtitle={`${values.district !== 'all' ? values.district : values.state !== 'all' ? values.state : 'All in scope'} · observed share of milestones > 30 days late, then the model forecast for open milestones`}
-            icon={<TrendingUp className="h-4 w-4" />}
-            action={
-              <Link to={`/trends${values.state !== 'all' ? `?level=district&state=${encodeURIComponent(values.state)}` : ''}`} className="text-[12px] font-semibold text-brand hover:underline">
-                State & district trends →
-              </Link>
-            }
+      ) : (
+        <>
+          {/* Headline figures */}
+          <MetricStrip
+            items={[
+              { label: 'Projects in view', value: formatNumber(k.totalProjects), hint: `${formatCompact(k.openCases)} open cases`, onClick: () => go({}) },
+              { label: 'Critical risk', value: formatNumber(k.criticalRiskProjects), hint: '≥ 60% of open parcels likely to slip', tone: 'danger', onClick: () => go({ risk: 'Critical' }) },
+              { label: 'High risk', value: formatNumber(k.highRiskProjects), hint: '45–60% likely to slip', tone: 'orange', onClick: () => go({ risk: 'High' }) },
+              { label: 'Need immediate action', value: formatNumber(k.immediateActionRequired), hint: 'Open critical intervention', onClick: () => go({ flag: 'action' }) },
+              { label: 'Behind schedule', value: formatNumber(k.delayedProjects), hint: `${k.blockedProjects} blocked by a dependency`, onClick: () => go({ flag: 'delayed' }) },
+              { label: 'Mean delay probability', value: `${Math.round(k.averageDelayProbability * 100)}%`, hint: `~${k.averagePredictedDelayDays} days expected slip`, onClick: () => go({ sort: 'risk' }) },
+            ]}
           />
-          <div className="h-[260px] px-2 pb-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={(trend.data?.series ?? []).map((t) => ({ month: t.month.slice(2), observed: t.overall.observed === null ? null : Math.round(t.overall.observed * 1000) / 10, forecast: t.overall.forecast === null ? null : Math.round(t.overall.forecast * 1000) / 10 }))} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={tick} />
-                <YAxis tickLine={false} axisLine={false} tick={tick} unit="%" domain={[0, 'auto']} />
-                <Tooltip content={<ChartTooltip formatter={(v) => `${v}%`} />} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line dataKey="observed" name="Observed delay rate" stroke={CHART_COLORS.saffron} strokeWidth={2.2} dot={false} />
-                <Line dataKey="forecast" name="Model forecast (open milestones)" stroke={CHART_COLORS.brand} strokeWidth={2.2} strokeDasharray="5 4" dot={{ r: 2 }} />
-              </ComposedChart>
-            </ResponsiveContainer>
+
+          {/* What needs attention */}
+          <div className="grid gap-5 xl:grid-cols-3">
+            <Card className="xl:col-span-2">
+              <CardHeader
+                title="Highest-risk projects"
+                subtitle="Ranked by predicted risk of missing the next milestone, with the top recommended action"
+                action={
+                  <Link to={`/projects?sort=risk${values.state !== 'all' ? `&state=${encodeURIComponent(values.state)}` : ''}`} className="link inline-flex items-center gap-1 text-sm">
+                    All projects <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                }
+              />
+              <TopProjects rows={s.topProjects} onOpen={(id) => navigate(`/projects/${id}`)} />
+            </Card>
+            <RiskDistribution s={s} onSelect={(band) => go({ risk: band })} />
           </div>
-        </Card>
-        <Card>
-          <CardHeader title="Highest-risk projects" subtitle="With the top triggered action" icon={<AlertOctagon className="h-4 w-4" />} />
-          <div className="divide-y divide-line">
-            {s.topProjects.map((p) => (
-              <button key={p.id} onClick={() => navigate(`/projects/${p.id}`)} className="flex w-full items-center gap-3 px-5 py-2.5 text-left hover:bg-surface-2">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12.5px] font-semibold text-ink">{p.name}</span>
-                  <span className="block truncate text-[10.5px] text-ink-3">
-                    {p.district}, {p.state} · {p.stage} ({STAGE_STATUS_LABEL[p.stageStatus]}){p.topAction ? ` · ${p.topAction}` : ''}
+
+          {/* Trend and drivers */}
+          <div className="grid gap-5 xl:grid-cols-3">
+            <Card className="xl:col-span-2">
+              <CardHeader
+                title="Delay trend"
+                subtitle={`${scopeName} · share of milestones more than 30 days late, then the model forecast for open milestones`}
+                action={
+                  <Link to={`/trends${values.state !== 'all' ? `?level=district&state=${encodeURIComponent(values.state)}` : ''}`} className="link inline-flex items-center gap-1 text-sm">
+                    Trends <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                }
+              />
+              <div className="px-5">
+                <ChartLegend
+                  items={[
+                    { label: 'Observed delay rate', color: CHART_COLORS.slate },
+                    { label: 'Forecast for open milestones', color: CHART_COLORS.brand, dashed: true },
+                  ]}
+                />
+              </div>
+              <div className="h-[260px] px-2 pb-4 pt-2">
+                {trend.data ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={(trend.data.series ?? []).map((t) => ({
+                        month: formatMonth(t.month),
+                        observed: t.overall.observed === null ? null : Math.round(t.overall.observed * 1000) / 10,
+                        forecast: t.overall.forecast === null ? null : Math.round(t.overall.forecast * 1000) / 10,
+                      }))}
+                      margin={{ top: 8, right: 16, left: -8, bottom: 0 }}
+                    >
+                      <CartesianGrid vertical={false} stroke="rgb(var(--c-line))" />
+                      <XAxis dataKey="month" tickLine={false} axisLine={false} tick={AXIS_TICK} minTickGap={16} />
+                      <YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} unit="%" domain={[0, 'auto']} width={44} />
+                      <Tooltip content={<ChartTooltip formatter={(v) => `${v}%`} />} cursor={{ stroke: 'rgb(var(--c-line-strong))' }} />
+                      <Line dataKey="observed" name="Observed" stroke={CHART_COLORS.slate} strokeWidth={2} dot={false} isAnimationActive={false} />
+                      <Line dataKey="forecast" name="Forecast" stroke={CHART_COLORS.brand} strokeWidth={2} strokeDasharray="5 4" dot={{ r: 2.5, strokeWidth: 0, fill: CHART_COLORS.brand }} isAnimationActive={false} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full animate-shimmer rounded-lg bg-surface-2" />
+                )}
+              </div>
+            </Card>
+            <Card>
+              <CardHeader title="Leading delay drivers" subtitle="Share of risk-increasing model contribution, weighted by open cases" />
+              <ol className="space-y-3 px-5 pb-5">
+                {s.delayDrivers.map((d, i) => (
+                  <li key={d.key}>
+                    <div className="flex justify-between gap-3 text-sm">
+                      <span className="text-ink">{d.key}</span>
+                      <span className="font-medium text-ink num">{Math.round(d.share * 100)}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-3">
+                      <div className="h-full rounded-full" style={{ width: `${d.share * 100}%`, background: i === 0 ? 'rgb(var(--c-brand))' : 'rgb(var(--c-brand) / 0.5)' }} />
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <p className="border-t border-line px-5 py-3 text-xs text-ink-3">Contributions explain predictions; they are not proof of cause.</p>
+            </Card>
+          </div>
+
+          {/* Geography */}
+          <PageSection title="Where risk concentrates" description="Mean predicted project risk — select a State to focus the whole overview">
+            <div className="grid gap-5 lg:grid-cols-2">
+              <Card>
+                <CardHeader title={values.state === 'all' ? 'By State' : 'By State in view'} />
+                <div className="px-2 pb-4" style={{ height: Math.max(200, s.stateRisk.length * 28 + 16) }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={s.stateRisk} layout="vertical" margin={{ top: 0, right: 40, left: 0, bottom: 0 }}>
+                      <XAxis type="number" hide domain={[0, 100]} />
+                      <YAxis type="category" dataKey="key" tickLine={false} axisLine={false} width={132} tick={AXIS_TICK_STRONG} />
+                      <Tooltip content={<ChartTooltip formatter={(v) => `${v}%`} />} cursor={CHART_CURSOR} />
+                      <Bar dataKey="avgRisk" name="Mean risk" radius={[0, 3, 3, 0]} barSize={12} className="cursor-pointer" isAnimationActive={false} onClick={(d: { key?: string }) => d?.key && set({ state: d.key, district: 'all' })} label={{ position: 'right', fill: 'rgb(var(--c-ink-2))', fontSize: 11, formatter: (v: number) => `${v}%` }}>
+                        {s.stateRisk.map((d) => (
+                          <Cell key={d.key} fill={RISK_HEX[riskFromScore(d.avgRisk)]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+              <Card>
+                <CardHeader title="Top districts" subtitle="15 highest by mean project risk" />
+                <ul className="divide-y divide-line border-t border-line">
+                  {s.districtRisk.map((d) => (
+                    <li key={d.key}>
+                      <button type="button" onClick={() => go({ district: d.key.split(', ')[0], state: d.key.split(', ')[1] })} className="flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none">
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm text-ink">{d.key}</span>
+                          <span className="block text-xs text-ink-3">
+                            {d.projects} project{d.projects === 1 ? '' : 's'} · {d.delayed} delayed · {d.blocked} blocked
+                          </span>
+                        </span>
+                        <RiskPill level={riskFromScore(d.avgRisk)} score={d.avgRisk} size="sm" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            </div>
+          </PageSection>
+
+          {/* Pipeline */}
+          <PageSection title="Acquisition pipeline" description="Where projects sit in the statutory lifecycle, and how each project type is tracking">
+            <div className="grid gap-5 lg:grid-cols-5">
+              <Card className="lg:col-span-3">
+                <CardHeader title="Projects by current stage" subtitle="Select a bar segment to list those projects" />
+                <div className="px-5">
+                  <ChartLegend
+                    items={[
+                      { label: 'In progress', color: STAGE_COLORS.inProgress },
+                      { label: 'Delayed', color: STAGE_COLORS.delayed },
+                      { label: 'Blocked', color: STAGE_COLORS.blocked },
+                    ]}
+                  />
+                </div>
+                <div className="h-[280px] px-2 pb-4 pt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={s.stageDistribution.map((d) => ({ ...d, short: d.key.split(' ')[0].replace('/', '') }))} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
+                      <CartesianGrid vertical={false} stroke="rgb(var(--c-line))" />
+                      <XAxis dataKey="short" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={0} />
+                      <YAxis tickLine={false} axisLine={false} tick={AXIS_TICK} allowDecimals={false} />
+                      <Tooltip content={<ChartTooltip labelFormatter={(l) => s.stageDistribution.find((d) => d.key.startsWith(String(l)))?.key ?? l} />} cursor={CHART_CURSOR} />
+                      <Bar dataKey="inProgress" name="In progress" stackId="a" fill={STAGE_COLORS.inProgress} className="cursor-pointer" isAnimationActive={false} onClick={(d: { key?: string }) => d?.key && go({ stage: d.key })} />
+                      <Bar dataKey="delayed" name="Delayed" stackId="a" fill={STAGE_COLORS.delayed} className="cursor-pointer" isAnimationActive={false} onClick={(d: { key?: string }) => d?.key && go({ stage: d.key, status: 'DELAYED' })} />
+                      <Bar dataKey="blocked" name="Blocked" stackId="a" fill={STAGE_COLORS.blocked} radius={[3, 3, 0, 0]} className="cursor-pointer" isAnimationActive={false} onClick={(d: { key?: string }) => d?.key && go({ stage: d.key, status: 'BLOCKED' })} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+              <Card className="lg:col-span-2">
+                <CardHeader title="By project type" subtitle="Mean predicted risk — select to filter" />
+                <ul className="divide-y divide-line border-t border-line">
+                  {[...s.projectTypeRisk]
+                    .sort((a, b) => b.avgRisk - a.avgRisk)
+                    .map((d) => {
+                      const band = riskFromScore(d.avgRisk);
+                      return (
+                        <li key={d.key}>
+                          <button type="button" onClick={() => set({ projectType: d.key })} className="flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none">
+                            <span className="w-32 shrink-0 truncate text-sm text-ink sm:w-40">{d.key}</span>
+                            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-3">
+                              <span className={cn('block h-full rounded-full', RISK_CLASS[band].bar)} style={{ width: `${d.avgRisk}%` }} />
+                            </span>
+                            <span className="w-10 text-right text-sm font-medium text-ink num">{d.avgRisk}%</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                </ul>
+              </Card>
+            </div>
+          </PageSection>
+
+          {/* Operations */}
+          <PageSection title="Operational health" description="Compensation, litigation, rehabilitation and schedule — the work behind the risk scores">
+            <Card className="grid gap-px overflow-hidden bg-line sm:grid-cols-2 xl:grid-cols-4 [&>*]:bg-surface">
+              <OpsBlock title="Compensation" figure={`${s.compensation.averageCompletionPct}%`} figureLabel="mean disbursement" note={`${s.compensation.backlogProjects} projects with a backlog · ${s.compensation.projectsAtOrPastCompensation} at or past Compensation`} rows={s.compensation.buckets} />
+              <OpsBlock title="Legal disputes" figure={formatCompact(s.legal.legalCases)} figureLabel="legal cases" note={`${formatCompact(s.legal.disputedParcels)} disputed parcels · ${s.legal.projectsWithEscalation} escalated`} rows={s.legal.byType.slice(0, 5).map((t) => ({ key: t.key, count: t.legalCases }))} />
+              <OpsBlock title="Rehabilitation & resettlement" figure={`${s.rr.averageProgressPct}%`} figureLabel="mean delivery" note={`${formatCompact(s.rr.affectedFamilies)} affected families · ${s.rr.projectsWithRR} projects with R&R due`} rows={s.rr.buckets} />
+              <OpsBlock
+                title="Schedule adherence"
+                figure={formatNumber(s.timeline.onTrack)}
+                figureLabel="current stages on track"
+                note={
+                  <span className="flex flex-wrap gap-x-3">
+                    <button type="button" className="link" onClick={() => go({ status: 'DELAYED' })}>
+                      {s.timeline.delayed} delayed
+                    </button>
+                    <button type="button" className="link" onClick={() => go({ status: 'BLOCKED' })}>
+                      {s.timeline.blocked} blocked
+                    </button>
                   </span>
-                </span>
-                <RiskPill level={p.riskBand} score={p.riskScore} size="sm" />
-              </button>
-            ))}
-          </div>
-        </Card>
-      </section>
+                }
+                rows={s.timeline.overrunBuckets}
+                rowsLabel="Forecast overrun"
+              />
+            </Card>
+          </PageSection>
+
+          <Card>
+            <CardHeader title="Department bottlenecks" subtitle="Current-stage cases waiting on each type of office" />
+            <div className="grid lg:grid-cols-2 lg:divide-x lg:divide-line">
+              <div className="relative min-w-0 overflow-x-auto">
+              <table className="w-full min-w-[420px] border-t border-line">
+                <thead>
+                  <tr className="bg-surface-2 text-left text-xs text-ink-3">
+                    <th scope="col" className="px-5 py-2 font-medium">Office type</th>
+                    <th scope="col" className="px-3 py-2 text-right font-medium">Projects</th>
+                    <th scope="col" className="px-5 py-2 text-right font-medium">Waiting now</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {s.departmentBottlenecks.byRole.slice(0, 8).map((d) => (
+                    <tr key={d.key}>
+                      <td className="px-5 py-2.5 text-sm text-ink">
+                        {d.key}
+                        <span className="block text-xs text-ink-3">{formatNumber(d.openCasesPending)} open across all stages</span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right text-sm text-ink-2 num">{d.projects}</td>
+                      <td className="px-5 py-2.5 text-right text-sm font-medium text-ink num">{formatNumber(d.currentStagePending)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+              <div className="min-w-0 border-t border-line px-5 py-4">
+                <p className="text-xs font-medium text-ink-3">Most-loaded named offices</p>
+                <ol className="mt-2 space-y-2">
+                  {s.departmentBottlenecks.byOffice.slice(0, 6).map((o) => (
+                    <li key={o.key} className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="min-w-0 truncate text-ink-2" title={o.key}>
+                        {o.key}
+                      </span>
+                      <span className="shrink-0 font-medium text-ink num">{formatNumber(o.openCasesPending)}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
 
-function MiniBars({ rows, color }: { rows: Array<{ key: string; count: number }>; color: string }) {
+function formatMonth(ym: string) {
+  const [y, m] = ym.split('-').map(Number);
+  if (!y || !m) return ym;
+  return new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+}
+
+function TopProjects({ rows, onOpen }: { rows: DashboardSummary['topProjects']; onOpen: (id: string) => void }) {
+  if (!rows.length) return <EmptyState title="No projects to rank" description="There are no open projects in this view." />;
+  return (
+    <ul className="divide-y divide-line border-t border-line">
+      {rows.map((p, i) => (
+        <li key={p.id}>
+          <button type="button" onClick={() => onOpen(p.id)} className="group flex w-full items-start gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none sm:items-center">
+            <span className="mt-0.5 w-5 shrink-0 text-xs text-ink-3 num sm:mt-0">{i + 1}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium text-ink">{p.name}</span>
+              <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-3">
+                <span>
+                  {p.district}, {p.state}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className={cn('h-1.5 w-1.5 rounded-full', STAGE_STATUS_DOT[p.stageStatus])} aria-hidden />
+                  {p.stage} · {STAGE_STATUS_LABEL[p.stageStatus]}
+                </span>
+              </span>
+              {p.topAction && <span className="mt-1 block truncate text-xs text-ink-2">Next: {p.topAction}</span>}
+            </span>
+            <RiskPill level={p.riskBand} score={p.riskScore} size="sm" />
+            <ChevronRight className="hidden h-4 w-4 shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5 sm:block" aria-hidden />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function RiskDistribution({ s, onSelect }: { s: DashboardSummary; onSelect: (band: string) => void }) {
+  const total = s.riskDistribution.reduce((a, r) => a + r.projects, 0) || 1;
+  const byBand = new Map(s.riskDistribution.map((r) => [r.key, r.projects]));
+  const bands = [...RISK_ORDER].reverse();
+  return (
+    <Card>
+      <CardHeader title="Risk distribution" subtitle="Projects by predicted band — select a band to list them" />
+      <div className="px-5 pb-5">
+        <div className="flex h-2.5 overflow-hidden rounded-full bg-surface-3" role="img" aria-label={bands.map((b) => `${b}: ${byBand.get(b) ?? 0}`).join(', ')}>
+          {RISK_ORDER.map((b) => (
+            <span key={b} style={{ width: `${((byBand.get(b) ?? 0) / total) * 100}%`, background: RISK_HEX[b] }} className="border-r-2 border-surface last:border-r-0" />
+          ))}
+        </div>
+        <ul className="mt-4 divide-y divide-line">
+          {bands.map((b) => {
+            const Icon = RISK_ICON[b];
+            const projects = byBand.get(b) ?? 0;
+            const cases = s.caseRiskDistribution.find((c) => c.key === b)?.cases ?? 0;
+            return (
+              <li key={b}>
+                <button type="button" onClick={() => onSelect(b)} className="-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-surface-2 focus-ring">
+                  <Icon className={cn('h-4 w-4 shrink-0', RISK_CLASS[b].text)} aria-hidden />
+                  <span className="flex-1 text-sm text-ink">{b}</span>
+                  <span className="text-xs text-ink-3 num">{formatCompact(cases)} cases</span>
+                  <span className="w-10 text-right text-sm font-semibold text-ink num">{projects}</span>
+                  <span className="w-10 text-right text-xs text-ink-3 num">{Math.round((projects / total) * 100)}%</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </Card>
+  );
+}
+
+function OpsBlock({ title, figure, figureLabel, note, rows, rowsLabel }: { title: string; figure: string; figureLabel: string; note: React.ReactNode; rows: Array<{ key: string; count: number }>; rowsLabel?: string }) {
   const max = Math.max(1, ...rows.map((r) => r.count));
   return (
-    <div className="space-y-1.5">
-      {rows.map((r) => (
-        <div key={r.key} className="flex items-center gap-2 text-[11px]">
-          <span className="w-[92px] shrink-0 truncate text-ink-3" title={r.key}>
-            {r.key}
-          </span>
-          <span className="h-2 flex-1 overflow-hidden rounded-full bg-surface-3">
-            <span className="block h-full rounded-full" style={{ width: `${(r.count / max) * 100}%`, background: color }} />
-          </span>
-          <span className="w-8 text-right font-bold text-ink num">{formatNumber(r.count)}</span>
-        </div>
-      ))}
+    <div className="p-5">
+      <h3 className="text-sm font-medium text-ink-2">{title}</h3>
+      <p className="mt-2 flex items-baseline gap-1.5">
+        <span className="text-2xl font-semibold tracking-tight text-ink num">{figure}</span>
+        <span className="text-xs text-ink-3">{figureLabel}</span>
+      </p>
+      <div className="mt-0.5 text-xs text-ink-3">{note}</div>
+      {rowsLabel && <p className="mt-4 text-2xs text-ink-3">{rowsLabel}</p>}
+      <ul className={cn('space-y-1.5', rowsLabel ? 'mt-1.5' : 'mt-4')}>
+        {rows.map((r) => (
+          <li key={r.key} className="flex items-center gap-2 text-xs">
+            <span className="w-[88px] shrink-0 truncate text-ink-3" title={r.key}>
+              {r.key}
+            </span>
+            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-3">
+              <span className="block h-full rounded-full bg-slate-400 dark:bg-slate-500" style={{ width: `${(r.count / max) * 100}%` }} />
+            </span>
+            <span className="w-9 text-right text-ink-2 num">{formatNumber(r.count)}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

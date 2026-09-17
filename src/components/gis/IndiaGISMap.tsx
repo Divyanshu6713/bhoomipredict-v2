@@ -408,8 +408,8 @@ export function IndiaGISMap({
       {/* hover readout */}
       {hover && !popup && (
         <div className="pointer-events-none absolute z-10 rounded-lg border border-line bg-surface/95 px-3 py-2 shadow-pop backdrop-blur" style={{ left: Math.min(px.w - 220, hover.x + 14), top: Math.max(8, hover.y - 10) }}>
-          <p className="text-[12.5px] font-bold text-ink">{hover.label}</p>
-          <p className="text-[11px] text-ink-3">{hover.sub}</p>
+          <p className="text-sm font-bold text-ink">{hover.label}</p>
+          <p className="text-xs text-ink-3">{hover.sub}</p>
         </div>
       )}
 
@@ -419,17 +419,17 @@ export function IndiaGISMap({
         const left = Math.max(8, Math.min(px.w - 296, pos.left - 140));
         const top = pos.top > px.h / 2 ? Math.max(8, pos.top - 272) : Math.min(px.h - 280, pos.top + 16);
         return (
-          <div data-map-ui className="absolute z-20 w-[288px] rounded-xl border border-line bg-surface p-3.5 shadow-pop animate-scale-in" style={{ left, top }}>
+          <div data-map-ui className="absolute z-20 w-[288px] rounded-lg border border-line bg-surface p-3.5 shadow-pop animate-scale-in" style={{ left, top }}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-mono text-[10.5px] font-semibold text-ink-3">{popup.id}</p>
-                <p className="text-[13px] font-bold leading-snug text-ink">{popup.name}</p>
+                <p className="font-mono text-xs font-semibold text-ink-3">{popup.id}</p>
+                <p className="text-sm font-bold leading-snug text-ink">{popup.name}</p>
               </div>
               <button onClick={() => setPopup(null)} className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-ink-3 hover:bg-surface-2" aria-label="Close">
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
-            <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
+            <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
               {[
                 ['State', popup.state],
                 ['District', popup.district],
@@ -441,19 +441,19 @@ export function IndiaGISMap({
                 ['Expected slip', popup.predictedDelayDays !== null ? `${popup.predictedDelayDays} days` : '—'],
               ].map(([k, v]) => (
                 <div key={k} className="min-w-0">
-                  <dt className="text-[9.5px] font-semibold uppercase tracking-wider text-ink-3">{k}</dt>
+                  <dt className="eyebrow">{k}</dt>
                   <dd className="truncate font-semibold text-ink" style={k === 'Risk category' ? { color: RISK_HEX[popup.riskBand] } : undefined} title={String(v)}>
                     {v}
                   </dd>
                 </div>
               ))}
               <div className="col-span-2 min-w-0">
-                <dt className="text-[9.5px] font-semibold uppercase tracking-wider text-ink-3">Primary authority</dt>
+                <dt className="eyebrow">Primary authority</dt>
                 <dd className="font-semibold leading-snug text-ink">{popup.primaryAuthority}</dd>
               </div>
             </dl>
             {onOpenProject && (
-              <button onClick={() => onOpenProject(popup.id)} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand py-2 text-[12px] font-semibold text-white hover:bg-brand/90">
+              <button onClick={() => onOpenProject(popup.id)} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand py-2 text-xs font-semibold text-white hover:bg-brand/90">
                 Open project <ExternalLink className="h-3.5 w-3.5" />
               </button>
             )}
@@ -487,7 +487,7 @@ export function IndiaGISMap({
               <Layers className="h-4 w-4" />
             </button>
             {layersOpen && (
-              <div className="absolute right-10 top-0 w-48 rounded-xl border border-line bg-surface p-2.5 shadow-pop">
+              <div className="absolute right-10 top-0 w-48 rounded-lg border border-line bg-surface p-2.5 shadow-pop">
                 <p className="label-xs mb-1.5">Layers</p>
                 {(
                   [
@@ -498,7 +498,7 @@ export function IndiaGISMap({
                     ['parcels', 'Case / parcel points'],
                   ] as const
                 ).map(([k, label]) => (
-                  <label key={k} className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-[12px] text-ink-2 hover:bg-surface-2">
+                  <label key={k} className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs text-ink-2 hover:bg-surface-2">
                     <input type="checkbox" checked={layers[k]} onChange={(e) => setLayers((l) => ({ ...l, [k]: e.target.checked }))} className="accent-[rgb(var(--c-brand))]" />
                     {label}
                   </label>
@@ -511,13 +511,13 @@ export function IndiaGISMap({
 
       {/* coordinates of the view centre and attribution */}
       <div className="pointer-events-none absolute bottom-2 left-3 right-3 flex flex-wrap items-end justify-between gap-2">
-        <span className="rounded-md bg-surface/85 px-2 py-1 text-[10px] font-medium text-ink-3 backdrop-blur num">
+        <span className="rounded-md bg-surface/85 px-2 py-1 text-2xs font-medium text-ink-3 backdrop-blur num">
           {(() => {
             const [lon, lat] = unproject(view.x + view.w / 2, view.y + view.h / 2);
             return `${lat.toFixed(2)}°N ${lon.toFixed(2)}°E · ×${zoom.toFixed(1)}`;
           })()}
         </span>
-        <span className="max-w-[70%] rounded-md bg-surface/85 px-2 py-1 text-right text-[9.5px] leading-snug text-ink-3 backdrop-blur">
+        <span className="max-w-[70%] rounded-md bg-surface/85 px-2 py-1 text-right text-2xs leading-snug text-ink-3 backdrop-blur">
           Boundaries: INDIAN-SHAPEFILES (Survey of India depiction). Project and parcel positions are synthetic demo locations.
         </span>
       </div>
@@ -531,14 +531,14 @@ export function GISLegend({ className }: { className?: string }) {
       {BAND_ORDER.map((lvl) => (
         <span key={lvl} className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-full border-2 border-white shadow" style={{ background: RISK_HEX[lvl] }} />
-          <span className="text-[11px] font-medium text-ink-2">{lvl}</span>
+          <span className="text-xs font-medium text-ink-2">{lvl}</span>
         </span>
       ))}
-      <span className="flex items-center gap-1.5 text-[11px] text-ink-3">
-        <span className="grid h-4 w-4 place-items-center rounded-full bg-rose-500 text-[8px] font-bold text-white">4</span>
+      <span className="flex items-center gap-1.5 text-xs text-ink-3">
+        <span className="grid h-4 w-4 place-items-center rounded-full bg-red-500 text-2xs font-bold text-white">4</span>
         cluster (worst band) — click to zoom
       </span>
-      <span className="text-[11px] text-ink-3">Area shading = mean project risk</span>
+      <span className="text-xs text-ink-3">Area shading = mean project risk</span>
     </div>
   );
 }

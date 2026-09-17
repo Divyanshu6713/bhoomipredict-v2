@@ -39,7 +39,7 @@ export function PasswordChange({ configured }: { configured: boolean }) {
         >
           Change
         </Button>
-        {msg && <p className={`sm:col-span-3 text-[12px] font-medium ${msg.ok ? 'text-emerald-600' : 'text-rose-600'}`}>{msg.text}</p>}
+        {msg && <p className={`sm:col-span-3 text-xs font-medium ${msg.ok ? 'text-emerald-700' : 'text-red-600'}`}>{msg.text}</p>}
       </div>
     </Card>
   );

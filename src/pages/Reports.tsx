@@ -351,7 +351,7 @@ export default function Reports() {
   return (
     <div className="space-y-4">
       <section className="grid gap-4 lg:grid-cols-[1fr_330px]">
-        <Card className="animate-fade-up">
+        <Card>
           <CardHeader
             title="Standard review packs"
             subtitle="Pre-configured exports aligned to the departmental reporting calendar"
@@ -359,34 +359,34 @@ export default function Reports() {
             action={<DemoDataBadge className="hidden sm:inline-flex" />}
           />
           <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2">
-            {REPORTS.map((r, i) => {
+            {REPORTS.map((r) => {
               const isActive = r.id === values.report;
               return (
                 <button
                   key={r.id}
                   onClick={() => set({ report: r.id })}
                   className={cn(
-                    'group rounded-2xl border p-4 text-left transition-all duration-300 hover:-translate-y-0.5 animate-fade-up',
-                    isActive ? 'border-brand/45 bg-brand/[0.06] shadow-card' : 'border-line bg-surface-2 hover:border-line-strong',
+                    'group rounded-lg border p-4 text-left transition-colors focus-ring',
+                    isActive ? 'border-brand bg-brand-soft/50' : 'border-line hover:border-line-strong hover:bg-surface-2',
                   )}
-                  style={{ animationDelay: `${i * 50}ms` }}
+                 
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span
                       className={cn(
-                        'grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-transform duration-300 group-hover:scale-110',
-                        isActive ? 'bg-brand text-white' : 'bg-surface-3 text-ink-2',
+                        'grid h-9 w-9 shrink-0 place-items-center rounded-lg',
+                        isActive ? 'bg-brand text-white' : 'bg-surface-3 text-ink-3',
                       )}
                     >
                       <r.icon className="h-[18px] w-[18px]" />
                     </span>
                     <Badge className="border-line bg-surface text-ink-3">{r.cadence}</Badge>
                   </div>
-                  <p className="mt-3.5 text-[13.5px] font-bold text-ink">{r.title}</p>
-                  <p className="mt-1.5 text-[12px] leading-relaxed text-ink-2">{r.description}</p>
-                  <p className="mt-2.5 text-[11px] text-ink-3">For: {r.audience}</p>
+                  <p className="mt-3.5 text-base font-bold text-ink">{r.title}</p>
+                  <p className="mt-1.5 text-xs text-ink-2">{r.description}</p>
+                  <p className="mt-2.5 text-xs text-ink-3">For: {r.audience}</p>
                   {generated[r.id] && (
-                    <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                       <CheckCircle2 className="h-3.5 w-3.5" /> Exported this session
                     </p>
                   )}
@@ -397,7 +397,7 @@ export default function Reports() {
         </Card>
 
         <div className="space-y-4">
-          <Card className="animate-fade-up" style={{ animationDelay: '60ms' }}>
+          <Card>
             <CardHeader title="Parameters" subtitle="Applied to the generated export" icon={<CalendarRange className="h-4 w-4" />} />
             <div className="space-y-3 px-5 pb-5">
               <Select
@@ -406,7 +406,7 @@ export default function Reports() {
                 onChange={(v) => set({ scope: v })}
                 options={[{ label: 'All states', value: 'all' }, ...(facets.data?.states ?? []).map((st) => ({ label: st, value: st }))]}
               />
-              <div className="rounded-xl border border-line bg-surface-2 p-3.5">
+              <div className="rounded-lg border border-line bg-surface-2 p-3.5">
                 <p className="label-xs">Records in scope</p>
                 <div className="mt-2 space-y-1.5">
                   {[
@@ -415,8 +415,8 @@ export default function Reports() {
                     ['Queue cells', queue.data?.total ?? 0],
                   ].map(([label, value]) => (
                     <div key={String(label)} className="flex items-baseline justify-between">
-                      <span className="text-[11.5px] text-ink-3">{label}</span>
-                      <span className="text-[12px] font-bold text-ink num">{formatNumber(Number(value))}</span>
+                      <span className="text-xs text-ink-3">{label}</span>
+                      <span className="text-xs font-bold text-ink num">{formatNumber(Number(value))}</span>
                     </div>
                   ))}
                 </div>
@@ -436,13 +436,13 @@ export default function Reports() {
               <Button variant="outline" className="w-full gap-2" onClick={() => window.print()}>
                 <Printer className="h-4 w-4" /> Print / save as PDF
               </Button>
-              <p className="text-center text-[11px] leading-relaxed text-ink-3">
+              <p className="text-center text-xs text-ink-3">
                 Exports contain synthetic prototype data only.
               </p>
             </div>
           </Card>
 
-          <Card className="animate-fade-up" style={{ animationDelay: '120ms' }}>
+          <Card>
             <CardHeader title="Dataset deliverables" subtitle="The full synthetic corpus" icon={<FileSpreadsheet className="h-4 w-4" />} />
             <div className="space-y-2 px-5 pb-5">
               <a href={datasetCsvUrl()} className="block">
@@ -455,7 +455,7 @@ export default function Reports() {
                   <FileText className="h-4 w-4" /> land_acquisition_synthetic_350k.pdf
                 </Button>
               </a>
-              <p className="text-[11px] leading-relaxed text-ink-3">
+              <p className="text-xs text-ink-3">
                 {formatNumber(s.totals.cases)} rows × {s.dataQuality.columns} columns. The PDF carries the field
                 dictionary, distributions, data-quality audit, model card and a documented tabular export.
               </p>
@@ -464,7 +464,7 @@ export default function Reports() {
         </div>
       </section>
 
-      <Card className="animate-fade-up">
+      <Card>
         <CardHeader
           title={`${report.title} — preview`}
           subtitle={`First rows of the export · generated ${formatDate(s.today)}`}
@@ -479,9 +479,9 @@ export default function Reports() {
             </div>
           }
         />
-        <div className="overflow-x-auto px-5 pb-5">
+        <div className="relative overflow-x-auto px-5 pb-5">
           {values.report === 'exceptions' ? (
-            <p className="py-6 text-[12.5px] leading-relaxed text-ink-2">
+            <p className="py-6 text-sm text-ink-2">
               This pack streams directly from the case registry rather than being assembled in the browser: cases with
               litigation, in the open set, ranked by predicted risk, up to 20,000 rows. Generating it starts the download
               immediately.
@@ -491,7 +491,7 @@ export default function Reports() {
               <thead>
                 <tr className="border-b border-line">
                   {preview[0]?.map((h, i) => (
-                    <th key={i} className="px-3 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-wider text-ink-3">
+                    <th key={i} className="px-3 py-2.5 text-left text-xs font-medium text-ink-3">
                       {h}
                     </th>
                   ))}
@@ -501,7 +501,7 @@ export default function Reports() {
                 {preview.slice(1).map((row, i) => (
                   <tr key={i} className="border-b border-line/70 last:border-0">
                     {row.map((cell, j) => (
-                      <td key={j} className={cn('px-3 py-2.5 text-[12.5px]', j === 0 ? 'font-semibold text-ink' : 'text-ink-2')}>
+                      <td key={j} className={cn('px-3 py-2.5 text-sm', j === 0 ? 'font-semibold text-ink' : 'text-ink-2')}>
                         {cell}
                       </td>
                     ))}
@@ -512,23 +512,23 @@ export default function Reports() {
           )}
         </div>
         {values.report !== 'exceptions' && (
-          <p className="border-t border-line px-5 py-3 text-[11px] text-ink-3">
+          <p className="border-t border-line px-5 py-3 text-xs text-ink-3">
             Full export contains {formatNumber(Math.max(0, rows.length - 1))} rows · scope:{' '}
             {values.scope === 'all' ? 'all states' : values.scope}.
           </p>
         )}
       </Card>
 
-      <Card className="animate-fade-up p-5">
+      <Card className="p-5">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <p className="label-xs">Risk legend</p>
           {(['Low', 'Medium', 'High', 'Critical'] as const).map((l) => (
             <span key={l} className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: RISK_HEX[l] }} />
-              <span className="text-[11.5px] text-ink-2">{l}</span>
+              <span className="text-xs text-ink-2">{l}</span>
             </span>
           ))}
-          <span className="ml-auto text-[11px] text-ink-3">
+          <span className="ml-auto text-xs text-ink-3">
             {formatCompact(s.totals.openCases)} open cases scored · snapshot {formatDate(s.today)}
           </span>
         </div>

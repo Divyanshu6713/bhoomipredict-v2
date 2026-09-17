@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ListChecks } from 'lucide-react';
-import { Badge, Button, Card, CardHeader, DemoDataBadge, Tabs } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, DemoDataBadge, MetricStrip, Tabs } from '@/components/ui';
 import { ErrorState } from '@/components/ui/primitives';
 import { FilterBar, allOption, toOptions } from '@/components/ui/FilterBar';
 import { InterventionCard } from '@/components/workflow';
 import { useApi, useDebounced, useFilters } from '@/hooks';
 import { useAuth } from '@/auth/AuthContext';
 import { fetchFacets, fetchInterventions } from '@/api/client';
-import { CATEGORY_LABEL, INTERVENTION_STATUS_LABEL, SEVERITY_CLASS } from '@/lib/status';
+import { CATEGORY_LABEL, INTERVENTION_STATUS_LABEL } from '@/lib/status';
 import { formatNumber } from '@/lib/format';
 import type { InterventionItem, InterventionList } from '@/data/types';
 
@@ -70,28 +70,21 @@ export default function Queue() {
 
   return (
     <div className="space-y-4">
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {(['Critical', 'High', 'Medium'] as const).map((sev) => (
-          <button key={sev} onClick={() => set({ severity: values.severity === sev ? 'all' : sev })} className="card p-4 text-left transition-colors hover:border-line-strong">
-            <div className="flex items-center justify-between">
-              <p className="label-xs">{sev}</p>
-              <Badge className={SEVERITY_CLASS[sev]}>{sev === 'Critical' ? 'P1' : sev === 'High' ? 'P2' : 'P3'}</Badge>
-            </div>
-            <p className="mt-2 font-display text-[24px] font-extrabold leading-none text-ink num">{formatNumber(counts?.bySeverity.find((c) => c.key === sev)?.count ?? 0)}</p>
-          </button>
-        ))}
-        <button onClick={() => set({ mine: values.mine ? '' : '1' })} className="card p-4 text-left transition-colors hover:border-line-strong">
-          <p className="label-xs">Assigned to my role</p>
-          <p className="mt-2 font-display text-[24px] font-extrabold leading-none text-ink num">{formatNumber(counts?.mine ?? 0)}</p>
-          <p className="mt-1 text-[10.5px] text-ink-3">{user?.roleLabel}</p>
-        </button>
-        <div className="card p-4">
-          <p className="label-xs">Past due date</p>
-          <p className="mt-2 font-display text-[24px] font-extrabold leading-none text-rose-600 dark:text-rose-400 num">{formatNumber(counts?.overdue ?? 0)}</p>
-        </div>
-      </section>
+      <MetricStrip
+        items={[
+          ...(['Critical', 'High', 'Medium'] as const).map((sev) => ({
+            label: `${sev} (${sev === 'Critical' ? 'P1' : sev === 'High' ? 'P2' : 'P3'})`,
+            value: formatNumber(counts?.bySeverity.find((c) => c.key === sev)?.count ?? 0),
+            tone: sev === 'Critical' ? ('danger' as const) : sev === 'High' ? ('orange' as const) : undefined,
+            active: values.severity === sev,
+            onClick: () => set({ severity: values.severity === sev ? 'all' : sev }),
+          })),
+          { label: 'Assigned to my role', value: formatNumber(counts?.mine ?? 0), hint: user?.roleLabel, active: Boolean(values.mine), onClick: () => set({ mine: values.mine ? '' : '1' }) },
+          { label: 'Past due date', value: formatNumber(counts?.overdue ?? 0), tone: (counts?.overdue ?? 0) > 0 ? 'danger' : undefined },
+        ]}
+      />
 
-      <Card className="animate-fade-up">
+      <Card>
         <CardHeader
           title="Intervention queue"
           subtitle={`${formatNumber(data?.total ?? 0)} interventions in ${user?.scopeLabel ?? 'your jurisdiction'} — generated from live rule and model triggers`}
@@ -131,10 +124,10 @@ export default function Queue() {
           activeCount={activeCount}
           extra={
             <div className="flex items-end gap-2 pb-0.5">
-              <label className="flex items-center gap-1.5 text-[12px] text-ink-2">
+              <label className="flex items-center gap-1.5 text-xs text-ink-2">
                 <input type="checkbox" checked={values.mine === '1'} onChange={(e) => set({ mine: e.target.checked ? '1' : '' })} className="accent-[rgb(var(--c-brand))]" /> Mine
               </label>
-              <label className="flex items-center gap-1.5 text-[12px] text-ink-2">
+              <label className="flex items-center gap-1.5 text-xs text-ink-2">
                 <input type="checkbox" checked={values.focus === '1'} onChange={(e) => set({ focus: e.target.checked ? '1' : '' })} className="accent-[rgb(var(--c-brand))]" /> My focus areas
               </label>
             </div>
@@ -143,7 +136,7 @@ export default function Queue() {
 
         {counts && counts.byDepartment.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 border-b border-line px-5 py-2.5">
-            <span className="label-xs mr-1">By responsible role</span>
+            <span className="mr-1 text-xs font-medium text-ink-2">By responsible role</span>
             {counts.byDepartment.slice(0, 8).map((d) => (
               <Badge key={d.key} className="border-line bg-surface-2 text-ink-2">
                 {d.key} <span className="num text-ink-3">{d.count}</span>
@@ -156,13 +149,13 @@ export default function Queue() {
           {(data?.items ?? []).map((item) => (
             <InterventionCard key={item.id} item={item} canUpdate={can('intervention.update')} onChanged={replace} />
           ))}
-          {result.loading && <p className="px-5 py-10 text-center text-[12px] text-ink-3">Evaluating rules…</p>}
-          {!result.loading && (data?.items.length ?? 0) === 0 && <p className="px-5 py-12 text-center text-[12.5px] text-ink-3">No interventions match. Every intervention is tied to a live trigger, so an empty queue means none holds for this filter.</p>}
+          {result.loading && <p className="px-5 py-10 text-center text-xs text-ink-3">Evaluating rules…</p>}
+          {!result.loading && (data?.items.length ?? 0) === 0 && <p className="px-5 py-12 text-center text-sm text-ink-3">No interventions match. Every intervention is tied to a live trigger, so an empty queue means none holds for this filter.</p>}
         </div>
 
         {data && data.pages > 1 && (
           <div className="flex items-center justify-between border-t border-line px-5 py-3">
-            <p className="text-[11.5px] text-ink-3 num">
+            <p className="text-xs text-ink-3 num">
               Page {data.page} of {data.pages}
             </p>
             <div className="flex gap-2">
@@ -177,7 +170,7 @@ export default function Queue() {
         )}
       </Card>
 
-      <Card className="p-5 text-[12px] leading-relaxed text-ink-2">
+      <Card className="p-5 text-xs text-ink-2">
         <p className="font-semibold text-ink">How an intervention gets here</p>
         <p className="mt-1">
           The rules engine evaluates every project in your jurisdiction against its lifecycle, dependency network and progress measures — compensation backlog, legal load, documentation, approval delay, R&R, stakeholder responsiveness, blocked stages and deadline breaches. Rules

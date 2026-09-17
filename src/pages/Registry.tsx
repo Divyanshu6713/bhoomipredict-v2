@@ -35,7 +35,7 @@ export default function Registry() {
 
   return (
     <div className="space-y-4">
-      <Card className="p-5 text-[12.5px] leading-relaxed text-ink-2">
+      <Card className="p-5 text-sm text-ink-2">
         <p className="font-semibold text-ink">About this registry</p>
         <p className="mt-1">{r.note}</p>
         <p className="mt-1">
@@ -54,7 +54,7 @@ export default function Registry() {
             {options.data?.authorityOptions && (
               <div>
                 <p className="label-xs mb-1">Eligible acquiring / requiring bodies</p>
-                <ul className="list-disc space-y-0.5 pl-4 text-[12px] text-ink-2">
+                <ul className="list-disc space-y-0.5 pl-4 text-xs text-ink-2">
                   {options.data.authorityOptions.map((a) => (
                     <li key={a}>{a}</li>
                   ))}
@@ -83,15 +83,15 @@ export default function Registry() {
         <CardHeader title="Acquisition frameworks" subtitle="Milestones, dispute forums and whether land is acquired or only a right of use / way" icon={<Gavel className="h-4 w-4" />} />
         <div className="grid gap-3 px-5 pb-5 lg:grid-cols-2">
           {r.frameworks.map((f) => (
-            <div key={f.id} className="rounded-xl border border-line bg-surface-2 p-4">
-              <p className="text-[13px] font-bold text-ink">{f.name}</p>
+            <div key={f.id} className="rounded-lg border border-line bg-surface-2 p-4">
+              <p className="text-sm font-bold text-ink">{f.name}</p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 <Badge>{humanise(f.mode)}</Badge>
                 <Badge>{f.siaRequired ? 'SIA required' : 'No SIA chapter'}</Badge>
                 <Badge>Forum: {f.disputeForum}</Badge>
               </div>
-              {f.note && <p className="mt-2 text-[11.5px] text-ink-2">{f.note}</p>}
-              <dl className="mt-2 grid grid-cols-[130px_1fr] gap-x-2 gap-y-0.5 text-[11px]">
+              {f.note && <p className="mt-2 text-xs text-ink-2">{f.note}</p>}
+              <dl className="mt-2 grid grid-cols-[130px_1fr] gap-x-2 gap-y-0.5 text-xs">
                 {Object.entries(f.milestones).map(([stage, m]) => (
                   <div key={stage} className="contents">
                     <dt className="text-ink-3">{stage}</dt>
@@ -110,11 +110,11 @@ export default function Registry() {
           <div className="divide-y divide-line border-t border-line">
             {r.projectTypes.map((t) => (
               <div key={t.name} className="px-5 py-2.5">
-                <p className="text-[12.5px] font-semibold text-ink">
+                <p className="text-sm font-semibold text-ink">
                   {t.name} {t.linear && <Badge className="ml-1">linear</Badge>}
                 </p>
-                <p className="text-[11px] text-ink-3">{t.subtypes.join(' · ')}</p>
-                {t.central && <p className="text-[11px] text-ink-2">Central: {t.central}</p>}
+                <p className="text-xs text-ink-3">{t.subtypes.join(' · ')}</p>
+                {t.central && <p className="text-xs text-ink-2">Central: {t.central}</p>}
               </div>
             ))}
           </div>
@@ -123,7 +123,7 @@ export default function Registry() {
           <CardHeader title="Rule thresholds" subtitle="Lifecycle blocking rules and intervention triggers" />
           <div className="grid grid-cols-1 gap-x-6 px-5 pb-5 sm:grid-cols-2">
             {Object.entries({ ...r.lifecycleRules, ...r.ruleThresholds }).map(([k, v]) => (
-              <div key={k} className="flex justify-between border-b border-line/70 py-1.5 text-[11.5px]">
+              <div key={k} className="flex justify-between border-b border-line/70 py-1.5 text-xs">
                 <span className="text-ink-3">{k.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
                 <span className="font-bold text-ink num">{v}</span>
               </div>

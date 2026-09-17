@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Eye, Flag, Info, Layers, Network } from 'lucide-react';
-import { Badge, Card, CardHeader, EmptyState, SkeletonCard } from '@/components/ui';
+import { Badge, Card, CardHeader, EmptyState, MetricStrip, PageSkeleton } from '@/components/ui';
 import { ErrorState, RiskPill } from '@/components/ui/primitives';
 import { ProvenanceBadge } from '@/components/brand/Provenance';
 import { useApi, useFilters } from '@/hooks';
@@ -28,50 +28,54 @@ export default function PortfolioHierarchy() {
   const goTo = (q: Record<string, string>) => set({ sector: q.sector ?? '', state: q.state ?? '', district: q.district ?? '' });
 
   if (data.error) return <ErrorState error={data.error} onRetry={data.reload} />;
-  if (!data.data) return <SkeletonCard lines={10} />;
+  if (!data.data) return <PageSkeleton />;
   const d = data.data;
   const projectsLink = `/projects?${new URLSearchParams({ ...(values.sector && values.sector !== 'all' ? { sector: values.sector } : {}), ...(values.state ? { state: values.state } : {}), ...(values.district ? { district: values.district } : {}) }).toString()}`;
 
   return (
     <div className="space-y-4">
-      <Card className="overflow-hidden">
-        <div className="bg-navy-900 px-5 py-5 grid-lines sm:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <nav aria-label="Hierarchy" className="flex flex-wrap items-center gap-1 text-[12.5px]">
-                {d.path.map((p, i) => {
-                  const last = i === d.path.length - 1;
-                  return (
-                    <span key={`${p.level}-${i}`} className="flex items-center gap-1">
-                      {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
-                      <button onClick={() => goTo(p.query)} disabled={last} className={cn('flex items-center gap-1.5 rounded-md px-1.5 py-0.5', last ? 'font-bold text-white' : 'text-white/55 hover:bg-white/10 hover:text-white')}>
-                        {i === 0 && <Flag className="h-3.5 w-3.5" />} {p.label}
-                      </button>
-                    </span>
-                  );
-                })}
-              </nav>
-              <h2 className="mt-2 font-display text-[22px] font-extrabold tracking-tight text-white">{d.path[d.path.length - 1].label === 'India' ? 'National acquisition portfolio' : d.path[d.path.length - 1].label}</h2>
-              <p className="mt-1 text-[12.5px] text-white/50">
-                Within your scope: {user?.scopeLabel} · {formatNumber(d.scope.projectsInScope)} projects
-              </p>
-            </div>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-              <HeroStat label="Projects" value={formatNumber(d.totals.projects)} />
-              <HeroStat label="Active" value={formatNumber(d.totals.active)} />
-              <HeroStat label="Delayed" value={formatNumber(d.totals.delayed)} color="#FBBF24" />
-              <HeroStat label="High risk" value={formatNumber(d.totals.highRisk)} color={RISK_HEX.High} />
-              <HeroStat label="Critical" value={formatNumber(d.totals.critical)} color={RISK_HEX.Critical} />
-              <HeroStat label="Mean risk" value={d.totals.avgRisk !== null ? `${d.totals.avgRisk}%` : '—'} />
+      <div>
+        <nav aria-label="Hierarchy" className="-ml-1.5 flex flex-wrap items-center gap-0.5 text-sm">
+          {d.path.map((p, i) => {
+            const last = i === d.path.length - 1;
+            return (
+              <span key={`${p.level}-${i}`} className="flex items-center gap-0.5">
+                {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-ink-3" aria-hidden />}
+                <button type="button" onClick={() => goTo(p.query)} disabled={last} aria-current={last ? 'page' : undefined} className={cn('flex items-center gap-1.5 rounded-md px-1.5 py-0.5 focus-ring', last ? 'font-medium text-ink' : 'text-ink-3 hover:bg-surface-3 hover:text-ink')}>
+                  {i === 0 && <Flag className="h-3.5 w-3.5" aria-hidden />} {p.label}
+                </button>
+              </span>
+            );
+          })}
+        </nav>
+        <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-xl font-semibold tracking-tight text-ink">{d.path[d.path.length - 1].label === 'India' ? 'National acquisition portfolio' : d.path[d.path.length - 1].label}</h2>
+          <p className="text-sm text-ink-3">
+            Within your scope: {user?.scopeLabel} · <span className="num">{formatNumber(d.scope.projectsInScope)}</span> projects
+          </p>
+        </div>
+      </div>
+
+      <div className="card overflow-hidden">
+        <MetricStrip
+          className="rounded-none border-0 shadow-none"
+          items={[
+            { label: 'Projects', value: formatNumber(d.totals.projects) },
+            { label: 'Active', value: formatNumber(d.totals.active) },
+            { label: 'Delayed', value: formatNumber(d.totals.delayed), tone: d.totals.delayed ? 'warning' : undefined },
+            { label: 'High risk', value: formatNumber(d.totals.highRisk), tone: d.totals.highRisk ? 'orange' : undefined },
+            { label: 'Critical', value: formatNumber(d.totals.critical), tone: d.totals.critical ? 'danger' : undefined },
+            { label: 'Mean risk', value: d.totals.avgRisk !== null ? `${d.totals.avgRisk}%` : '—' },
+          ]}
+        />
+        {d.totals.projects > 0 && (
+          <div className="border-t border-line px-5 py-3">
+            <div className="flex h-1.5 overflow-hidden rounded-full bg-surface-3" role="img" aria-label={`Risk mix: ${d.riskMix.map((r) => `${r.band} ${r.projects}`).join(', ')}`}>
+              {d.riskMix.map((r) => (r.projects ? <div key={r.band} className="border-r-2 border-surface last:border-r-0" style={{ width: `${(r.projects / d.totals.projects) * 100}%`, background: RISK_HEX[r.band] }} /> : null))}
             </div>
           </div>
-          {d.totals.projects > 0 && (
-            <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-white/10" title="Risk mix">
-              {d.riskMix.map((r) => (r.projects ? <div key={r.band} style={{ width: `${(r.projects / d.totals.projects) * 100}%`, background: RISK_HEX[r.band] }} /> : null))}
-            </div>
-          )}
-        </div>
-      </Card>
+        )}
+      </div>
 
       <Card>
         <CardHeader
@@ -83,7 +87,7 @@ export default function PortfolioHierarchy() {
               <ProvenanceBadge mode="synthetic" compact />
               <ProvenanceBadge mode="model" compact />
               {d.level !== 'sector' && (
-                <Link to={projectsLink} className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand hover:underline">
+                <Link to={projectsLink} className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline">
                   Open in registry <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               )}
@@ -98,14 +102,14 @@ export default function PortfolioHierarchy() {
               <button key={c.id} onClick={() => navigate(`/projects/${c.projectId}`)} className="flex w-full flex-wrap items-center gap-3 px-5 py-3 text-left hover:bg-surface-2">
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
-                    <span className="font-mono text-[11px] text-ink-3">{c.id}</span>
-                    <span className="truncate text-[13px] font-semibold text-ink">{c.label}</span>
+                    <span className="font-mono text-xs text-ink-3">{c.id}</span>
+                    <span className="truncate text-sm font-semibold text-ink">{c.label}</span>
                   </span>
-                  <span className="block truncate text-[11px] text-ink-3">{c.detail}</span>
-                  {c.topDriver && <span className="block text-[11px] text-ink-3">Top driver: {c.topDriver}</span>}
+                  <span className="block truncate text-xs text-ink-3">{c.detail}</span>
+                  {c.topDriver && <span className="block text-xs text-ink-3">Top driver: {c.topDriver}</span>}
                 </span>
                 {c.stage && c.stageStatus && (
-                  <span className={cn('rounded-md border px-2 py-0.5 text-[10.5px] font-semibold', STAGE_STATUS_CLASS[c.stageStatus])}>
+                  <span className={cn('rounded-md border px-2 py-0.5 text-xs font-semibold', STAGE_STATUS_CLASS[c.stageStatus])}>
                     {c.stage} · {STAGE_STATUS_LABEL[c.stageStatus]}
                   </span>
                 )}
@@ -116,12 +120,12 @@ export default function PortfolioHierarchy() {
             ))}
           </div>
         ) : (
-          <div className="overflow-x-auto border-t border-line">
+          <div className="relative overflow-x-auto border-t border-line">
             <table className="w-full min-w-[760px]">
               <thead>
                 <tr className="border-b border-line bg-surface-2">
                   {['Name', 'Projects', 'Active', 'Delayed', 'Blocked', 'High', 'Critical', 'Mean risk', 'Open cases', ''].map((h, i) => (
-                    <th key={h + i} className={cn('px-4 py-2.5 text-[10.5px] font-bold uppercase tracking-wider text-ink-3', i === 0 ? 'text-left' : 'text-right')}>
+                    <th key={h + i} className={cn('px-4 py-2.5 text-xs font-medium text-ink-3', i === 0 ? 'text-left' : 'text-right')}>
                       {h}
                     </th>
                   ))}
@@ -143,8 +147,8 @@ export default function PortfolioHierarchy() {
           <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2">
             {d.oversight.map((o) => (
               <div key={o.id} className="rounded-xl border border-line bg-surface-2 p-3.5">
-                <p className="text-[13px] font-semibold text-ink">{o.detail}</p>
-                {o.description && <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-3">{o.description}</p>}
+                <p className="text-sm font-semibold text-ink">{o.detail}</p>
+                {o.description && <p className="mt-0.5 text-xs text-ink-3">{o.description}</p>}
                 <MiniStats stats={o.stats} />
               </div>
             ))}
@@ -152,20 +156,9 @@ export default function PortfolioHierarchy() {
         </Card>
       )}
 
-      <p className="flex items-start gap-2 px-1 text-[11.5px] leading-relaxed text-ink-3">
+      <p className="flex items-start gap-2 px-1 text-xs text-ink-3">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {d.engine}
       </p>
-    </div>
-  );
-}
-
-function HeroStat({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-center">
-      <p className="font-display text-[17px] font-extrabold leading-none text-white num" style={color ? { color } : undefined}>
-        {value}
-      </p>
-      <p className="mt-1 text-[10px] text-white/45">{label}</p>
     </div>
   );
 }
@@ -174,29 +167,34 @@ function Row({ node, onOpen }: { node: PortfolioNode; onOpen: () => void }) {
   const s = node.stats;
   const empty = s.projects === 0;
   return (
-    <tr onClick={onOpen} className={cn('border-b border-line/70 last:border-0', empty ? 'opacity-60' : 'cursor-pointer hover:bg-surface-2')}>
+    <tr
+      onClick={onOpen}
+      tabIndex={empty ? undefined : 0}
+      onKeyDown={(e) => !empty && (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onOpen())}
+      className={cn('border-b border-line last:border-0', empty ? 'text-ink-3 opacity-70' : 'cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none')}
+    >
       <td className="px-4 py-2.5">
-        <p className="text-[13px] font-semibold text-ink">{node.label}</p>
-        {node.detail && <p className="text-[11px] text-ink-3">{node.detail}</p>}
-        {node.onboarded === false && <Badge className="mt-1 border-line bg-surface-3 text-[10px] text-ink-3">Sector registered · no project types onboarded</Badge>}
-        {s.topDriver && !empty && <p className="text-[10.5px] text-ink-3">Top driver: {s.topDriver.group}</p>}
+        <p className="text-sm font-semibold text-ink">{node.label}</p>
+        {node.detail && <p className="text-xs text-ink-3">{node.detail}</p>}
+        {node.onboarded === false && <Badge className="mt-1 border-line bg-surface-3 text-2xs text-ink-3">Sector registered · no project types onboarded</Badge>}
+        {s.topDriver && !empty && <p className="text-xs text-ink-3">Top driver: {s.topDriver.group}</p>}
       </td>
       <Num v={s.projects} strong />
       <Num v={s.active} />
-      <Num v={s.delayed} color={s.delayed ? '#D97706' : undefined} />
-      <Num v={s.blocked} color={s.blocked ? RISK_HEX.Critical : undefined} />
-      <Num v={s.highRisk} color={s.highRisk ? RISK_HEX.High : undefined} />
-      <Num v={s.critical} color={s.critical ? RISK_HEX.Critical : undefined} />
-      <td className="px-4 py-2.5 text-right text-[12.5px] font-semibold text-ink num">{s.avgRisk !== null ? `${s.avgRisk}%` : '—'}</td>
-      <td className="px-4 py-2.5 text-right text-[12.5px] text-ink-2 num">{formatCompact(s.openCases)}</td>
+      <Num v={s.delayed} tone={s.delayed ? 'text-amber-700 dark:text-amber-300' : undefined} />
+      <Num v={s.blocked} tone={s.blocked ? 'text-red-700 dark:text-red-300' : undefined} />
+      <Num v={s.highRisk} tone={s.highRisk ? 'text-orange-700 dark:text-orange-300' : undefined} />
+      <Num v={s.critical} tone={s.critical ? 'text-red-700 dark:text-red-300' : undefined} />
+      <td className="px-4 py-2.5 text-right text-sm font-semibold text-ink num">{s.avgRisk !== null ? `${s.avgRisk}%` : '—'}</td>
+      <td className="px-4 py-2.5 text-right text-sm text-ink-2 num">{formatCompact(s.openCases)}</td>
       <td className="px-3 py-2.5 text-right">{!empty && <ChevronRight className="ml-auto h-4 w-4 text-ink-3" />}</td>
     </tr>
   );
 }
 
-function Num({ v, strong, color }: { v: number; strong?: boolean; color?: string }) {
+function Num({ v, strong, tone }: { v: number; strong?: boolean; tone?: string }) {
   return (
-    <td className={cn('px-4 py-2.5 text-right text-[12.5px] num', strong ? 'font-bold text-ink' : 'text-ink-2')} style={color ? { color } : undefined}>
+    <td className={cn('px-4 py-2.5 text-right text-sm num', tone ?? (strong ? 'font-medium text-ink' : 'text-ink-2'))}>
       {formatNumber(v)}
     </td>
   );
@@ -204,7 +202,7 @@ function Num({ v, strong, color }: { v: number; strong?: boolean; color?: string
 
 function MiniStats({ stats }: { stats: PortfolioStats }) {
   return (
-    <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-ink-2 num">
+    <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-2 num">
       <span>
         <b className="text-ink">{stats.projects}</b> projects
       </span>

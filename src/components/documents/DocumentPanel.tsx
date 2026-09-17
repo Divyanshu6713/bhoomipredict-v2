@@ -9,9 +9,9 @@ import { formatDate } from '@/lib/format';
 import type { DocumentList, DocumentRecord } from '@/data/types';
 
 const STATUS_CLASS: Record<string, string> = {
-  SUBMITTED: 'border-sky-500/25 bg-sky-500/10 text-sky-600 dark:text-sky-400',
-  VERIFIED: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  REJECTED: 'border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400',
+  SUBMITTED: 'border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300',
+  VERIFIED: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  REJECTED: 'border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300',
 };
 
 const kb = (n: number) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
@@ -89,7 +89,7 @@ export function DocumentPanel({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 pb-3">
-        <p className="text-[11.5px] text-ink-3">
+        <p className="text-xs text-ink-3">
           {list.total} document{list.total === 1 ? '' : 's'} · you can file: {list.allowedTypes.length ? list.allowedTypes.map(humanise).join(', ') : 'none (read-only role)'}
         </p>
         {canUpload && list.allowedTypes.length > 0 && (
@@ -103,17 +103,17 @@ export function DocumentPanel({
           <div key={d.id} className="flex flex-wrap items-start gap-3 px-5 py-3">
             <FileText className="mt-0.5 h-4 w-4 shrink-0 text-ink-3" />
             <div className="min-w-[200px] flex-1">
-              <p className="text-[12.5px] font-semibold text-ink">{d.title}</p>
-              <p className="text-[11px] text-ink-3">
+              <p className="text-sm font-semibold text-ink">{d.title}</p>
+              <p className="text-xs text-ink-3">
                 <span className="font-mono">{d.id}</span> · {humanise(d.type)}
                 {d.stage && ` · ${d.stage}`}
                 {d.caseId && ` · ${d.caseId}`} · v{d.version} · {kb(d.versions[d.versions.length - 1].bytes)}
               </p>
-              <p className="text-[11px] text-ink-3">
+              <p className="text-xs text-ink-3">
                 {d.uploaded_by.name} ({humanise(d.uploaded_by.role)}) · {formatDate(d.uploaded_at)}
               </p>
               {d.review && (
-                <p className="mt-0.5 text-[11px] text-ink-2">
+                <p className="mt-0.5 text-xs text-ink-2">
                   Reviewed by {d.review.by.name}: {d.review.note ?? humanise(d.status)}
                 </p>
               )}
@@ -134,14 +134,14 @@ export function DocumentPanel({
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Verify
                   </Button>
                   <Button size="sm" variant="ghost" className="gap-1" onClick={() => setReviewFor({ doc: d, status: 'REJECTED' })}>
-                    <XCircle className="h-3.5 w-3.5 text-rose-500" /> Reject
+                    <XCircle className="h-3.5 w-3.5 text-red-500" /> Reject
                   </Button>
                 </>
               )}
             </div>
           </div>
         ))}
-        {list.documents.length === 0 && <p className="px-5 py-8 text-center text-[12px] text-ink-3">No documents filed yet.</p>}
+        {list.documents.length === 0 && <p className="px-5 py-8 text-center text-xs text-ink-3">No documents filed yet.</p>}
       </div>
 
       <Modal
@@ -175,7 +175,7 @@ export function DocumentPanel({
           <Field label="File">
             <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} accept=".pdf,.png,.jpg,.jpeg,.csv,.txt,.json,.docx,.xlsx" className={cn(inputClass, 'py-2 h-auto')} />
           </Field>
-          {error && <p className="text-[12px] font-medium text-rose-600">{error}</p>}
+          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
         </div>
       </Modal>
 
@@ -198,7 +198,7 @@ export function DocumentPanel({
         <Field label={reviewFor?.status === 'REJECTED' ? 'Reason (required)' : 'Note (optional)'} hint="A document cannot be reviewed by the person who uploaded it.">
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className={cn(inputClass, 'h-auto py-2')} />
         </Field>
-        {error && <p className="mt-2 text-[12px] font-medium text-rose-600">{error}</p>}
+        {error && <p className="mt-2 text-xs font-medium text-red-600">{error}</p>}
       </Modal>
     </div>
   );

@@ -15,7 +15,7 @@ export default function Admin() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[12.5px] text-ink-3">Every action on this screen is permission-checked by the API and written to the audit trail.</p>
+        <p className="text-sm text-ink-3">Every action on this screen is permission-checked by the API and written to the audit trail.</p>
         <div className="flex gap-2">
           <DemoDataBadge />
           {can('project.create') && (
@@ -40,8 +40,8 @@ export default function Admin() {
 function Unavailable({ title, permission }: { title: string; permission: string }) {
   return (
     <Card className="p-6">
-      <p className="font-display text-[15px] font-bold text-ink">{title}</p>
-      <p className="mt-1 text-[12px] text-ink-3">Your role does not have the {permission} permission.</p>
+      <p className="text-md font-bold text-ink">{title}</p>
+      <p className="mt-1 text-xs text-ink-3">Your role does not have the {permission} permission.</p>
     </Card>
   );
 }
@@ -83,8 +83,8 @@ function CsvUpload() {
       <div className="space-y-3 px-5 pb-5">
         <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line bg-surface-2 px-4 py-6 text-center hover:border-brand/40">
           <Upload className="h-5 w-5 text-ink-3" />
-          <span className="text-[12.5px] font-semibold text-ink">{fileName || 'Choose a CSV file'}</span>
-          <span className="text-[11px] text-ink-3">Up to 500 projects · checks columns, types, state, district, stage, project type, percentages, coordinates, dates and eligible authority</span>
+          <span className="text-sm font-semibold text-ink">{fileName || 'Choose a CSV file'}</span>
+          <span className="text-xs text-ink-3">Up to 500 projects · checks columns, types, state, district, stage, project type, percentages, coordinates, dates and eligible authority</span>
           <input
             type="file"
             accept=".csv,text/csv"
@@ -106,21 +106,21 @@ function CsvUpload() {
             <Upload className="h-4 w-4" /> Commit {result?.summary ? `${result.summary.valid} projects` : ''}
           </Button>
         </div>
-        {error && <p className="text-[12px] font-medium text-rose-600">{error}</p>}
+        {error && <p className="text-xs font-medium text-red-600">{error}</p>}
         {result && (
           <div className="space-y-2">
             {result.fileErrors.map((e) => (
-              <p key={e} className="flex items-start gap-1.5 rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-[12px] text-rose-700 dark:text-rose-300">
+              <p key={e} className="flex items-start gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-300">
                 <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {e}
               </p>
             ))}
             {result.warnings.map((w) => (
-              <p key={w} className="text-[11.5px] text-amber-700 dark:text-amber-400">
+              <p key={w} className="text-xs text-amber-700 dark:text-amber-400">
                 {w}
               </p>
             ))}
             {result.summary && (
-              <p className="text-[12.5px] font-semibold text-ink">
+              <p className="text-sm font-semibold text-ink">
                 {result.summary.valid} of {result.summary.rows} rows valid{result.committed ? ` — ${result.created.length} projects created` : ''}.
               </p>
             )}
@@ -138,12 +138,12 @@ function CsvUpload() {
             <div className="max-h-[320px] divide-y divide-line overflow-y-auto rounded-xl border border-line">
               {result.rows.map((r) => (
                 <div key={r.row} className="px-3 py-2">
-                  <p className="flex items-center gap-1.5 text-[12px] font-semibold text-ink">
-                    {r.valid ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <XCircle className="h-3.5 w-3.5 text-rose-500" />}
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-ink">
+                    {r.valid ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <XCircle className="h-3.5 w-3.5 text-red-500" />}
                     Row {r.row}: {r.name || '(no name)'}
                   </p>
                   {r.errors.map((e, i) => (
-                    <p key={i} className="ml-5 text-[11.5px] text-rose-700 dark:text-rose-300">
+                    <p key={i} className="ml-5 text-xs text-red-700 dark:text-red-300">
                       {e.column && <span className="font-mono">{e.column}: </span>}
                       {e.message}
                     </p>
@@ -190,11 +190,11 @@ function ModelPanel({ canRetrain }: { canRetrain: boolean }) {
             ]}
           />
         )}
-        <div className="rounded-xl border border-line bg-surface-2 p-3.5">
+        <div className="rounded-lg border border-line bg-surface-2 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-[12.5px] font-semibold text-ink">Retrain with newly recorded outcomes (gated against the champion)</p>
-              <p className="text-[11px] text-ink-3">{status.data?.environment.ok ? `Environment: ${status.data.environment.detail}` : `Environment unavailable: ${status.data?.environment.detail ?? '…'}`}</p>
+              <p className="text-sm font-semibold text-ink">Retrain with newly recorded outcomes (gated against the champion)</p>
+              <p className="text-xs text-ink-3">{status.data?.environment.ok ? `Environment: ${status.data.environment.detail}` : `Environment unavailable: ${status.data?.environment.detail ?? '…'}`}</p>
             </div>
             <Button
               size="sm"
@@ -209,25 +209,25 @@ function ModelPanel({ canRetrain }: { canRetrain: boolean }) {
               <RotateCcw className={cn('h-3.5 w-3.5', running && 'animate-spin')} /> {running ? 'Running…' : 'Start retraining'}
             </Button>
           </div>
-          {!canRetrain && <p className="mt-1.5 text-[11px] text-ink-3">Retraining requires the model.retrain permission (National Administrator).</p>}
-          {message && <p className="mt-2 text-[11.5px] text-ink-2">{message}</p>}
+          {!canRetrain && <p className="mt-1.5 text-xs text-ink-3">Retraining requires the model.retrain permission (National Administrator).</p>}
+          {message && <p className="mt-2 text-xs text-ink-2">{message}</p>}
           {status.data && status.data.job.status !== 'idle' && (
             <div className="mt-3 space-y-1.5">
-              <p className="text-[11.5px] font-semibold text-ink">
+              <p className="text-xs font-semibold text-ink">
                 Job {status.data.job.id} · {status.data.job.status}
-                {status.data.job.error && <span className="text-rose-600"> — {status.data.job.error}</span>}
+                {status.data.job.error && <span className="text-red-600"> — {status.data.job.error}</span>}
               </p>
               {status.data.job.steps.map((s) => (
-                <p key={s.name} className="text-[11px] text-ink-2">
+                <p key={s.name} className="text-xs text-ink-2">
                   <Badge className="mr-1.5">{s.status}</Badge>
                   {s.name}
                 </p>
               ))}
-              <pre className="max-h-40 overflow-auto rounded-lg bg-navy-900 p-2.5 font-mono text-[10.5px] leading-relaxed text-white/80">{status.data.job.log.slice(-20).join('\n')}</pre>
+              <pre className="max-h-40 overflow-auto rounded-lg bg-navy-900 p-2.5 font-mono text-xs text-white/80">{status.data.job.log.slice(-20).join('\n')}</pre>
             </div>
           )}
         </div>
-        <p className="text-[11px] text-ink-3">
+        <p className="text-xs text-ink-3">
           Continuous learning — new outcomes, live monitoring, drift, registry and rollback: <Link to="/learning" className="font-semibold text-brand hover:underline">Model Lifecycle</Link>. Full model card: <Link to="/data" className="font-semibold text-brand hover:underline">Data & Model</Link>.
         </p>
       </div>
@@ -254,20 +254,20 @@ function ValidationPanel() {
       <div className="divide-y divide-line border-t border-line">
         {(report.data?.checks ?? []).map((c) => (
           <div key={c.id} className="flex items-start gap-3 px-5 py-2.5">
-            {c.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />}
+            {c.passed ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" /> : <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />}
             <div className="min-w-0 flex-1">
-              <p className="text-[12.5px] font-semibold text-ink">{c.label}</p>
-              {c.detail && <p className="text-[11px] text-ink-3">{c.detail}</p>}
+              <p className="text-sm font-semibold text-ink">{c.label}</p>
+              {c.detail && <p className="text-xs text-ink-3">{c.detail}</p>}
               {c.examples.map((e) => (
-                <p key={e} className="font-mono text-[10.5px] text-rose-700 dark:text-rose-300">
+                <p key={e} className="font-mono text-xs text-red-700 dark:text-red-300">
                   {e}
                 </p>
               ))}
             </div>
-            <span className="font-mono text-[10.5px] text-ink-3">{c.passed ? 'pass' : `${c.failures} fail`}</span>
+            <span className="font-mono text-xs text-ink-3">{c.passed ? 'pass' : `${c.failures} fail`}</span>
           </div>
         ))}
-        {report.loading && <p className="px-5 py-6 text-center text-[12px] text-ink-3">Running checks…</p>}
+        {report.loading && <p className="px-5 py-6 text-center text-xs text-ink-3">Running checks…</p>}
       </div>
     </Card>
   );
@@ -282,10 +282,10 @@ function DeletedProjects() {
         {(list.data?.projects ?? []).map((p) => (
           <div key={p.id} className="flex items-center gap-3 px-5 py-2.5">
             <div className="min-w-0 flex-1">
-              <p className="text-[12.5px] font-semibold text-ink">
+              <p className="text-sm font-semibold text-ink">
                 {p.id} · {p.name}
               </p>
-              <p className="text-[11px] text-ink-3">
+              <p className="text-xs text-ink-3">
                 {formatDate(p.at)} · {p.reason}
               </p>
             </div>
@@ -294,7 +294,7 @@ function DeletedProjects() {
             </Button>
           </div>
         ))}
-        {list.data?.projects.length === 0 && <p className="px-5 py-5 text-[12px] text-ink-3">No deleted projects.</p>}
+        {list.data?.projects.length === 0 && <p className="px-5 py-5 text-xs text-ink-3">No deleted projects.</p>}
       </div>
     </Card>
   );

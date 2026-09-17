@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Download, FileStack } from 'lucide-react';
-import { Badge, Card, CardHeader, DemoDataBadge } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, DemoDataBadge, EmptyState } from '@/components/ui';
 import { ErrorState } from '@/components/ui/primitives';
 import { FilterBar, allOption } from '@/components/ui/FilterBar';
 import { useApi, useFilters } from '@/hooks';
@@ -29,12 +29,12 @@ export default function Documents() {
         onReset={reset}
         activeCount={activeCount}
       />
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[860px]">
           <thead>
             <tr className="border-b border-line bg-surface-2">
               {['Document', 'Type', 'Project / stage / case', 'Uploaded', 'Version', 'Status', ''].map((h) => (
-                <th key={h} className="px-4 py-2 text-left text-[10.5px] font-bold uppercase tracking-wider text-ink-3">
+                <th key={h} className="px-4 py-2 text-left text-xs font-medium text-ink-3">
                   {h}
                 </th>
               ))}
@@ -44,15 +44,15 @@ export default function Documents() {
             {(d?.documents ?? []).map((doc) => (
               <tr key={doc.id} className="border-b border-line/70">
                 <td className="px-4 py-2.5">
-                  <p className="text-[12.5px] font-semibold text-ink">{doc.title}</p>
-                  <p className="font-mono text-[10.5px] text-ink-3">{doc.id}</p>
+                  <p className="text-sm font-semibold text-ink">{doc.title}</p>
+                  <p className="font-mono text-xs text-ink-3">{doc.id}</p>
                 </td>
-                <td className="px-4 py-2.5 text-[12px]">{humanise(doc.type)}</td>
-                <td className="px-4 py-2.5 text-[12px]">
+                <td className="px-4 py-2.5 text-xs">{humanise(doc.type)}</td>
+                <td className="px-4 py-2.5 text-xs">
                   <Link to={`/projects/${doc.projectId}`} className="font-semibold text-brand hover:underline">
                     {doc.projectName}
                   </Link>
-                  <p className="text-[11px] text-ink-3">
+                  <p className="text-xs text-ink-3">
                     {doc.stage ?? 'No stage'}
                     {doc.caseId && (
                       <>
@@ -64,16 +64,16 @@ export default function Documents() {
                     )}
                   </p>
                 </td>
-                <td className="px-4 py-2.5 text-[11.5px] text-ink-2">
+                <td className="px-4 py-2.5 text-xs text-ink-2">
                   {doc.uploaded_by.name}
                   <p className="text-ink-3">{formatDate(doc.uploaded_at)}</p>
                 </td>
-                <td className="px-4 py-2.5 text-[12px] num">v{doc.version}</td>
+                <td className="px-4 py-2.5 text-xs num">v{doc.version}</td>
                 <td className="px-4 py-2.5">
                   <Badge>{humanise(doc.status)}</Badge>
                 </td>
                 <td className="px-4 py-2.5">
-                  <a href={documentDownloadUrl(doc.id)} className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand hover:underline">
+                  <a href={documentDownloadUrl(doc.id)} className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline">
                     <Download className="h-3.5 w-3.5" /> Download
                   </a>
                 </td>
@@ -81,9 +81,22 @@ export default function Documents() {
             ))}
           </tbody>
         </table>
-        {d?.documents.length === 0 && <p className="px-5 py-10 text-center text-[12px] text-ink-3">No documents yet. Open a project to upload notifications, awards, land records or survey files.</p>}
+        {d?.documents.length === 0 && (
+          <EmptyState
+            icon={<FileStack />}
+            title="No documents in this view"
+            description="Documents are uploaded against a project, stage or case — gazette notifications, awards, land records and survey files. Open a project to add the first one."
+            action={
+              <Link to="/projects">
+                <Button size="sm" variant="secondary" tabIndex={-1}>
+                  Go to projects
+                </Button>
+              </Link>
+            }
+          />
+        )}
       </div>
-      <p className="border-t border-line px-5 py-3 text-[11px] text-ink-3">A working MVP repository: files are stored on the server with versions, review status and an audit entry for every upload, review and download. It is not a certified government records system.</p>
+      <p className="border-t border-line px-5 py-3 text-xs text-ink-3">A working MVP repository: files are stored on the server with versions, review status and an audit entry for every upload, review and download. It is not a certified government records system.</p>
     </Card>
   );
 }

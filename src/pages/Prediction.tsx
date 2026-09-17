@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Activity, ArrowRight, BrainCircuit, Info, MapPin, Network, RotateCcw, Sparkles, Wand2 } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, Info, Loader2, Minus, RotateCcw, Wand2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { Badge, Card, CardHeader, DemoDataBadge, InfoDot, Select, SkeletonCard } from '@/components/ui';
-import { ErrorState } from '@/components/ui/primitives';
+import { Badge, Button, Card, CardHeader, DemoDataBadge, InfoDot, Select, Skeleton } from '@/components/ui';
+import { ErrorState, RiskPill, RiskVerdict } from '@/components/ui/primitives';
 import { ContributorBars } from '@/components/explain/Contributors';
 import { DependencyNetwork } from '@/components/network/DependencyNetwork';
 import { RecommendationList } from '@/components/workflow';
-import { RiskGauge } from '@/components/charts';
-import { RISK_HEX } from '@/lib/risk';
 import { useApi } from '@/hooks';
 import { fetchPredictionSpec, fetchScenarioOptions, fetchScenarioSeed, scoreScenario } from '@/api/client';
 import { useAuth } from '@/auth/AuthContext';
@@ -30,6 +28,8 @@ const SIGNAL_FIELDS: Array<{ field: string; label: string; min: number; max: num
   { field: 'rr_progress_percentage', label: 'R&R progress', min: 0, max: 100, step: 1, unit: '%', group: 'R&R' },
 ];
 
+const SIGNAL_GROUPS = Array.from(new Set(SIGNAL_FIELDS.map((f) => f.group)));
+
 const PRESETS: Array<{ id: string; label: string; description: string; patch: Signals; clearPending?: string[] }> = [
   { id: 'compensation', label: 'Clear the compensation backlog', description: 'Disbursement to 90%, pending days to a fortnight, treasury release cleared', patch: { compensation_completion_percentage: 90, compensation_pending_days: 14, compensation_status: 'Paid' }, clearPending: ['TREASURY'] },
   { id: 'legal', label: 'Consolidate the litigation', description: 'Legal cases down to 0.1 per parcel, dispute complexity Low', patch: { legal_case_count: 0.1, dispute_complexity: 'Low' }, clearPending: ['DISPUTE_FORUM'] },
@@ -37,22 +37,26 @@ const PRESETS: Array<{ id: string; label: string; description: string; patch: Si
   { id: 'approvals', label: 'Escalate pending approvals', description: 'Approvals and clearances disposed; gating dependencies cleared', patch: { approval_delay_days: 0, approval_status: 'Approved', department_response_days: 18 }, clearPending: ['CENTRAL_SANCTION', 'FOREST', 'SIA_UNIT', 'AVIATION', 'RAILWAY_INTERFACE'] },
 ];
 
-function Slider({ label, value, min, max, step, unit, baseline, onChange }: { label: string; value: number; min: number; max: number; step: number; unit?: string; baseline?: number; onChange: (v: number) => void }) {
+function Slider({ id, label, value, min, max, step, unit, baseline, onChange }: { id: string; label: string; value: number; min: number; max: number; step: number; unit?: string; baseline?: number; onChange: (v: number) => void }) {
   const pct = ((value - min) / (max - min)) * 100;
   const changed = baseline !== undefined && Math.abs(baseline - value) > 1e-6;
+  const fmt = (v: number) => v.toLocaleString('en-IN', { maximumFractionDigits: 2 });
   return (
     <div>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <label className="label-xs">{label}</label>
-        <span className="flex items-baseline gap-1.5">
-          {changed && <span className="text-[10.5px] text-ink-3 num line-through">{Number(baseline).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>}
-          <span className={cn('text-[12px] font-bold num', changed ? 'text-brand' : 'text-ink')}>
-            {value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-            {unit && <span className="ml-0.5 text-[10.5px] font-semibold text-ink-3">{unit}</span>}
+      <div className="mb-1.5 flex items-baseline justify-between gap-2">
+        <label htmlFor={id} className="text-sm text-ink-2">
+          {label}
+        </label>
+        <span className="flex shrink-0 items-baseline gap-1.5">
+          {changed && <span className="text-xs text-ink-3 line-through num">{fmt(Number(baseline))}</span>}
+          <span className={cn('text-sm font-medium num', changed ? 'text-brand' : 'text-ink')}>
+            {fmt(value)}
+            {unit && <span className="ml-0.5 text-xs font-normal text-ink-3">{unit}</span>}
           </span>
         </span>
       </div>
       <input
+        id={id}
         type="range"
         min={min}
         max={max}
@@ -63,6 +67,26 @@ function Slider({ label, value, min, max, step, unit, baseline, onChange }: { la
         style={{ background: `linear-gradient(to right, rgb(var(--c-brand)) 0%, rgb(var(--c-brand)) ${pct}%, rgb(var(--c-surface-3)) ${pct}%, rgb(var(--c-surface-3)) 100%)` }}
       />
     </div>
+  );
+}
+
+function InputSection({ step, title, description, action, children }: { step: number; title: string; description: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="px-5 py-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+            <span className="grid h-5 w-5 place-items-center rounded-full bg-surface-3 text-2xs font-medium text-ink-2 num" aria-hidden>
+              {step}
+            </span>
+            {title}
+          </h2>
+          <p className="mt-0.5 pl-7 text-xs text-ink-3">{description}</p>
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -94,6 +118,7 @@ export default function Prediction() {
   const [result, setResult] = useState<ScenarioResponse | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [scoring, setScoring] = useState(false);
+  const [showFeatures, setShowFeatures] = useState(false);
   const request = useRef(0);
 
   // Seed from a project when linked, otherwise from a neutral context and the corpus medians.
@@ -165,89 +190,91 @@ export default function Prediction() {
 
   if (spec.error) return <ErrorState error={spec.error} onRetry={spec.reload} />;
   if (seed.error) return <ErrorState error={seed.error} onRetry={seed.reload} />;
-  if (!context || !baseline) return <SkeletonCard lines={12} />;
+  if (!context || !baseline) {
+    return (
+      <div className="grid gap-5 xl:grid-cols-[400px_1fr]">
+        <div className="card space-y-4 p-5">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-9" />
+          ))}
+        </div>
+        <div className="card p-5">
+          <Skeleton className="h-32" />
+        </div>
+      </div>
+    );
+  }
 
   const r = result?.result;
   const b = result?.baseline;
+  const reset = () => {
+    setContext(baseline.context);
+    setPending(baseline.pending);
+    setSignals(baseline.signals);
+  };
 
   return (
-    <div className="space-y-4">
-      <Card className="animate-fade-up overflow-hidden">
-        <div className="relative bg-navy-900 px-5 py-6 grid-lines sm:px-7">
-          <div className="relative flex flex-wrap items-start justify-between gap-5">
-            <div className="max-w-2xl">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge className="border-brand/30 bg-brand/15 text-[#8FB4FF]" dot="bg-brand">
-                  Scenario scoring
-                </Badge>
-                <DemoDataBadge />
-                {seed.data && <Badge className="border-white/15 bg-white/10 text-white/70">seeded from {seed.data.project.id}</Badge>}
-              </div>
-              <h2 className="mt-3 font-display text-[23px] font-extrabold tracking-tight text-white sm:text-[28px]">Which authorities hold this acquisition, and what would change if they acted?</h2>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-white/55">
-                Choose any State or UT, district and project type: the registry builds the dependency network for that context — framework, acquiring body, district offices, land records and clearances. Mark which department actions are pending, adjust the signals, and the model re-scores.
-              </p>
-            </div>
-            {spec.data && (
-              <div className="grid grid-cols-3 gap-4 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3.5">
-                {[
-                  { label: 'Surrogate R²', value: spec.data.fidelity.logOddsR2.toFixed(2) },
-                  { label: 'Band match', value: `${(spec.data.fidelity.bandAgreement * 100).toFixed(0)}%` },
-                  { label: 'Dependencies', value: String(result?.dependencies.count ?? '—') },
-                ].map((m) => (
-                  <div key={m.label} className="text-center">
-                    <p className="font-display text-[17px] font-extrabold leading-none text-white num">{m.value}</p>
-                    <p className="mt-1 text-[10px] text-white/40">{m.label}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
+    <div className="space-y-5">
+      <div className="-mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-3">
+        <DemoDataBadge />
+        {seed.data ? (
+          <span>
+            Starting from{' '}
+            <Link to={`/projects/${seed.data.project.id}`} className="link">
+              {seed.data.project.name}
+            </Link>{' '}
+            as recorded.
+          </span>
+        ) : (
+          <span>Starting from a neutral scenario with dataset medians.</span>
+        )}
+        {spec.data && (
+          <span className="inline-flex items-center gap-1">
+            Scoring fidelity R² <span className="num">{spec.data.fidelity.logOddsR2.toFixed(2)}</span> · band agreement <span className="num">{(spec.data.fidelity.bandAgreement * 100).toFixed(0)}%</span>
+            <InfoDot text="How closely scenario scoring reproduces the deployed ensemble on real records. The effect of a pending department action is measured by re-scoring." />
+          </span>
+        )}
+      </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,430px)_1fr]">
-        {/* --------------------------------------------------- inputs */}
-        <div className="space-y-4">
-          <Card className="animate-fade-up">
-            <CardHeader
-              title="Project context"
-              subtitle="Drives the authority network and the model's categorical inputs"
-              icon={<MapPin className="h-4 w-4" />}
-              action={
-                <button
-                  onClick={() => {
-                    setContext(baseline.context);
-                    setPending(baseline.pending);
-                    setSignals(baseline.signals);
-                  }}
-                  className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-ink-3 hover:text-brand"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" /> Reset
-                </button>
-              }
-            />
-            <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2">
+      <div className="grid items-start gap-5 xl:grid-cols-[400px_minmax(0,1fr)]">
+        {/* ------------------------------------------------------ inputs */}
+        <Card className="divide-y divide-line xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto">
+          <InputSection
+            step={1}
+            title="Describe the project"
+            description="Location and type decide the authorities and the model's categorical inputs"
+            action={
+              <Button size="sm" variant="ghost" onClick={reset} disabled={changedCount === 0} className="-mr-2 -mt-1">
+                <RotateCcw className="h-3.5 w-3.5" /> Reset
+              </Button>
+            }
+          >
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
               <Select label="State" value={context.state} onChange={(v) => setCtx({ state: v, district: '', subDistrict: null, primaryAuthority: undefined })} options={(options.data?.states ?? [context.state]).map((s) => ({ label: s, value: s }))} />
               <Select
                 label="District"
                 value={context.district}
                 onChange={(v) => setCtx({ district: v, subDistrict: null, primaryAuthority: undefined })}
-                options={[...(context.district ? [] : [{ label: 'Select district', value: '' }]), ...(options.data?.districts ?? []).map((d) => ({ label: `${d.district}${d.inCorpus ? '' : ' ·'}`, value: d.district }))]}
+                options={[...(context.district ? [] : [{ label: 'Select district', value: '' }]), ...(options.data?.districts ?? []).map((d) => ({ label: `${d.district}${d.inCorpus ? '' : ' (no history)'}`, value: d.district }))]}
               />
               <Select label="Project type" value={context.projectType} onChange={(v) => setCtx({ projectType: v as ProjectType, subtype: undefined, primaryAuthority: undefined })} options={(options.data?.projectTypes ?? []).map((t) => ({ label: t.name, value: t.name }))} />
               <Select label="Subtype" value={context.subtype ?? typeDef?.subtypes[0] ?? ''} onChange={(v) => setCtx({ subtype: v, primaryAuthority: undefined })} options={(typeDef?.subtypes ?? []).map((s) => ({ label: s, value: s }))} />
-              <div className="sm:col-span-2">
-                <Select label="Primary acquiring / requiring body" value={context.primaryAuthority ?? options.data?.authorityOptions?.[0] ?? ''} onChange={(v) => setCtx({ primaryAuthority: v })} options={(options.data?.authorityOptions ?? []).map((a) => ({ label: a, value: a }))} />
-                <p className="mt-1 text-[10.5px] text-ink-3">Only bodies eligible for this type in this state and district are offered.</p>
+              <div className="sm:col-span-2 xl:col-span-1 2xl:col-span-2">
+                <Select label="Acquiring / requiring body" value={context.primaryAuthority ?? options.data?.authorityOptions?.[0] ?? ''} onChange={(v) => setCtx({ primaryAuthority: v })} options={(options.data?.authorityOptions ?? []).map((a) => ({ label: a, value: a }))} />
+                <p className="mt-1 text-xs text-ink-3">Only bodies eligible for this type, State and district are offered.</p>
               </div>
               <Select label="Current stage" value={context.stage} onChange={(v) => setCtx({ stage: v as StageName })} options={LIFECYCLE_STAGES.map((s) => ({ label: s, value: s }))} />
               <Select label={districtDef ? 'Taluk / tehsil' : 'Sub-district'} value={context.subDistrict ?? districtDef?.subDistricts[0] ?? ''} onChange={(v) => setCtx({ subDistrict: v })} options={(districtDef?.subDistricts ?? []).map((s) => ({ label: s, value: s }))} />
-              <div className="sm:col-span-2">
-                <label className="label-xs mb-1.5 block">Affected families</label>
-                <input type="number" min={0} value={context.affectedFamilies ?? 0} onChange={(e) => setCtx({ affectedFamilies: Number(e.target.value) })} className="h-10 w-full rounded-xl border border-line bg-surface px-3 text-sm text-ink focus-ring" />
+              <div>
+                <label htmlFor="scenario-families" className="mb-1.5 block text-xs font-medium text-ink-2">
+                  Affected families
+                </label>
+                <input id="scenario-families" type="number" min={0} inputMode="numeric" value={context.affectedFamilies ?? 0} onChange={(e) => setCtx({ affectedFamilies: Number(e.target.value) })} className="input" />
               </div>
-              <div className="flex flex-wrap gap-2 sm:col-span-2">
+            </div>
+            <fieldset className="mt-4">
+              <legend className="mb-1.5 text-xs font-medium text-ink-2">Site conditions</legend>
+              <div className="flex flex-wrap gap-1.5">
                 {(
                   [
                     ['forestLand', 'Forest land'],
@@ -258,120 +285,171 @@ export default function Prediction() {
                 ).map(([k, label]) => {
                   const on = Boolean(context.flags?.[k]);
                   return (
-                    <button key={k} onClick={() => setCtx({ flags: { ...context.flags, [k]: !on } })} className={cn('rounded-xl border px-3 py-1.5 text-[12px] font-semibold transition-colors', on ? 'border-brand/45 bg-brand/[0.08] text-brand' : 'border-line bg-surface-2 text-ink-3')}>
-                      {label}: {on ? 'yes' : 'no'}
+                    <button
+                      key={k}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setCtx({ flags: { ...context.flags, [k]: !on } })}
+                      className={cn('h-8 rounded-md border px-2.5 text-sm transition-colors focus-ring', on ? 'border-brand bg-brand-soft text-brand-ink' : 'border-line-strong bg-surface text-ink-2 hover:bg-surface-2')}
+                    >
+                      {label}
                     </button>
                   );
                 })}
               </div>
-              {result && (
-                <p className="text-[10.5px] leading-relaxed text-ink-3 sm:col-span-2">
-                  District history {Math.round(result.context.districtRate * 100)}% ({result.context.districtRateBasis}); authority history {Math.round(result.context.authorityRate * 100)}% ({result.context.authorityRateBasis}).
-                </p>
-              )}
-            </div>
-          </Card>
+            </fieldset>
+          </InputSection>
 
-          <Card className="animate-fade-up">
-            <CardHeader title="Apply an intervention" subtitle="Moves the signals and clears the matching department actions" icon={<Wand2 className="h-4 w-4" />} />
-            <div className="grid gap-2 px-5 pb-5">
+          <InputSection step={2} title="Try an intervention" description="Moves the relevant signals and clears the matching department actions">
+            <div className="grid gap-2">
               {PRESETS.map((p) => (
                 <button
                   key={p.id}
+                  type="button"
                   onClick={() => {
                     setSignals((s) => ({ ...s, ...p.patch }));
                     if (p.clearPending) setPending((list) => list.filter((c) => !p.clearPending!.includes(c)));
                   }}
-                  className="group flex items-center gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-left transition-all hover:border-brand/40 hover:bg-brand/5"
+                  className="group flex items-center gap-3 rounded-lg border border-line px-3 py-2.5 text-left transition-colors hover:border-brand/40 hover:bg-brand-soft/40 focus-ring"
                 >
-                  <Wand2 className="h-3.5 w-3.5 shrink-0 text-brand" />
+                  <Wand2 className="h-4 w-4 shrink-0 text-ink-3 group-hover:text-brand" aria-hidden />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[12.5px] font-semibold text-ink">{p.label}</span>
-                    <span className="block text-[11px] text-ink-3">{p.description}</span>
+                    <span className="block text-sm font-medium text-ink">{p.label}</span>
+                    <span className="block text-xs text-ink-3">{p.description}</span>
                   </span>
-                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="h-4 w-4 shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5" aria-hidden />
                 </button>
               ))}
             </div>
-          </Card>
+          </InputSection>
 
-          <Card className="animate-fade-up">
-            <CardHeader title="Signals" subtitle="Project-level values in the model's vocabulary" icon={<BrainCircuit className="h-4 w-4" />} />
-            <div className="space-y-4 px-5 pb-5">
-              {SIGNAL_FIELDS.map((f) => (
-                <Slider key={f.field} label={f.label} value={Number(signals[f.field] ?? f.min)} baseline={Number(baseline.signals[f.field] ?? f.min)} min={f.min} max={f.max} step={f.step} unit={f.unit} onChange={(v) => setSignals((s) => ({ ...s, [f.field]: v }))} />
+          <InputSection step={3} title="Fine-tune signals" description="Project-level values in the model's vocabulary">
+            <div className="space-y-6">
+              {SIGNAL_GROUPS.map((g) => (
+                <div key={g} className="space-y-4">
+                  <p className="text-2xs font-medium text-ink-3">{g}</p>
+                  {SIGNAL_FIELDS.filter((f) => f.group === g).map((f) => (
+                    <Slider
+                      key={f.field}
+                      id={`signal-${f.field}`}
+                      label={f.label}
+                      value={Number(signals[f.field] ?? f.min)}
+                      baseline={Number(baseline.signals[f.field] ?? f.min)}
+                      min={f.min}
+                      max={f.max}
+                      step={f.step}
+                      unit={f.unit}
+                      onChange={(v) => setSignals((s) => ({ ...s, [f.field]: v }))}
+                    />
+                  ))}
+                </div>
               ))}
             </div>
-          </Card>
-        </div>
+          </InputSection>
+        </Card>
 
-        {/* -------------------------------------------------- results */}
-        <div className="space-y-4">
-          {error && <ErrorState error={error} title="Scenario could not be scored" />}
+        {/* ----------------------------------------------------- results */}
+        <div className="min-w-0 space-y-5" aria-live="polite">
+          {error && <ErrorState error={error} title="The scenario could not be scored" />}
 
-          <Card className="animate-fade-up">
+          <Card>
             <CardHeader
-              title="Model-based scenario estimate"
-              subtitle={seed.data ? `Baseline is ${seed.data.project.name} as recorded` : 'Baseline is the starting scenario'}
-              icon={<Sparkles className="h-4 w-4" />}
-              action={<InfoDot text="Scored by the deployed gradient-boosted ensemble with exact TreeSHAP contributions; the effect of a pending department action is measured by re-scoring. It is an estimate, not a guaranteed outcome." />}
+              title="Predicted outcome"
+              subtitle={seed.data ? `Compared with ${seed.data.project.name} as recorded` : 'Compared with the starting scenario'}
+              action={
+                <span className={cn('inline-flex h-6 items-center gap-1.5 text-xs text-ink-3 transition-opacity', scoring ? 'opacity-100' : 'opacity-0')} aria-hidden={!scoring}>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Re-scoring
+                </span>
+              }
             />
-            {r ? (
-              <div className="grid gap-5 px-5 pb-5 lg:grid-cols-[1fr_1fr_1.1fr]">
-                <div className="rounded-2xl border border-line bg-surface-2 p-4">
-                  <p className="label-xs">Baseline</p>
-                  <p className="mt-2 font-display text-[34px] font-extrabold leading-none num" style={{ color: b ? RISK_HEX[b.riskBand] : undefined }}>
-                    {b ? `${Math.round(b.probability * 100)}%` : '—'}
-                  </p>
-                  <p className="mt-1.5 text-[11.5px] font-bold uppercase tracking-wider" style={{ color: b ? RISK_HEX[b.riskBand] : undefined }}>
-                    {b?.riskBand} risk · {b?.predictedDelayDays ?? '—'}d expected slip
-                  </p>
-                  {seed.data && <p className="mt-3 border-t border-line pt-2.5 text-[11px] leading-relaxed text-ink-3">The project's headline risk is {seed.data.project.riskScore}% ({seed.data.project.riskBasis}); the surrogate on its project profile gives {b ? Math.round(b.probability * 100) : '—'}%.</p>}
-                </div>
-                <div className="rounded-2xl border border-brand/30 bg-brand/[0.06] p-4">
-                  <p className="label-xs text-brand">Scenario</p>
-                  <p className="mt-2 font-display text-[34px] font-extrabold leading-none num" style={{ color: RISK_HEX[r.riskBand] }}>
-                    {Math.round(r.probability * 100)}%
-                  </p>
-                  <p className="mt-1.5 text-[11.5px] font-bold uppercase tracking-wider" style={{ color: RISK_HEX[r.riskBand] }}>
-                    {r.riskBand} risk · {r.predictedDelayDays ?? '—'}d expected slip
-                  </p>
-                  {result?.delta && (
-                    <p className={cn('mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold num', result.delta.riskScore < 0 ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400' : result.delta.riskScore > 0 ? 'bg-rose-500/12 text-rose-600 dark:text-rose-400' : 'bg-surface-3 text-ink-3')}>
-                      {result.delta.riskScore > 0 ? '+' : ''}
-                      {result.delta.riskScore.toFixed(1)} pts · {result.delta.predictedDelayDays > 0 ? '+' : ''}
-                      {result.delta.predictedDelayDays}d
-                    </p>
-                  )}
-                  <p className="mt-2 text-[11px] text-ink-3">{changedCount === 0 ? 'Nothing changed yet.' : `${changedCount} input group${changedCount > 1 ? 's' : ''} changed.`}{scoring ? ' Re-scoring…' : ''}</p>
+            {r && b ? (
+              <div className="grid gap-4 px-5 pb-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+                <RiskVerdict
+                  level={r.riskBand}
+                  score={Math.round(r.probability * 100)}
+                  label="Scenario — probability the next milestone slips by more than 30 days"
+                  detail={
+                    <>
+                      <span className="num">{r.predictedDelayDays ?? '—'}</span> days expected slip · <span className="num">{result?.dependencies.pendingCount ?? 0}</span> department actions pending
+                    </>
+                  }
+                />
+                <div className="rounded-xl border border-line p-4 sm:p-5">
+                  <p className="text-xs font-medium text-ink-2">Change from baseline</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <div>
+                      <p className="text-xs text-ink-3">Baseline</p>
+                      <RiskPill level={b.riskBand} score={Math.round(b.probability * 100)} className="mt-1" />
+                    </div>
+                    <ArrowRight className="mt-4 h-4 w-4 text-ink-3" aria-hidden />
+                    <div>
+                      <p className="text-xs text-ink-3">Scenario</p>
+                      <RiskPill level={r.riskBand} score={Math.round(r.probability * 100)} className="mt-1" />
+                    </div>
+                  </div>
+                  {result?.delta && <DeltaLine points={result.delta.riskScore} days={result.delta.predictedDelayDays} />}
+                  <p className="mt-2 text-xs text-ink-3">{changedCount === 0 ? 'No inputs changed yet — adjust the panel on the left.' : `${changedCount} input group${changedCount > 1 ? 's' : ''} changed.`}</p>
                   {result?.delta && (result.delta.addedDependencies.length > 0 || result.delta.removedDependencies.length > 0) && (
-                    <p className="mt-2 text-[11px] leading-relaxed text-ink-2">
+                    <p className="mt-2 border-t border-line pt-2 text-xs text-ink-2">
                       {result.delta.addedDependencies.length > 0 && <>Added: {result.delta.addedDependencies.join('; ')}. </>}
                       {result.delta.removedDependencies.length > 0 && <>Removed: {result.delta.removedDependencies.join('; ')}.</>}
                     </p>
                   )}
-                </div>
-                <div className="grid place-items-center">
-                  <RiskGauge score={r.riskScore} label={r.riskBand} sublabel={`${result?.dependencies.pendingCount ?? 0} department actions pending`} color={RISK_HEX[r.riskBand]} size={180} />
+                  {seed.data && (
+                    <p className="mt-2 border-t border-line pt-2 text-xs text-ink-3">
+                      Headline project risk is {seed.data.project.riskScore}% ({seed.data.project.riskBasis}).
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
-              <p className="px-5 pb-6 text-[12px] text-ink-3">{scoring ? 'Scoring…' : 'Choose a district to score the scenario.'}</p>
+              <div className="grid gap-4 px-5 pb-5 lg:grid-cols-2">
+                <Skeleton className="h-36 rounded-xl" />
+                <Skeleton className="h-36 rounded-xl" />
+              </div>
             )}
-            <div className="border-t border-line px-5 py-3">
-              <p className="flex items-start gap-2 text-[11.5px] leading-relaxed text-ink-2">
-                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-                A model-based scenario estimate: what the model would predict if the record looked like this. It says nothing about whether an intervention is achievable.
-              </p>
-            </div>
+            <p className="flex items-start gap-2 border-t border-line px-5 py-3 text-xs text-ink-3">
+              <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+              A model-based estimate of what the prediction would be if the record looked like this. It says nothing about whether an intervention is achievable.
+            </p>
           </Card>
 
+          {result && r && (
+            <div className="grid gap-5 2xl:grid-cols-2">
+              <Card>
+                <CardHeader title="Why — what raises the risk" subtitle="Largest contributions to this scenario's score" />
+                <div className="px-5 pb-5">
+                  <ContributorBars contributors={r.increasing.map((g) => ({ group: g.group, value: g.value, share: g.share }))} max={7} />
+                  {r.reducing.length > 0 && (
+                    <div className="mt-4 border-t border-line pt-3">
+                      <p className="mb-2 text-xs font-medium text-ink-2">Pulling the risk down</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {r.reducing.slice(0, 5).map((x) => (
+                          <Badge key={x.group} tone="success">
+                            {x.group} <span className="num">{x.value.toFixed(2)}</span>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+              <Card>
+                <CardHeader title="What to do — recommendations" subtitle="Rules that apply to this scenario, with owners from its authority network" />
+                <div className="px-5 pb-5">
+                  <RecommendationList items={result.recommendations} max={8} emptyText="No rule fires for this scenario — nothing requires escalation at these values." />
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {result?.issues && <IssueProfilePanel profile={result.issues} subtitle={`Delay causes that apply to this ${context.projectType.toLowerCase()} scenario at ${context.stage}. Updates as you change pending actions and signals.`} />}
+
           {result && (
-            <Card className="animate-fade-up">
+            <Card>
               <CardHeader
-                title="Authority & dependency network for this scenario"
-                subtitle={`${result.dependencies.count} dependencies · ${result.dependencies.relevantCount} gate ${context.stage} · coordination ${result.dependencies.coordinationScore}/100 · milestone: ${result.milestone}`}
-                icon={<Network className="h-4 w-4" />}
+                title="Authorities and dependencies"
+                subtitle={`${result.dependencies.count} dependencies · ${result.dependencies.relevantCount} gate ${context.stage} · coordination score ${result.dependencies.coordinationScore}/100 · milestone: ${result.milestone}`}
               />
               <div className="px-5 pb-5">
                 <DependencyNetwork
@@ -385,82 +463,78 @@ export default function Prediction() {
             </Card>
           )}
 
-          {result?.issues && <IssueProfilePanel className="animate-fade-up" profile={result.issues} subtitle={`Delay causes that apply to this ${context.projectType.toLowerCase()} scenario at ${context.stage} — updates as you toggle pending actions and signals`} />}
-
-          {result && r && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Card className="animate-fade-up">
-                <CardHeader title="What raises the risk" subtitle="Closed-form contributions in this scenario" icon={<Sparkles className="h-4 w-4" />} />
-                <div className="px-5 pb-5">
-                  <ContributorBars contributors={r.increasing.map((g) => ({ group: g.group, value: g.value, share: g.share }))} max={7} />
-                  {r.reducing.length > 0 && (
-                    <div className="mt-4 border-t border-line pt-3">
-                      <p className="label-xs mb-2">Pulling the risk down</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {r.reducing.slice(0, 5).map((x) => (
-                          <Badge key={x.group} className="border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
-                            {x.group} {x.value.toFixed(2)}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
+          {r && (
+            <Card>
+              <button type="button" onClick={() => setShowFeatures((v) => !v)} aria-expanded={showFeatures} className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left focus-ring">
+                <span>
+                  <span className="block text-base font-semibold text-ink">Feature-level detail</span>
+                  <span className="block text-sm text-ink-3">Largest contributions in log-odds — they sum exactly to the scenario score</span>
+                </span>
+                <ChevronDown className={cn('h-4 w-4 shrink-0 text-ink-3 transition-transform', showFeatures && 'rotate-180')} />
+              </button>
+              {showFeatures && (
+                <div className="relative overflow-x-auto border-t border-line">
+                  <table className="w-full min-w-[560px]">
+                    <thead>
+                      <tr className="bg-surface-2 text-xs text-ink-3">
+                        <th scope="col" className="py-2 pl-5 pr-3 text-left font-medium">Feature</th>
+                        <th scope="col" className="px-3 py-2 text-left font-medium">Factor group</th>
+                        <th scope="col" className="px-3 py-2 text-right font-medium">Value used</th>
+                        <th scope="col" className="py-2 pl-3 pr-5 text-right font-medium">Contribution</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {r.features.slice(0, 14).map((f) => (
+                        <tr key={f.feature}>
+                          <td className="py-2 pl-5 pr-3 text-sm text-ink">
+                            {f.label}
+                            {f.imputed && (
+                              <Badge tone="warning" className="ml-2">
+                                imputed
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-sm text-ink-3">{f.group}</td>
+                          <td className="px-3 py-2 text-right text-sm text-ink-2 num">{f.value}</td>
+                          <td className={cn('py-2 pl-3 pr-5 text-right text-sm font-medium num', f.contribution > 0 ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300')}>
+                            {f.contribution > 0 ? '+' : ''}
+                            {f.contribution.toFixed(3)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {seed.data && (
+                    <p className="border-t border-line px-5 py-3 text-xs text-ink-3">
+                      For the deployed ensemble&rsquo;s own TreeSHAP attributions on real case records, open{' '}
+                      <Link to={`/projects/${seed.data.project.id}`} className="link">
+                        {seed.data.project.id}
+                      </Link>{' '}
+                      and any of its cases.
+                    </p>
                   )}
                 </div>
-              </Card>
-              <Card className="animate-fade-up">
-                <CardHeader title="Recommendations" subtitle="Rules applied to this scenario, owners from its network" icon={<Activity className="h-4 w-4" />} />
-                <div className="px-5 pb-5">
-                  <RecommendationList items={result.recommendations} max={8} emptyText="No rule fires for this scenario." />
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {r && (
-            <Card className="animate-fade-up">
-              <CardHeader title="Feature-level detail" subtitle="Largest contributions, in log-odds — they sum exactly to the scenario score" icon={<Activity className="h-4 w-4" />} />
-              <div className="overflow-x-auto px-5 pb-5">
-                <table className="w-full min-w-[620px]">
-                  <thead>
-                    <tr className="border-b border-line">
-                      {['Feature', 'Factor group', 'Value used', 'Contribution'].map((h, i) => (
-                        <th key={h} className={cn('py-2.5 text-[10.5px] font-bold uppercase tracking-wider text-ink-3', i > 1 ? 'text-right' : 'text-left')}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {r.features.slice(0, 14).map((f) => (
-                      <tr key={f.feature} className="border-b border-line/70 last:border-0">
-                        <td className="py-2 text-[12.5px] font-semibold text-ink">
-                          {f.label}
-                          {f.imputed && <Badge className="ml-2 border-amber-500/25 bg-amber-500/10 text-[9.5px] text-amber-600">imputed</Badge>}
-                        </td>
-                        <td className="py-2 text-[11.5px] text-ink-3">{f.group}</td>
-                        <td className="py-2 text-right text-[12px] text-ink-2 num">{f.value}</td>
-                        <td className={cn('py-2 text-right text-[12.5px] font-bold num', f.contribution > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
-                          {f.contribution > 0 ? '+' : ''}
-                          {f.contribution.toFixed(3)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {seed.data && (
-                  <p className="mt-3 text-[11px] text-ink-3">
-                    For the deployed ensemble's own TreeSHAP attributions on real case records, open{' '}
-                    <Link to={`/projects/${seed.data.project.id}`} className="font-semibold text-brand hover:underline">
-                      {seed.data.project.id}
-                    </Link>{' '}
-                    and any of its cases.
-                  </p>
-                )}
-              </div>
+              )}
             </Card>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function DeltaLine({ points, days }: { points: number; days: number }) {
+  const Icon = points < 0 ? ArrowDownRight : points > 0 ? ArrowUpRight : Minus;
+  const tone = points < 0 ? 'text-emerald-700 dark:text-emerald-300' : points > 0 ? 'text-red-700 dark:text-red-300' : 'text-ink-3';
+  return (
+    <p className={cn('mt-3 flex items-center gap-1.5 text-md font-semibold num', tone)}>
+      <Icon className="h-4 w-4" aria-hidden />
+      {points > 0 ? '+' : ''}
+      {points.toFixed(1)} pts
+      <span className="text-sm font-normal text-ink-3">
+        · {days > 0 ? '+' : ''}
+        {days} days slip
+      </span>
+    </p>
   );
 }

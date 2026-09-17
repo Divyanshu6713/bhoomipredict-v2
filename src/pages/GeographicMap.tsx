@@ -108,7 +108,7 @@ export default function GeographicMap() {
 
   return (
     <div className="space-y-4">
-      <Card className="animate-fade-up">
+      <Card>
         <CardHeader
           title="GIS risk map"
           subtitle={`${formatNumber(visible.length)} of ${formatNumber(all.length)} projects shown · India → state → district → project`}
@@ -136,18 +136,25 @@ export default function GeographicMap() {
           activeCount={activeCount}
           extra={
             <div className="pb-0.5">
-              <p className="label-xs mb-1.5">Risk</p>
-              <div className="flex gap-1.5">
-                {BANDS.map((band) => (
-                  <button
-                    key={band}
-                    onClick={() => toggleBand(band)}
-                    className={cn('inline-flex h-10 items-center gap-1.5 rounded-xl border px-2.5 text-[11.5px] font-semibold transition-colors', bands.has(band) ? 'border-transparent text-white' : 'border-line bg-surface-2 text-ink-3')}
-                    style={bands.has(band) ? { background: RISK_HEX[band] } : undefined}
-                  >
-                    {band.toUpperCase()}
-                  </button>
-                ))}
+              <p className="mb-1.5 text-xs font-medium text-ink-2" id="map-risk-label">
+                Risk bands shown
+              </p>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby="map-risk-label">
+                {BANDS.map((band) => {
+                  const on = bands.has(band);
+                  return (
+                    <button
+                      key={band}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => toggleBand(band)}
+                      className={cn('inline-flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-sm transition-colors focus-ring', on ? 'border-line-strong bg-surface text-ink shadow-xs' : 'border-dashed border-line bg-transparent text-ink-3 hover:text-ink-2')}
+                    >
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: on ? RISK_HEX[band] : 'rgb(var(--c-line-strong))' }} aria-hidden />
+                      {band}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           }
@@ -178,7 +185,7 @@ export default function GeographicMap() {
               <div className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
                 <div className="min-w-0">
                   <p className="label-xs">{dstat ? 'District summary' : stat ? 'State summary' : 'All India'}</p>
-                  <p className="text-[14px] font-bold text-ink">{dstat ? `${dstat.district}, ${dstat.state}` : selectedState ?? 'Portfolio in view'}</p>
+                  <p className="text-base font-bold text-ink">{dstat ? `${dstat.district}, ${dstat.state}` : selectedState ?? 'Portfolio in view'}</p>
                 </div>
                 {(dstat || stat) && <RiskPill level={riskFromScore((dstat ?? stat)!.avgRisk)} score={(dstat ?? stat)!.avgRisk} size="sm" />}
               </div>
@@ -220,29 +227,29 @@ export default function GeographicMap() {
                 {hotspots.map((h) => (
                   <button key={h.key} onClick={() => set({ state: h.state, district: h.district })} className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-surface-2">
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[12.5px] font-semibold text-ink">{h.district}</span>
-                      <span className="block text-[10.5px] text-ink-3">
+                      <span className="block truncate text-sm font-semibold text-ink">{h.district}</span>
+                      <span className="block text-xs text-ink-3">
                         {h.state} · {h.high} of {h.projects} High/Critical
                       </span>
                     </span>
                     <RiskPill level={riskFromScore(h.avgRisk)} score={h.avgRisk} size="sm" />
                   </button>
                 ))}
-                {hotspots.length === 0 && <p className="px-4 py-5 text-center text-[12px] text-ink-3">No High or Critical projects in view.</p>}
+                {hotspots.length === 0 && <p className="px-4 py-5 text-center text-xs text-ink-3">No High or Critical projects in view.</p>}
               </div>
             </div>
           </div>
         </div>
       </Card>
 
-      <Card className="animate-fade-up">
+      <Card>
         <CardHeader title="Projects in view" subtitle="Same list as the markers, highest risk first" icon={<Layers className="h-4 w-4" />} />
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full min-w-[860px]">
             <thead>
               <tr className="border-y border-line bg-surface-2">
                 {['Project', 'Location', 'Type', 'Stage', 'Authority', 'Risk'].map((h) => (
-                  <th key={h} className="px-4 py-2 text-left text-[10.5px] font-bold uppercase tracking-wider text-ink-3">
+                  <th key={h} className="px-4 py-2 text-left text-xs font-medium text-ink-3">
                     {h}
                   </th>
                 ))}
@@ -252,17 +259,17 @@ export default function GeographicMap() {
               {focusList.slice(0, 25).map((p) => (
                 <tr key={p.id} onClick={() => navigate(`/projects/${p.id}`)} className="cursor-pointer border-b border-line/70 hover:bg-surface-2">
                   <td className="px-4 py-2">
-                    <p className="text-[12.5px] font-semibold text-ink">{p.name}</p>
-                    <p className="font-mono text-[10.5px] text-ink-3">{p.id}</p>
+                    <p className="text-sm font-semibold text-ink">{p.name}</p>
+                    <p className="font-mono text-xs text-ink-3">{p.id}</p>
                   </td>
-                  <td className="px-4 py-2 text-[12px] text-ink-2">
+                  <td className="px-4 py-2 text-xs text-ink-2">
                     {p.district}, {p.state}
                   </td>
-                  <td className="px-4 py-2 text-[12px] text-ink-2">{p.type}</td>
-                  <td className="px-4 py-2 text-[12px] text-ink-2">
+                  <td className="px-4 py-2 text-xs text-ink-2">{p.type}</td>
+                  <td className="px-4 py-2 text-xs text-ink-2">
                     {p.stage} <Badge className="ml-1">{STAGE_STATUS_LABEL[p.stageStatus]}</Badge>
                   </td>
-                  <td className="max-w-[240px] truncate px-4 py-2 text-[12px] text-ink-2">{p.primaryAuthority}</td>
+                  <td className="max-w-[240px] truncate px-4 py-2 text-xs text-ink-2">{p.primaryAuthority}</td>
                   <td className="px-4 py-2">
                     <RiskPill level={p.riskBand} score={p.riskScore} size="sm" />
                   </td>
@@ -270,7 +277,7 @@ export default function GeographicMap() {
               ))}
             </tbody>
           </table>
-          {focusList.length > 25 && <p className="px-4 py-2.5 text-[11px] text-ink-3">Showing 25 of {focusList.length}. Use the registry for the full list.</p>}
+          {focusList.length > 25 && <p className="px-4 py-2.5 text-xs text-ink-3">Showing 25 of {focusList.length}. Use the registry for the full list.</p>}
         </div>
       </Card>
     </div>

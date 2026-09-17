@@ -1,6 +1,7 @@
 import { Cpu, Database, PencilLine, PlugZap, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/cn';
+import { TONE_CHIP } from '@/lib/tone';
 import type { DataMode } from '@/data/types';
 
 /**
@@ -11,35 +12,35 @@ export const PROVENANCE: Record<DataMode, { label: string; short: string; classN
   synthetic: {
     label: 'Synthetic demo data',
     short: 'Synthetic',
-    className: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+    className: TONE_CHIP.warning,
     icon: Database,
     description: 'Generated for demonstration and model development. Not an official record.',
   },
   user: {
     label: 'User-entered',
     short: 'User-entered',
-    className: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400',
+    className: TONE_CHIP.info,
     icon: PencilLine,
     description: 'Entered through a form or CSV upload in this prototype.',
   },
   model: {
     label: 'Model-generated',
     short: 'Model output',
-    className: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300',
+    className: TONE_CHIP.neutral,
     icon: Cpu,
     description: 'Estimated by the delay-risk model or rule engine. An estimate, not an observation.',
   },
   integration: {
     label: 'Integration-ready · not connected',
     short: 'Integration-ready',
-    className: 'border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-700 dark:text-emerald-400',
+    className: TONE_CHIP.success,
     icon: PlugZap,
     description: 'Contract and adapter slot defined; no government system is connected.',
   },
   official: {
     label: 'Official source',
     short: 'Official',
-    className: 'border-brand/30 bg-brand/10 text-brand',
+    className: TONE_CHIP.brand,
     icon: ShieldCheck,
     description: 'Retrieved from a connected government system.',
   },
@@ -49,8 +50,8 @@ export function ProvenanceBadge({ mode, compact = false, className }: { mode: Da
   const p = PROVENANCE[mode];
   const Icon = p.icon;
   return (
-    <span title={p.description} className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-[3px] text-[10px] font-bold uppercase leading-none tracking-[0.06em]', p.className, className)}>
-      <Icon className="h-3 w-3" />
+    <span title={p.description} className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-xs font-medium leading-4', p.className, className)}>
+      <Icon className="h-3 w-3" aria-hidden />
       {compact ? p.short : p.label}
     </span>
   );
@@ -59,12 +60,12 @@ export function ProvenanceBadge({ mode, compact = false, className }: { mode: Da
 /** A compact legend explaining the four modes, linking to the Data Sources screen. */
 export function ProvenanceLegend({ className, modes = ['synthetic', 'user', 'model', 'integration'] }: { className?: string; modes?: DataMode[] }) {
   return (
-    <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] text-ink-3', className)}>
-      <span className="font-semibold text-ink-2">Data provenance:</span>
+    <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-ink-3', className)}>
+      <span className="font-medium text-ink-2">Data provenance:</span>
       {modes.map((m) => (
         <ProvenanceBadge key={m} mode={m} compact />
       ))}
-      <Link to="/data-sources" className="font-semibold text-brand hover:underline">
+      <Link to="/data-sources" className="link">
         About data sources
       </Link>
     </div>
