@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button, Select } from '@/components/ui';
 
@@ -14,6 +14,8 @@ export interface FilterSelect {
 /**
  * Shared filter row. Every filtered screen drives the API with the same
  * vocabulary, so the bar is declarative: give it selects and it reports changes.
+ * On small screens the selects fold behind a "Filters" toggle so the result list
+ * stays visible.
  */
 export function FilterBar({
   search,
@@ -36,48 +38,48 @@ export function FilterBar({
   extra?: ReactNode;
   className?: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const collapsible = selects.length > 2;
+
   return (
-    <div className={cn('border-b border-line px-5 pb-4', className)}>
-      <div className="flex flex-wrap items-end gap-3">
+    <div className={cn('px-4 pb-4 sm:px-5', className)}>
+      <div className="flex items-center gap-2">
         {onSearch && (
-          <div className="relative min-w-[200px] flex-1">
-            <label className="label-xs mb-1.5 block">Search</label>
-            <Search className="pointer-events-none absolute left-3 top-[34px] h-4 w-4 text-ink-3" />
-            <input
-              value={search ?? ''}
-              onChange={(e) => onSearch(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="h-10 w-full rounded-xl border border-line bg-surface px-3 pl-9 text-sm text-ink placeholder:text-ink-3 transition-colors hover:border-line-strong focus-ring"
-            />
+          <div className="relative min-w-0 flex-1 md:max-w-sm">
+            <label className="sr-only" htmlFor="filterbar-search">
+              Search
+            </label>
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" aria-hidden />
+            <input id="filterbar-search" type="search" value={search ?? ''} onChange={(e) => onSearch(e.target.value)} placeholder={searchPlaceholder} className="input pl-8" />
           </div>
         )}
-
-        {selects.map((s) => (
-          <Select
-            key={s.key}
-            label={s.label}
-            value={s.value}
-            onChange={(v) => onChange(s.key, v)}
-            className={s.width ?? 'w-[160px]'}
-            options={s.options}
-          />
-        ))}
-
-        {extra}
-
+        {collapsible && (
+          <Button type="button" variant="secondary" size="md" onClick={() => setOpen((o) => !o)} aria-expanded={open} className={cn('md:hidden', !onSearch && 'w-full')}>
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters
+            {activeCount > 0 && <span className="rounded bg-brand px-1.5 text-xs text-white num">{activeCount}</span>}
+          </Button>
+        )}
         {activeCount > 0 && onReset && (
-          <Button size="md" variant="ghost" onClick={onReset} className="gap-1.5">
-            <RotateCcw className="h-3.5 w-3.5" /> Reset
+          <Button type="button" size="md" variant="ghost" onClick={onReset} className="hidden md:inline-flex">
+            <X className="h-3.5 w-3.5" /> Clear filters
           </Button>
         )}
       </div>
 
-      {activeCount > 0 && (
-        <p className="mt-2.5 flex items-center gap-1.5 text-[11px] text-ink-3">
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          {activeCount} filter{activeCount > 1 ? 's' : ''} active · applied server-side across the full corpus
-        </p>
-      )}
+      <div className={cn('mt-3 flex-wrap items-end gap-2.5', collapsible && !open ? 'hidden md:flex' : 'flex')}>
+        {selects.map((s) => (
+          <div key={s.key} className="w-full sm:w-[var(--fw)]" style={{ ['--fw' as string]: `${/(\d+)px/.exec(s.width ?? '')?.[1] ?? 160}px` }}>
+            <Select label={s.label} value={s.value} onChange={(v) => onChange(s.key, v)} options={s.options} />
+          </div>
+        ))}
+        {extra}
+        {activeCount > 0 && onReset && (
+          <Button type="button" size="md" variant="ghost" onClick={onReset} className="md:hidden">
+            <X className="h-3.5 w-3.5" /> Clear {activeCount} filter{activeCount > 1 ? 's' : ''}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

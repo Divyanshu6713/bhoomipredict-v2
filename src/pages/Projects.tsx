@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Download, FilePlus2, FileUp, Filter, Gauge } from 'lucide-react';
+import { Download, FilePlus2, FileUp } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { Badge, Button, Card, CardHeader, DemoDataBadge, Progress, Tabs } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, MetricStrip, Progress, Tabs } from '@/components/ui';
 import { ServerTable, type ServerColumn } from '@/components/ui/ServerTable';
 import { FilterBar, allOption, toOptions } from '@/components/ui/FilterBar';
 import { ErrorState, RiskPill } from '@/components/ui/primitives';
@@ -72,8 +72,8 @@ export default function Projects() {
       className: 'w-[260px] max-w-[260px]',
       render: (p) => (
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold text-ink">{p.name}</p>
-          <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-ink-3">
+          <p className="truncate text-sm font-semibold text-ink">{p.name}</p>
+          <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-ink-3">
             <span className="font-mono">{p.id}</span>
             <span>·</span>
             <span className="truncate">{p.authority}</span>
@@ -86,8 +86,8 @@ export default function Projects() {
       header: 'State / districts',
       render: (p) => (
         <div className="min-w-0">
-          <p className="truncate text-[12.5px] font-medium text-ink">{p.state}</p>
-          <p className="truncate text-[11px] text-ink-3">{p.districts.join(', ')}</p>
+          <p className="truncate text-sm font-medium text-ink">{p.state}</p>
+          <p className="truncate text-xs text-ink-3">{p.districts.join(', ')}</p>
           {p.source !== 'corpus' && <ProvenanceBadge mode="user" compact className="mt-1" />}
         </div>
       ),
@@ -95,11 +95,12 @@ export default function Projects() {
     {
       key: 'type',
       header: 'Type',
+      hideOnMobile: true,
       render: (p) => (
-        <div className="space-y-1">
-          <Badge className="border-line bg-surface-2 text-ink-2">{p.type}</Badge>
-          <p className="text-[10.5px] text-ink-3">{p.subtype}</p>
-          <Badge className={cn('block w-fit', PRIORITY_CLASS[p.priority])}>{p.priority}</Badge>
+        <div className="min-w-0">
+          <p className="text-sm text-ink">{p.type}</p>
+          <p className="text-xs text-ink-3">{p.subtype}</p>
+          {p.priority !== 'Routine' && <Badge className={cn('mt-1', PRIORITY_CLASS[p.priority])}>{p.priority}</Badge>}
         </div>
       ),
     },
@@ -108,11 +109,11 @@ export default function Projects() {
       header: 'Current stage',
       render: (p) => (
         <div className="min-w-[150px]">
-          <p className="text-[12.5px] font-semibold text-ink">{p.currentStage}</p>
+          <p className="text-sm font-semibold text-ink">{p.currentStage}</p>
           <Badge className={cn('mt-1', STAGE_STATUS_CLASS[p.stageStatus])}>
             {STAGE_STATUS_LABEL[p.stageStatus]} · {p.daysRemaining < 0 ? `${Math.abs(p.daysRemaining)}d overdue` : `${p.daysRemaining}d left`}
           </Badge>
-          {p.residualBacklog > 0 && <p className="mt-1 text-[10.5px] text-amber-700 dark:text-amber-400 num">{formatNumber(p.residualBacklog)} residual cases in completed stages</p>}
+          {p.residualBacklog > 0 && <p className="mt-1 text-xs text-amber-700 dark:text-amber-400 num">{formatNumber(p.residualBacklog)} residual cases in completed stages</p>}
         </div>
       ),
     },
@@ -124,8 +125,8 @@ export default function Projects() {
       render: (p) => (
         <div className="min-w-[92px]">
           <div className="flex items-baseline justify-end gap-1.5">
-            <span className="num text-[12.5px] font-semibold text-ink">{p.progressPct.toFixed(0)}%</span>
-            <span className="text-[10px] text-ink-3">stage {p.currentStageIndex + 1}/9</span>
+            <span className="num text-sm font-semibold text-ink">{p.progressPct.toFixed(0)}%</span>
+            <span className="text-2xs text-ink-3">stage {p.currentStageIndex + 1}/9</span>
           </div>
           <Progress
             value={p.progressPct}
@@ -142,19 +143,20 @@ export default function Projects() {
       align: 'right',
       render: (p) => (
         <div>
-          <span className="num text-[12.5px] font-semibold text-ink">{formatNumber(p.totalParcels)}</span>
-          <p className="text-[10.5px] text-ink-3 num">{p.source === 'corpus' ? `${formatNumber(p.openCases)} open` : 'no case records'}</p>
+          <span className="num text-sm font-semibold text-ink">{formatNumber(p.totalParcels)}</span>
+          <p className="text-xs text-ink-3 num">{p.source === 'corpus' ? `${formatNumber(p.openCases)} open` : 'no case records'}</p>
         </div>
       ),
     },
     {
       key: 'compensation',
       header: 'Compensation',
+      hideOnMobile: true,
       align: 'right',
       render: (p) => (
         <div className="min-w-[86px]">
-          <span className="num text-[12px] font-semibold text-ink">{p.compensationCompletionPct.toFixed(0)}%</span>
-          <p className="truncate text-[10.5px] text-ink-3">{p.compensationStatus}</p>
+          <span className="num text-xs font-semibold text-ink">{p.compensationCompletionPct.toFixed(0)}%</span>
+          <p className="truncate text-xs text-ink-3">{p.compensationStatus}</p>
         </div>
       ),
     },
@@ -165,8 +167,8 @@ export default function Projects() {
       align: 'right',
       render: (p) => (
         <div>
-          <span className={cn('num text-[12.5px] font-bold', p.actionCount ? 'text-orange-600 dark:text-orange-400' : 'text-ink-3')}>{p.actionCount}</span>
-          <p className="text-[10.5px] text-ink-3 num">{p.predictedDelayDays !== null ? `~${p.predictedDelayDays}d slip` : ''}</p>
+          <span className={cn('num text-sm font-bold', p.actionCount ? 'text-orange-700 dark:text-orange-300' : 'text-ink-3')}>{p.actionCount}</span>
+          <p className="text-xs text-ink-3 num">{p.predictedDelayDays !== null ? `~${p.predictedDelayDays}d slip` : ''}</p>
         </div>
       ),
     },
@@ -178,7 +180,7 @@ export default function Projects() {
       render: (p) => (
         <div className="flex flex-col items-end gap-1">
           <RiskPill level={p.riskBand} score={p.riskScore} />
-          {p.topContributor && <span className="text-[10px] text-ink-3">{p.topContributor}</span>}
+          {p.topContributor && <span className="text-2xs text-ink-3">{p.topContributor}</span>}
         </div>
       ),
     },
@@ -248,66 +250,48 @@ export default function Projects() {
   const agg = data?.aggregate;
 
   return (
-    <div className="space-y-4">
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {[
+    <div className="space-y-6">
+      <MetricStrip
+        items={[
           { label: 'Projects in view', value: data ? formatNumber(data.total) : '—' },
           { label: 'Parcels covered', value: agg ? formatCompact(agg.totalParcels) : '—' },
           { label: 'Open cases', value: agg ? formatCompact(agg.openCases) : '—' },
-          {
-            label: 'High-risk cases',
-            value: agg ? formatCompact(agg.highRiskCases) : '—',
-            tone: 'text-orange-600 dark:text-orange-400',
-          },
-          {
-            label: 'Delayed · blocked',
-            value: agg ? `${formatNumber(agg.delayedProjects)} · ${formatNumber(agg.blockedProjects)}` : '—',
-            tone: 'text-rose-600 dark:text-rose-400',
-          },
-          { label: 'Residual backlog', value: agg ? formatCompact(agg.residualBacklog) : '—' },
+          { label: 'High-risk cases', value: agg ? formatCompact(agg.highRiskCases) : '—', tone: 'orange' },
+          { label: 'Delayed · blocked', value: agg ? `${formatNumber(agg.delayedProjects)} · ${formatNumber(agg.blockedProjects)}` : '—', tone: 'danger' },
+          { label: 'Residual backlog', value: agg ? formatCompact(agg.residualBacklog) : '—', hint: 'cases in completed stages' },
+        ]}
+      />
 
-        ].map((m, i) => (
-          <Card key={m.label} className="p-4 animate-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
-            <p className="label-xs leading-tight">{m.label}</p>
-            <p className={cn('mt-1.5 font-display text-[21px] font-extrabold leading-none num', m.tone ?? 'text-ink')}>
-              {m.value}
-            </p>
-          </Card>
-        ))}
-      </section>
-
-      <Card className="animate-fade-up">
+      <Card>
         <CardHeader
-          title="Acquisition project registry"
-          subtitle="Case management with the model's risk for each project's next statutory milestone"
-          icon={<Gauge className="h-4 w-4" />}
+          title="Project registry"
+          subtitle="Each project with the model's risk for its next statutory milestone"
           action={
-            <div className="flex items-center gap-2">
-              <DemoDataBadge className="hidden sm:inline-flex" />
-              {can('project.create') && (
-                <Link to="/projects/new">
-                  <Button size="sm" className="gap-1.5">
-                    <FilePlus2 className="h-3.5 w-3.5" /> New project
-                  </Button>
-                </Link>
-              )}
-              {can('data.upload') && (
-                <Link to="/admin">
-                  <Button size="sm" variant="outline" className="gap-1.5">
-                    <FileUp className="h-3.5 w-3.5" /> CSV upload
-                  </Button>
-                </Link>
-              )}
+            <div className="flex flex-wrap items-center gap-2">
               <a href={projectsCsvUrl({ ...query, pageSize: undefined, page: undefined })} className="inline-flex">
-                <Button size="sm" variant="outline" className="gap-1.5">
+                <Button size="sm" variant="ghost" tabIndex={-1}>
                   <Download className="h-3.5 w-3.5" /> Projects CSV
                 </Button>
               </a>
               <a href={casesCsvUrl({ state: values.state, projectType: values.projectType, stage: values.stage, risk: values.risk, limit: 20000 })} className="inline-flex">
-                <Button size="sm" variant="ghost" className="gap-1.5">
+                <Button size="sm" variant="ghost" tabIndex={-1}>
                   <Download className="h-3.5 w-3.5" /> Cases CSV
                 </Button>
               </a>
+              {can('data.upload') && (
+                <Link to="/admin">
+                  <Button size="sm" variant="secondary" tabIndex={-1}>
+                    <FileUp className="h-3.5 w-3.5" /> Upload CSV
+                  </Button>
+                </Link>
+              )}
+              {can('project.create') && (
+                <Link to="/projects/new">
+                  <Button size="sm" tabIndex={-1}>
+                    <FilePlus2 className="h-3.5 w-3.5" /> New project
+                  </Button>
+                </Link>
+              )}
             </div>
           }
         />
@@ -327,10 +311,8 @@ export default function Projects() {
           }}
           activeCount={activeCount}
           extra={
-            <div className="min-w-0">
-              <p className="label-xs mb-1.5 flex items-center gap-1.5">
-                <Filter className="h-3 w-3" /> Risk band
-              </p>
+            <div className="min-w-0 max-w-full">
+              <p className="mb-1.5 text-xs font-medium text-ink-2">Risk band</p>
               <Tabs
                 tabs={[
                   { id: 'all', label: 'All' },
@@ -366,7 +348,7 @@ export default function Projects() {
         />
       </Card>
 
-      <p className="px-1 text-[11px] leading-relaxed text-ink-3">
+      <p className="max-w-4xl px-1 text-xs text-ink-3">
         Next-milestone risk is the model's probability that the project's current stage misses its next milestone by
         more than 30 days. It is a predicted risk, not a determination — and it is one input to a human review, not a
         decision.{' '}

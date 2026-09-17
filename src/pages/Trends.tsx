@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Building2, CalendarClock, Gauge, Landmark, TrendingUp } from 'lucide-react';
-import { Badge, Card, CardHeader, Select, SkeletonCard, Tabs } from '@/components/ui';
-import { StatCard } from '@/components/ui/StatCard';
+import { Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Building2, Landmark, TrendingUp } from 'lucide-react';
+import { Badge, Card, CardHeader, MetricStrip, Select, SkeletonCard, Tabs } from '@/components/ui';
 import { ErrorState, PrototypeNotice, RiskPill } from '@/components/ui/primitives';
 import { ChartTooltip } from '@/components/charts';
 import { useApi, useFilters } from '@/hooks';
@@ -13,7 +12,8 @@ import { formatNumber } from '@/lib/format';
 import type { DelayTrends, PerformanceRow } from '@/data/types';
 
 const tick = { fill: 'rgb(var(--c-ink-3))', fontSize: 11 };
-const PALETTE = ['#3B72F0', '#F59E0B', '#10B981', '#E11D48', '#7C6CF5', '#0EA5E9', '#EA580C', '#14B8A6'];
+// Up to eight comparison series: distinguishable, muted, and never the risk colours.
+const PALETTE = ['#2563EB', '#0E8C7F', '#C98512', '#6D63D6', '#3E7CB1', '#B4538A', '#5F8F3E', '#667085'];
 const pct = (v: number | null | undefined) => (v === null || v === undefined ? '—' : `${Math.round(v * 100)}%`);
 
 /**
@@ -34,8 +34,8 @@ export default function Trends() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="max-w-2xl">
-          <p className="label-xs">Delay trends</p>
-          <p className="text-[12.5px] leading-relaxed text-ink-2">
+          <h2 className="text-md font-semibold text-ink">Delay trends</h2>
+          <p className="text-sm text-ink-2">
             <span className="font-semibold text-ink">Solid</span> lines are the observed share of milestones that slipped more than 30 days, by due month.{' '}
             <span className="font-semibold text-ink">Dashed</span> lines are the deployed model’s expected share for open milestones due in coming months. They never overlap, so the chart never shows the model “agreeing” with data it was trained on.
           </p>
@@ -54,7 +54,7 @@ export default function Trends() {
           <Select className="w-[190px]" label="State" value={values.state} onChange={(v) => set({ state: v, level: v === 'all' ? 'state' : values.level })} options={[{ label: 'All in scope', value: 'all' }, ...(facets.data?.states ?? []).map((x) => ({ label: x, value: x }))]} />
         </div>
       </div>
-      {values.level === 'district' && values.state === 'all' && <p className="text-[12px] text-amber-600">Choose a State to compare its districts.</p>}
+      {values.level === 'district' && values.state === 'all' && <p className="text-sm text-amber-800 dark:text-amber-300">Choose a State to compare its districts.</p>}
 
       {!trends.data ? <SkeletonCard lines={8} /> : <TrendCharts data={trends.data} />}
 
@@ -62,8 +62,8 @@ export default function Trends() {
 
       <section className="space-y-4">
         <div>
-          <p className="label-xs">Performance indicators</p>
-          <p className="text-[12.5px] text-ink-2">How the bodies acting on acquisitions are doing on observed delay, predicted risk, pending work and intervention closure.</p>
+          <h2 className="text-md font-semibold text-ink">Performance indicators</h2>
+          <p className="text-sm text-ink-2">How the bodies acting on acquisitions are doing on observed delay, predicted risk, pending work and intervention closure.</p>
         </div>
         {perf.error ? (
           <ErrorState error={perf.error} onRetry={perf.reload} />
@@ -71,18 +71,16 @@ export default function Trends() {
           <SkeletonCard lines={6} />
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-              {[
-                { label: 'On track (current stage)', value: Math.round((perf.data.kpis.onTrackShare ?? 0) * 100), unit: '%', icon: Gauge, caption: `${perf.data.kpis.projects} projects`, accent: '#10B981' },
-                { label: 'Observed delay rate', value: Math.round((perf.data.kpis.observedDelayRate ?? 0) * 100), unit: '%', icon: Activity, caption: 'resolved milestones > 30 days late', accent: '#F59E0B' },
-                { label: 'Forecast > 6 months late', value: perf.data.kpis.severeOverrunLikely ?? 0, icon: CalendarClock, caption: `median forecast completion; ${perf.data.kpis.projectsLikelyToMissTarget} projects P(miss target) ≥ 50%`, accent: RISK_HEX.Critical },
-                { label: 'Open interventions', value: perf.data.kpis.interventionsOpen, icon: TrendingUp, caption: `${perf.data.kpis.interventionsOverdue} overdue`, accent: '#3B72F0' },
-                { label: 'Escalated', value: perf.data.kpis.interventionsEscalated, icon: ArrowUpRight, caption: 'overdue and moved up a level', accent: '#BE123C' },
-                { label: 'Mean resolution', value: perf.data.kpis.meanResolutionDays ?? 0, unit: 'days', icon: CalendarClock, caption: `${Math.round((perf.data.kpis.interventionResolutionRate ?? 0) * 100)}% of interventions closed`, accent: '#7C6CF5' },
-              ].map((c, i) => (
-                <StatCard key={c.label} index={i} {...c} />
-              ))}
-            </div>
+            <MetricStrip
+              items={[
+                { label: 'On track (current stage)', value: `${Math.round((perf.data.kpis.onTrackShare ?? 0) * 100)}%`, hint: `of ${perf.data.kpis.projects} projects` },
+                { label: 'Observed delay rate', value: `${Math.round((perf.data.kpis.observedDelayRate ?? 0) * 100)}%`, hint: 'resolved milestones > 30 days late' },
+                { label: 'Forecast > 6 months late', value: formatNumber(perf.data.kpis.severeOverrunLikely ?? 0), hint: `${perf.data.kpis.projectsLikelyToMissTarget} likely to miss target`, tone: (perf.data.kpis.severeOverrunLikely ?? 0) > 0 ? 'danger' : undefined },
+                { label: 'Open interventions', value: formatNumber(perf.data.kpis.interventionsOpen), hint: `${perf.data.kpis.interventionsOverdue} overdue` },
+                { label: 'Escalated', value: formatNumber(perf.data.kpis.interventionsEscalated), hint: 'overdue and moved up a level' },
+                { label: 'Mean resolution', value: `${perf.data.kpis.meanResolutionDays ?? 0} days`, hint: `${Math.round((perf.data.kpis.interventionResolutionRate ?? 0) * 100)}% of interventions closed` },
+              ]}
+            />
             <Card>
               <CardHeader
                 title="League tables"
@@ -102,9 +100,9 @@ export default function Trends() {
                 }
               />
               {values.view === 'office' ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-[12px]">
-                    <thead className="bg-surface-2 text-left text-[10.5px] uppercase tracking-wider text-ink-3">
+                <div className="relative overflow-x-auto">
+                  <table className="w-full min-w-[760px] text-xs">
+                    <thead className="bg-surface-2 text-left text-xs font-medium text-ink-3">
                       <tr>
                         <th className="px-5 py-2">Office</th>
                         <th className="px-3 py-2">Level</th>
@@ -120,7 +118,7 @@ export default function Trends() {
                         <tr key={o.key} className="hover:bg-surface-2">
                           <td className="px-5 py-2">
                             <p className="font-semibold text-ink">{o.key}</p>
-                            <p className="text-[10.5px] text-ink-3">{o.role}</p>
+                            <p className="text-xs text-ink-3">{o.role}</p>
                           </td>
                           <td className="px-3 py-2 capitalize text-ink-2">{o.level.replace('_', '-')}</td>
                           <td className="px-3 py-2 text-right num">{o.projects}</td>
@@ -191,11 +189,11 @@ function TrendCharts({ data }: { data: DelayTrends }) {
           </ResponsiveContainer>
         </div>
         <div className="flex flex-wrap gap-1.5 px-5 pb-4">
-          <button onClick={() => setFocus(null)} className="rounded-full border border-line px-2.5 py-1 text-[11px] font-semibold text-ink-2 hover:border-brand/50">
+          <button onClick={() => setFocus(null)} className="rounded-full border border-line px-2.5 py-1 text-xs font-semibold text-ink-2 hover:border-brand/50">
             All
           </button>
           {data.groups.map((g, i) => (
-            <button key={g} onClick={() => setFocus(focus === g ? null : g)} className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold" style={{ borderColor: focus === g ? PALETTE[i % PALETTE.length] : 'rgb(var(--c-line))' }}>
+            <button key={g} onClick={() => setFocus(focus === g ? null : g)} className="flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium focus-ring" style={{ borderColor: focus === g ? PALETTE[i % PALETTE.length] : 'rgb(var(--c-line))' }}>
               <span className="h-2 w-2 rounded-full" style={{ background: PALETTE[i % PALETTE.length] }} /> {g}
             </button>
           ))}
@@ -208,22 +206,22 @@ function TrendCharts({ data }: { data: DelayTrends }) {
             <div key={g.key} className="flex items-center gap-3 px-5 py-2.5">
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: PALETTE[i % PALETTE.length] }} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[12.5px] font-semibold text-ink">{g.key}</span>
-                <span className="block text-[10.5px] text-ink-3 num">
+                <span className="block truncate text-sm font-semibold text-ink">{g.key}</span>
+                <span className="block text-xs text-ink-3 num">
                   {pct(g.previous6MonthsRate)} → {pct(g.last6MonthsRate)} observed · {formatNumber(g.forecastOpenMilestones)} open milestones
                 </span>
               </span>
               <DirectionBadge direction={g.direction} />
               <span className="w-14 text-right">
-                <span className="block text-[13px] font-bold num" style={{ color: g.forecastDelayShare === null ? undefined : RISK_HEX[riskFromScore(g.forecastDelayShare * 100)] }}>
+                <span className="block text-sm font-bold num" style={{ color: g.forecastDelayShare === null ? undefined : RISK_HEX[riskFromScore(g.forecastDelayShare * 100)] }}>
                   {pct(g.forecastDelayShare)}
                 </span>
-                <span className="block text-[9.5px] text-ink-3">forecast</span>
+                <span className="block text-2xs text-ink-3">forecast</span>
               </span>
             </div>
           ))}
         </div>
-        <p className="border-t border-line px-5 py-2.5 text-[10.5px] leading-relaxed text-ink-3">{data.definitions.forecast}</p>
+        <p className="border-t border-line px-5 py-2.5 text-xs text-ink-3">{data.definitions.forecast}</p>
       </Card>
     </section>
   );
@@ -232,13 +230,13 @@ function TrendCharts({ data }: { data: DelayTrends }) {
 function DirectionBadge({ direction }: { direction: string }) {
   if (direction === 'worsening')
     return (
-      <Badge className="border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400">
+      <Badge className="border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300">
         <ArrowUpRight className="h-3 w-3" /> worsening
       </Badge>
     );
   if (direction === 'improving')
     return (
-      <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+      <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
         <ArrowDownRight className="h-3 w-3" /> improving
       </Badge>
     );
@@ -251,9 +249,9 @@ function DirectionBadge({ direction }: { direction: string }) {
 
 function LeagueTable({ rows, label }: { rows: PerformanceRow[]; label: string }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[900px] text-[12px]">
-        <thead className="bg-surface-2 text-left text-[10.5px] uppercase tracking-wider text-ink-3">
+    <div className="relative overflow-x-auto">
+      <table className="w-full min-w-[900px] text-xs">
+        <thead className="bg-surface-2 text-left text-xs font-medium text-ink-3">
           <tr>
             <th className="px-5 py-2">{label}</th>
             <th className="px-3 py-2 text-right">Projects</th>
@@ -287,14 +285,14 @@ function LeagueTable({ rows, label }: { rows: PerformanceRow[]; label: string })
               <td className="px-3 py-2 text-right num">{r.avgApprovalDelayDays === null ? '—' : `${r.avgApprovalDelayDays} d`}</td>
               <td className="px-3 py-2 text-right num">{r.avgPredictedSlipDays} d</td>
               <td className="px-3 py-2 text-right num">
-                {r.interventionsOpen} · <span className={r.interventionsOverdue ? 'font-bold text-rose-600' : ''}>{r.interventionsOverdue}</span>
+                {r.interventionsOpen} · <span className={r.interventionsOverdue ? 'font-bold text-red-600' : ''}>{r.interventionsOverdue}</span>
               </td>
               <td className="px-5 py-2 text-right num">{r.meanResolutionDays === null ? '—' : `${r.meanResolutionDays} d`}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="flex items-center gap-1.5 border-t border-line px-5 py-2.5 text-[10.5px] text-ink-3">
+      <p className="flex items-center gap-1.5 border-t border-line px-5 py-2.5 text-xs text-ink-3">
         <Building2 className="h-3 w-3" /> Observed delay is on resolved milestones; mean risk is the deployed model on open ones. Resolution times fill in as interventions close.
       </p>
     </div>

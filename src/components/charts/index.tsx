@@ -16,55 +16,49 @@ export function ChartTooltip({
   labelFormatter?: (label: string | number) => ReactNode;
 }) {
   if (!active || !payload?.length) return null;
+  const rows = payload.filter((p) => p.value !== undefined && p.value !== null && !Number.isNaN(p.value as number));
+  if (!rows.length) return null;
   return (
-    <div className="rounded-xl border border-line bg-surface/95 px-3 py-2.5 shadow-pop backdrop-blur">
-      {label !== undefined && (
-        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ink-3">
-          {labelFormatter ? labelFormatter(label) : label}
-        </p>
-      )}
-      <div className="space-y-1">
-        {payload
-          .filter((p) => p.value !== undefined && !Number.isNaN(p.value as number))
-          .map((p, i) => (
-            <div key={i} className="flex items-center gap-2 text-[12px]">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: p.color }} />
-              <span className="text-ink-2">{p.name}</span>
-              <span className="ml-auto font-semibold text-ink num">
-                {formatter ? formatter(p.value as number, p.name ?? '') : p.value}
-              </span>
-            </div>
-          ))}
+    <div className="min-w-[140px] rounded-lg border border-line bg-surface px-3 py-2 shadow-pop">
+      {label !== undefined && <p className="mb-1 text-xs font-medium text-ink">{labelFormatter ? labelFormatter(label) : label}</p>}
+      <div className="space-y-0.5">
+        {rows.map((p, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            <span className="h-2 w-2 shrink-0 rounded-sm" style={{ background: p.color }} />
+            <span className="text-ink-3">{p.name}</span>
+            <span className="ml-auto pl-3 font-medium text-ink num">{formatter ? formatter(p.value as number, p.name ?? '') : p.value}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-export function ChartLegend({
-  items,
-  className,
-}: {
-  items: Array<{ label: string; color: string; value?: string | number }>;
-  className?: string;
-}) {
+export function ChartLegend({ items, className }: { items: Array<{ label: string; color: string; value?: string | number; dashed?: boolean }>; className?: string }) {
   return (
-    <div className={cn('flex flex-wrap items-center gap-x-4 gap-y-2', className)}>
+    <div className={cn('flex flex-wrap items-center gap-x-4 gap-y-1.5', className)}>
       {items.map((it) => (
-        <div key={it.label} className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-[3px]" style={{ background: it.color }} />
-          <span className="text-[11.5px] font-medium text-ink-2">{it.label}</span>
-          {it.value !== undefined && <span className="text-[11.5px] font-bold text-ink num">{it.value}</span>}
+        <div key={it.label} className="flex items-center gap-1.5">
+          {it.dashed ? (
+            <svg width="14" height="4" aria-hidden>
+              <line x1="0" y1="2" x2="14" y2="2" stroke={it.color} strokeWidth="2" strokeDasharray="3 2" />
+            </svg>
+          ) : (
+            <span className="h-2 w-2 rounded-sm" style={{ background: it.color }} />
+          )}
+          <span className="text-xs text-ink-2">{it.label}</span>
+          {it.value !== undefined && <span className="text-xs font-medium text-ink num">{it.value}</span>}
         </div>
       ))}
     </div>
   );
 }
 
-/** Circular gauge used for composite risk scores. */
+/** Semi-circular gauge for a single composite risk score. */
 export function RiskGauge({
   score,
   size = 200,
-  stroke = 14,
+  stroke = 12,
   label,
   sublabel,
   color,
@@ -77,45 +71,35 @@ export function RiskGauge({
   color: string;
 }) {
   const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const sweep = 0.78; // three-quarter dial
-  const arc = c * sweep;
-  const filled = arc * (Math.min(100, Math.max(0, score)) / 100);
+  const half = Math.PI * r;
+  const filled = half * (Math.min(100, Math.max(0, score)) / 100);
+  const h = size / 2 + stroke;
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-[140deg]">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="rgb(var(--c-surface-3))"
-          strokeWidth={stroke}
-          strokeDasharray={`${arc} ${c}`}
-          strokeLinecap="round"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
+    <div className="relative" style={{ width: size, height: h + 34 }} role="img" aria-label={`${Math.round(score)} out of 100${label ? `, ${label}` : ''}`}>
+      <svg width={size} height={h} viewBox={`0 0 ${size} ${h}`} aria-hidden>
+        <path d={`M ${stroke / 2} ${size / 2} A ${r} ${r} 0 0 1 ${size - stroke / 2} ${size / 2}`} fill="none" stroke="rgb(var(--c-surface-3))" strokeWidth={stroke} strokeLinecap="round" />
+        <path
+          d={`M ${stroke / 2} ${size / 2} A ${r} ${r} 0 0 1 ${size - stroke / 2} ${size / 2}`}
           fill="none"
           stroke={color}
           strokeWidth={stroke}
-          strokeDasharray={`${filled} ${c}`}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dasharray 1.1s cubic-bezier(.22,1,.36,1)' }}
+          strokeDasharray={`${filled} ${half}`}
+          style={{ transition: 'stroke-dasharray .5s ease-out' }}
         />
       </svg>
-      <div className="absolute inset-0 grid place-items-center text-center">
-        <div>
-          <p className="font-display text-[40px] font-extrabold leading-none tracking-tight text-ink num">
-            {Math.round(score)}
-            <span className="text-lg font-bold text-ink-3">/100</span>
+      <div className="absolute inset-x-0 text-center" style={{ top: size / 2 - 30 }}>
+        <p className="text-4xl font-semibold leading-none tracking-tight text-ink num">
+          {Math.round(score)}
+          <span className="text-md font-normal text-ink-3">/100</span>
+        </p>
+        {label && (
+          <p className="mt-2 text-sm font-semibold" style={{ color }}>
+            {label}
           </p>
-          {label && <p className="mt-2 text-sm font-bold uppercase tracking-wider" style={{ color }}>{label}</p>}
-          {sublabel && <p className="mt-1 text-[11px] text-ink-3">{sublabel}</p>}
-        </div>
+        )}
+        {sublabel && <p className="mt-0.5 text-xs text-ink-3">{sublabel}</p>}
       </div>
     </div>
   );
@@ -139,23 +123,20 @@ export function ContributionBar({
 }) {
   const width = `${Math.max(1.5, share * 100)}%`;
   return (
-    <div className="group">
+    <div>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-[13px] font-semibold text-ink">
-          <span className="mr-2 text-[11px] font-bold text-ink-3 num">{String(index + 1).padStart(2, '0')}</span>
+        <p className="text-sm font-medium text-ink">
+          <span className="mr-2 text-xs text-ink-3 num">{index + 1}</span>
           {label}
         </p>
-        <p className="shrink-0 text-[13px] font-bold text-ink num">
-          {(share * 100).toFixed(0)}%{suffix && <span className="ml-1.5 text-[11px] font-medium text-ink-3">{suffix}</span>}
+        <p className="shrink-0 text-sm font-semibold text-ink num">
+          {(share * 100).toFixed(0)}%{suffix && <span className="ml-1.5 text-xs font-normal text-ink-3">{suffix}</span>}
         </p>
       </div>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-3">
-        <div
-          className="h-full rounded-full animate-grow-bar"
-          style={{ ['--bar-w' as string]: width, width, background: color, animationDelay: `${index * 70}ms` }}
-        />
+      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-3">
+        <div className="h-full rounded-full animate-grow-bar" style={{ ['--bar-w' as string]: width, width, background: color, animationDelay: `${index * 30}ms` }} />
       </div>
-      {detail && <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-3">{detail}</p>}
+      {detail && <p className="mt-1 text-xs text-ink-3">{detail}</p>}
     </div>
   );
 }

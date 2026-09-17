@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { ArrowDown, ChevronLeft, ChevronRight, ChevronsUpDown, Loader2 } from 'lucide-react';
+import { ArrowDown, ChevronLeft, ChevronRight, ChevronsUpDown, Loader2, SearchX } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Button, EmptyState, Skeleton } from '@/components/ui';
 
@@ -12,7 +12,11 @@ export interface ServerColumn<T> {
   className?: string;
   headerClassName?: string;
   align?: 'left' | 'right' | 'center';
+  /** Leave out of the stacked mobile layout (e.g. purely decorative columns). */
+  hideOnMobile?: boolean;
 }
+
+const alignClass = (align?: string) => (align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left');
 
 /**
  * Table over a server-paginated result set.
@@ -21,6 +25,10 @@ export interface ServerColumn<T> {
  * the browser — so this component only reports intent and renders the page it is
  * given. The previous page stays on screen while the next one loads, which keeps
  * the layout from jumping on every keystroke in a filter.
+ *
+ * Below the md breakpoint rows become stacked cards: the first column is the
+ * title, the last column (usually status or risk) sits beside it, and the rest
+ * form a two-column definition list.
  */
 export function ServerTable<T>({
   rows,
@@ -37,7 +45,8 @@ export function ServerTable<T>({
   loading = false,
   refreshing = false,
   emptyTitle = 'No records match these filters',
-  emptyDescription = 'Widen the risk band or clear a filter to see more.',
+  emptyDescription = 'Try widening the risk band or clearing a filter. Filters apply across the full dataset, not just this page.',
+  emptyAction,
   dense = false,
   minWidth = 900,
   footNote,
@@ -57,18 +66,21 @@ export function ServerTable<T>({
   refreshing?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: ReactNode;
   dense?: boolean;
   minWidth?: number;
   footNote?: ReactNode;
 }) {
-  const alignClass = (align?: string) =>
-    align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
-
   if (loading) {
     return (
-      <div className="space-y-2 p-5">
+      <div className="space-y-px p-4" aria-busy="true" aria-label="Loading records">
         {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-9" />
+          <div key={i} className="flex items-center gap-4 py-2.5">
+            <Skeleton className="h-4 flex-[2]" />
+            <Skeleton className="hidden h-4 flex-1 sm:block" />
+            <Skeleton className="hidden h-4 flex-1 md:block" />
+            <Skeleton className="h-5 w-20" />
+          </div>
         ))}
       </div>
     );
@@ -77,40 +89,40 @@ export function ServerTable<T>({
   const start = (page - 1) * pageSize + 1;
   const end = Math.min(total, page * pageSize);
   const windowStart = Math.max(1, Math.min(page - 2, pages - 4));
+  const [primary, ...others] = columns;
+  const trailing = others.length > 1 ? others[others.length - 1] : undefined;
+  const middle = (trailing ? others.slice(0, -1) : others).filter((c) => !c.hideOnMobile);
 
   return (
-    <div className={cn('relative', refreshing && 'opacity-[0.72] transition-opacity')}>
+    <div className="relative" aria-busy={refreshing || undefined}>
       {refreshing && (
-        <div className="pointer-events-none absolute right-4 top-3 z-20 flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] font-semibold text-ink-3 shadow-card">
-          <Loader2 className="h-3 w-3 animate-spin" /> updating
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-0.5 overflow-hidden bg-brand/10">
+          <div className="h-full w-1/3 animate-indeterminate bg-brand" />
         </div>
       )}
-      <div className="overflow-x-auto">
+
+      {/* ≥ md: table */}
+      <div className={cn('relative hidden overflow-x-auto md:block', refreshing && 'opacity-70 transition-opacity')}>
         <table className="w-full border-collapse" style={{ minWidth }}>
           <thead>
-            <tr className="border-b border-line">
+            <tr className="border-y border-line bg-surface-2">
               {columns.map((col) => {
                 const isSorted = col.sortKey && sort === col.sortKey;
                 return (
                   <th
                     key={col.key}
-                    className={cn(
-                      'sticky top-0 z-10 bg-surface px-3 py-3 text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-3',
-                      alignClass(col.align),
-                      col.headerClassName,
-                    )}
+                    scope="col"
+                    aria-sort={isSorted ? 'descending' : undefined}
+                    className={cn('whitespace-nowrap px-3 py-2 text-xs font-medium text-ink-3 first:pl-5 last:pr-5', alignClass(col.align), col.headerClassName)}
                   >
                     {col.sortKey && onSort ? (
                       <button
+                        type="button"
                         onClick={() => onSort(col.sortKey!)}
-                        className={cn(
-                          'inline-flex items-center gap-1 transition-colors hover:text-ink',
-                          isSorted && 'text-brand',
-                          col.align === 'right' && 'flex-row-reverse',
-                        )}
+                        className={cn('inline-flex items-center gap-1 rounded transition-colors hover:text-ink focus-ring', isSorted && 'text-ink', col.align === 'right' && 'flex-row-reverse')}
                       >
                         {col.header}
-                        {isSorted ? <ArrowDown className="h-3 w-3" /> : <ChevronsUpDown className="h-3 w-3 opacity-40" />}
+                        {isSorted ? <ArrowDown className="h-3 w-3" /> : <ChevronsUpDown className="h-3 w-3 opacity-50" />}
                       </button>
                     ) : (
                       col.header
@@ -121,26 +133,21 @@ export function ServerTable<T>({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => (
+            {rows.map((row) => (
               <tr
                 key={rowKey(row)}
                 onClick={() => onRowClick?.(row)}
-                style={{ animationDelay: `${Math.min(i, 12) * 16}ms` }}
-                className={cn(
-                  'border-b border-line/70 animate-fade-in transition-colors last:border-0',
-                  onRowClick && 'cursor-pointer hover:bg-surface-2',
-                )}
+                onKeyDown={(e) => {
+                  if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onRowClick(row);
+                  }
+                }}
+                tabIndex={onRowClick ? 0 : undefined}
+                className={cn('border-b border-line transition-colors last:border-0', onRowClick && 'cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none')}
               >
                 {columns.map((col) => (
-                  <td
-                    key={col.key}
-                    className={cn(
-                      dense ? 'px-3 py-2.5' : 'px-3 py-3.5',
-                      'text-[13px] text-ink-2',
-                      alignClass(col.align),
-                      col.className,
-                    )}
-                  >
+                  <td key={col.key} className={cn(dense ? 'py-2' : 'py-3', 'px-3 align-top text-sm text-ink-2 first:pl-5 last:pr-5', alignClass(col.align), col.className)}>
                     {col.render(row)}
                   </td>
                 ))}
@@ -150,26 +157,74 @@ export function ServerTable<T>({
         </table>
       </div>
 
-      {rows.length === 0 && <EmptyState title={emptyTitle} description={emptyDescription} />}
+      {/* < md: stacked cards */}
+      <ul className={cn('divide-y divide-line border-t border-line md:hidden', refreshing && 'opacity-70')}>
+        {rows.map((row) => {
+          const content = (
+            <>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">{primary.render(row)}</div>
+                {trailing && <div className="shrink-0 text-right">{trailing.render(row)}</div>}
+              </div>
+              {middle.length > 0 && (
+                <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2">
+                  {middle.map((col) => (
+                    <div key={col.key} className="min-w-0">
+                      <dt className="text-2xs text-ink-3">{col.header}</dt>
+                      <dd className="mt-0.5 min-w-0 text-sm text-ink-2 [&_*]:!text-left [&_.items-end]:!items-start [&_.justify-end]:!justify-start">{col.render(row)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </>
+          );
+          return (
+            <li key={rowKey(row)}>
+              {onRowClick ? (
+                // A div, not a button: cells may contain their own links and buttons.
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onRowClick(row)}
+                  onKeyDown={(e) => {
+                    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onRowClick(row);
+                    }
+                  }}
+                  className="block w-full cursor-pointer px-4 py-3.5 text-left transition-colors hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none"
+                >
+                  {content}
+                </div>
+              ) : (
+                <div className="px-4 py-3.5">{content}</div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {rows.length === 0 && <EmptyState icon={<SearchX />} title={emptyTitle} description={emptyDescription} action={emptyAction} className="border-t border-line" />}
 
       {(total > pageSize || footNote) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3">
-          <p className="text-[12px] text-ink-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3 sm:px-5">
+          <p className="text-sm text-ink-3">
             {total > 0 ? (
               <>
-                Showing <span className="font-semibold text-ink num">{start.toLocaleString('en-IN')}</span>–
-                <span className="font-semibold text-ink num">{end.toLocaleString('en-IN')}</span> of{' '}
-                <span className="font-semibold text-ink num">{total.toLocaleString('en-IN')}</span>
+                <span className="num">
+                  {start.toLocaleString('en-IN')}–{end.toLocaleString('en-IN')}
+                </span>{' '}
+                of <span className="font-medium text-ink num">{total.toLocaleString('en-IN')}</span>
               </>
             ) : (
               'No matching records'
             )}
-            {footNote && <span className="ml-2 text-ink-3">{footNote}</span>}
+            {footNote && <span className="ml-2 hidden text-xs sm:inline">· {footNote}</span>}
           </p>
           {pages > 1 && (
-            <div className="flex items-center gap-1.5">
-              <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page">
-                <ChevronLeft className="h-3.5 w-3.5" />
+            <nav className="flex items-center gap-1" aria-label="Pagination">
+              <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page" className="px-2">
+                <ChevronLeft className="h-4 w-4" />
               </Button>
               {Array.from({ length: Math.min(5, pages) }).map((_, i) => {
                 const p = windowStart + i;
@@ -177,20 +232,23 @@ export function ServerTable<T>({
                 return (
                   <button
                     key={p}
+                    type="button"
                     onClick={() => onPage(p)}
-                    className={cn(
-                      'h-8 min-w-8 rounded-lg px-2 text-xs font-semibold transition-colors num',
-                      p === page ? 'bg-brand text-white' : 'border border-line text-ink-2 hover:bg-surface-2',
-                    )}
+                    aria-current={p === page ? 'page' : undefined}
+                    className={cn('hidden h-8 min-w-8 rounded-md px-2 text-sm font-medium transition-colors num focus-ring sm:inline-block', p === page ? 'bg-surface-3 text-ink' : 'text-ink-3 hover:bg-surface-3 hover:text-ink')}
                   >
                     {p}
                   </button>
                 );
               })}
-              <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Next page">
-                <ChevronRight className="h-3.5 w-3.5" />
+              <span className="px-2 text-sm text-ink-3 num sm:hidden">
+                {page} / {pages}
+              </span>
+              <Button size="sm" variant="ghost" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Next page" className="px-2">
+                <ChevronRight className="h-4 w-4" />
               </Button>
-            </div>
+              {loading && <Loader2 className="h-4 w-4 animate-spin text-ink-3" />}
+            </nav>
           )}
         </div>
       )}

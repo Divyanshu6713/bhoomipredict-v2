@@ -36,28 +36,33 @@ export default function Profile() {
     <div className="space-y-4">
       {/* ------------------------------------------------------------ identity */}
       <Card className="overflow-hidden">
-        <div className="relative bg-navy-900 px-5 py-5 grid-lines sm:px-6">
+        <div className="px-5 py-5 sm:px-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-4">
-              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/[0.06] font-display text-[18px] font-extrabold text-white">{initials}</span>
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-slate-700 text-md font-semibold text-white dark:bg-slate-600" aria-hidden>
+                {initials}
+              </span>
               <div className="min-w-0">
-                <p className="font-display text-[20px] font-extrabold tracking-tight text-white">{user.name}</p>
-                <p className="text-[13px] text-white/70">{user.designation}</p>
-                <p className="mt-0.5 text-[12px] text-white/45">{pos.organisation.name}</p>
+                <p className="text-xl font-semibold tracking-tight text-ink">{user.name}</p>
+                <p className="text-sm text-ink-2">{user.designation}</p>
+                <p className="mt-0.5 text-xs text-ink-3">{pos.organisation.name}</p>
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  <Badge className="border-brand/30 bg-brand/20 text-[#9DBBFF]">
+                  <Badge tone="brand">
                     <ShieldCheck className="h-3 w-3" /> {user.roleLabel}
                   </Badge>
-                  <Badge className="border-white/15 bg-white/[0.06] text-white/70">{pos.organisation.kindLabel}</Badge>
-                  <Badge className="border-amber-400/30 bg-amber-400/10 text-amber-200">{user.configured ? 'Configured demo position' : 'Demo profile'}</Badge>
+                  <Badge>{pos.organisation.kindLabel}</Badge>
+                  <Badge tone="warning">{user.configured ? 'Configured demo position' : 'Demo profile'}</Badge>
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">Administrative scope</p>
-              <p className="mt-1 font-display text-[18px] font-extrabold text-white">{pos.tierLabel}</p>
-              <p className="text-[12px] text-white/60">{pos.place}</p>
-              <p className="mt-1 text-[11px] text-white/40">{TIER_STATEMENT[pos.tier]}{pos.portfolio.restricted ? ` · ${pos.portfolio.label}` : ''}</p>
+            <div className="rounded-lg border border-line bg-surface-2 px-4 py-3">
+              <p className="text-xs text-ink-3">Administrative scope</p>
+              <p className="mt-0.5 text-lg font-semibold text-ink">{pos.tierLabel}</p>
+              <p className="text-sm text-ink-2">{pos.place}</p>
+              <p className="mt-1 max-w-xs text-xs text-ink-3">
+                {TIER_STATEMENT[pos.tier]}
+                {pos.portfolio.restricted ? ` · ${pos.portfolio.label}` : ''}
+              </p>
             </div>
           </div>
         </div>
@@ -69,7 +74,7 @@ export default function Profile() {
           <CardHeader title="Administrative position" subtitle={`${pos.template.label} hierarchy · only the levels this organisation uses`} icon={<GitBranch className="h-4 w-4" />} />
           <div className="space-y-4 px-5 pb-5">
             <AdministrativeChain position={pos} />
-            <div className="rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-[11.5px] leading-relaxed text-ink-2">
+            <div className="rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-xs text-ink-2">
               <p>
                 <span className="font-semibold text-ink">Hierarchy: </span>
                 {pos.template.levels.map((l) => humanise(l)).join(' → ')}
@@ -85,7 +90,7 @@ export default function Profile() {
                 </p>
               )}
             </div>
-            {pos.organisation.illustrative && pos.organisation.description && <p className="text-[11px] leading-relaxed text-ink-3">{pos.organisation.description}</p>}
+            {pos.organisation.illustrative && pos.organisation.description && <p className="text-xs text-ink-3">{pos.organisation.description}</p>}
           </div>
         </Card>
 
@@ -105,8 +110,8 @@ export default function Profile() {
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                   <Stat label="Projects managed" value={formatNumber(t.projects)} to="/projects" />
                   <Stat label="Active" value={formatNumber(t.active)} to="/projects" />
-                  <Stat label="Delayed" value={formatNumber(t.delayed)} tone="text-amber-600 dark:text-amber-400" to="/projects?flag=delayed" />
-                  <Stat label="Blocked" value={formatNumber(t.blocked)} tone="text-rose-600 dark:text-rose-400" to="/projects?flag=blocked" />
+                  <Stat label="Delayed" value={formatNumber(t.delayed)} tone="text-amber-700 dark:text-amber-300" to="/projects?flag=delayed" />
+                  <Stat label="Blocked" value={formatNumber(t.blocked)} tone="text-red-700 dark:text-red-300" to="/projects?flag=blocked" />
                   <Stat label="High risk" value={formatNumber(t.highRisk)} color={RISK_HEX.High} to="/projects?risk=High" />
                   <Stat label="Critical risk" value={formatNumber(t.critical)} color={RISK_HEX.Critical} to="/projects?risk=Critical" />
                   <Stat label="Open cases" value={formatCompact(t.openCases)} to="/cases" />
@@ -117,7 +122,7 @@ export default function Profile() {
                   {showStates && <Breakdown title="By State / UT" rows={portfolio.byState} />}
                 </div>
                 {t.topDriver && (
-                  <p className="text-[11.5px] text-ink-3">
+                  <p className="text-xs text-ink-3">
                     Most frequent top delay driver: <span className="font-semibold text-ink-2">{t.topDriver.group}</span> ({t.topDriver.projects} projects).
                   </p>
                 )}
@@ -150,7 +155,7 @@ export default function Profile() {
           <div className="space-y-4 px-5 pb-5">
             <div>
               <p className="label-xs mb-1.5">Focus areas (alerts and actions routed to this role)</p>
-              <div className="flex flex-wrap gap-1.5">{user.focus.length ? user.focus.map((f) => <Badge key={f}>{CATEGORY_LABEL[f] ?? f}</Badge>) : <span className="text-[12px] text-ink-3">None — read-only</span>}</div>
+              <div className="flex flex-wrap gap-1.5">{user.focus.length ? user.focus.map((f) => <Badge key={f}>{CATEGORY_LABEL[f] ?? f}</Badge>) : <span className="text-xs text-ink-3">None — read-only</span>}</div>
             </div>
             <div>
               <p className="label-xs mb-1.5">Permissions enforced by the API</p>
@@ -162,7 +167,7 @@ export default function Profile() {
                     </Badge>
                   ))
                 ) : (
-                  <span className="text-[12px] text-ink-3">Read-only access</span>
+                  <span className="text-xs text-ink-3">Read-only access</span>
                 )}
               </div>
             </div>
@@ -170,7 +175,7 @@ export default function Profile() {
         </Card>
         <Card>
           <CardHeader title="Official information" subtitle="Identity and office details" icon={<ContactRound className="h-4 w-4" />} />
-          <dl className="divide-y divide-line px-5 pb-4 text-[12.5px]">
+          <dl className="divide-y divide-line px-5 pb-4 text-sm">
             {[
               ['Designation', user.designation],
               ['Organisation', pos.organisation.name],
@@ -185,7 +190,7 @@ export default function Profile() {
             ))}
             <div className="flex gap-4 py-2">
               <dt className="w-32 shrink-0 text-ink-3">Contact</dt>
-              <dd className="min-w-0 text-[11.5px] leading-relaxed text-ink-3">{official.directory}</dd>
+              <dd className="min-w-0 text-xs text-ink-3">{official.directory}</dd>
             </div>
           </dl>
         </Card>
@@ -200,22 +205,22 @@ export default function Profile() {
             {assignedProjects.map((p) => (
               <Link key={p.id} to={`/projects/${p.id}`} className="flex items-center gap-3 px-5 py-2.5 hover:bg-surface-2">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12.5px] font-semibold text-ink">{p.name}</span>
-                  <span className="block text-[10.5px] text-ink-3">
+                  <span className="block truncate text-sm font-semibold text-ink">{p.name}</span>
+                  <span className="block text-xs text-ink-3">
                     {p.district}, {p.state} · {p.stage} ({STAGE_STATUS_LABEL[p.stageStatus]})
                   </span>
                 </span>
                 <RiskPill level={p.riskBand} score={p.riskScore} size="sm" />
               </Link>
             ))}
-            {assignedProjects.length === 0 && <p className="px-5 py-6 text-[12px] text-ink-3">No interventions are currently assigned to {user.roleLabel.toLowerCase()} in this scope.</p>}
+            {assignedProjects.length === 0 && <p className="px-5 py-6 text-xs text-ink-3">No interventions are currently assigned to {user.roleLabel.toLowerCase()} in this scope.</p>}
           </div>
           {assignedCases.length > 0 && (
             <div className="border-t border-line px-5 py-3">
               <p className="label-xs mb-1.5">Cases cited in my interventions</p>
               <div className="flex flex-wrap gap-x-2 gap-y-1">
                 {assignedCases.map((c) => (
-                  <Link key={c} to={`/cases/${c}`} className="font-mono text-[11.5px] text-brand hover:underline">
+                  <Link key={c} to={`/cases/${c}`} className="font-mono text-xs text-brand hover:underline">
                     {c}
                   </Link>
                 ))}
@@ -238,7 +243,7 @@ function Stat({ label, value, tone, color, to }: { label: string; value: string;
   return (
     <Link to={to} className="rounded-xl border border-line bg-surface-2 px-3 py-2.5 transition-colors hover:border-line-strong">
       <p className="label-xs leading-tight">{label}</p>
-      <p className={cn('mt-1.5 font-display text-[18px] font-extrabold leading-none num', tone ?? 'text-ink')} style={color ? { color } : undefined}>
+      <p className={cn('mt-1.5 text-xl font-semibold leading-none num', tone ?? 'text-ink')} style={color ? { color } : undefined}>
         {value}
       </p>
     </Link>
@@ -252,7 +257,7 @@ function Breakdown({ title, rows }: { title: string; rows: Array<PortfolioStats 
       <p className="label-xs mb-2">{title}</p>
       <ul className="space-y-1.5">
         {rows.slice(0, 6).map((r) => (
-          <li key={r.key} className="text-[11.5px]">
+          <li key={r.key} className="text-xs">
             <div className="flex items-center justify-between gap-2">
               <span className="truncate font-medium text-ink-2">{r.label}</span>
               <span className="shrink-0 text-ink-3 num">

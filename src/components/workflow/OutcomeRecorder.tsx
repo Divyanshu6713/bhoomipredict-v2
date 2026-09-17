@@ -21,8 +21,8 @@ export function OutcomeRecorder({ caseId, dueDate, today, canRecord, recorded, o
     return (
       <Card>
         <CardHeader title="Recorded outcome" subtitle="Feeds live monitoring now and the model at the next retraining" icon={<DatabaseZap className="h-4 w-4" />} />
-        <div className="space-y-1.5 px-5 pb-5 text-[12px] text-ink-2">
-          <p className="flex items-center gap-2 text-[13px] font-bold text-ink">
+        <div className="space-y-1.5 px-5 pb-5 text-xs text-ink-2">
+          <p className="flex items-center gap-2 text-sm font-bold text-ink">
             <CheckCircle2 className="h-4 w-4 text-emerald-500" /> {recorded.delayed ? 'Milestone delayed more than 30 days' : 'Milestone met within 30 days'}
             <Badge className="border-line bg-surface-2 text-ink-3">{recorded.source}</Badge>
           </p>
@@ -32,7 +32,7 @@ export function OutcomeRecorder({ caseId, dueDate, today, canRecord, recorded, o
           <p>
             Model had predicted <span className="font-bold num">{Math.round(recorded.predictedProbability * 100)}%</span> ({recorded.predictedBand}) with {recorded.modelVersion ?? 'the serving model'}.
           </p>
-          <p className="text-[11px] text-ink-3">
+          <p className="text-xs text-ink-3">
             Recorded by {recorded.recordedBy.name} on {formatDate(recorded.recordedAt)}.
           </p>
         </div>
@@ -58,7 +58,7 @@ export function OutcomeRecorder({ caseId, dueDate, today, canRecord, recorded, o
     <Card>
       <CardHeader title="Record milestone outcome" subtitle={`Due ${formatDate(dueDate)} · recording date limit ${formatDate(today)}`} icon={<DatabaseZap className="h-4 w-4" />} />
       <div className="space-y-3 px-5 pb-5">
-        <div className="flex gap-2 text-[12px]">
+        <div className="flex gap-2 text-xs">
           <label className="flex items-center gap-1.5">
             <input type="radio" checked={mode === 'completed'} onChange={() => setMode('completed')} /> Milestone achieved on
           </label>
@@ -69,11 +69,11 @@ export function OutcomeRecorder({ caseId, dueDate, today, canRecord, recorded, o
         <Field label="Date" hint={mode === 'pending' ? 'Only a known delay once more than 30 days past the due date.' : 'Delay is measured against the due date; more than 30 days counts as delayed.'}>
           <input type="date" className={inputClass} value={date} max={today} onChange={(e) => setDate(e.target.value)} />
         </Field>
-        {error && <p className="text-[12px] font-medium text-rose-600">{error}</p>}
+        {error && <p className="text-xs font-medium text-red-600">{error}</p>}
         <Button onClick={submit} disabled={busy || !date} className="w-full">
           {busy ? 'Recording…' : 'Record outcome'}
         </Button>
-        <p className="text-[10.5px] leading-relaxed text-ink-3">The prediction made before this outcome is kept alongside it, so the model is evaluated on data it had not seen. Written to the audit trail.</p>
+        <p className="text-xs text-ink-3">The prediction made before this outcome is kept alongside it, so the model is evaluated on data it had not seen. Written to the audit trail.</p>
       </div>
     </Card>
   );

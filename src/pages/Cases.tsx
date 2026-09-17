@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, Filter, Layers, Zap } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { Badge, Button, Card, CardHeader, DemoDataBadge, Progress, Tabs } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, MetricStrip, Progress, Tabs } from '@/components/ui';
 import { ServerTable, type ServerColumn } from '@/components/ui/ServerTable';
 import { FilterBar, allOption, toOptions } from '@/components/ui/FilterBar';
 import { ErrorState, RiskPill } from '@/components/ui/primitives';
@@ -72,8 +72,8 @@ export default function Cases() {
       header: 'Case',
       render: (c) => (
         <div className="min-w-0">
-          <p className="font-mono text-[11.5px] font-semibold text-ink">{c.caseId}</p>
-          <p className="truncate text-[11px] text-ink-3">
+          <p className="font-mono text-xs font-semibold text-ink">{c.caseId}</p>
+          <p className="truncate text-xs text-ink-3">
             {c.village}, {c.district}
           </p>
         </div>
@@ -86,19 +86,20 @@ export default function Cases() {
       className: 'w-[210px] max-w-[210px]',
       render: (c) => (
         <div className="min-w-0">
-          <p className="truncate text-[12.5px] font-medium text-ink">{c.projectName}</p>
-          <p className="truncate text-[10.5px] text-ink-3">
+          <p className="truncate text-sm font-medium text-ink">{c.projectName}</p>
+          <p className="truncate text-xs text-ink-3">
             {c.projectId} · {c.state}
           </p>
         </div>
       ),
     },
-    { key: 'stage', header: 'Stage', render: (c) => <span className="text-[12px]">{c.stage}</span> },
-    { key: 'area', header: 'Area', sortKey: 'area', align: 'right', render: (c) => <span className="num">{c.areaHa} ha</span> },
+    { key: 'stage', header: 'Stage', render: (c) => <span className="text-xs">{c.stage}</span> },
+    { key: 'area', header: 'Area', sortKey: 'area', align: 'right', hideOnMobile: true, render: (c) => <span className="num">{c.areaHa} ha</span> },
     {
       key: 'own',
       header: 'Ownership',
-      render: (c) => <Badge className="border-line bg-surface-2 text-ink-2">{c.ownership}</Badge>,
+      hideOnMobile: true,
+      render: (c) => <span className="text-sm text-ink-2">{c.ownership}</span>,
     },
     {
       key: 'comp',
@@ -108,14 +109,14 @@ export default function Cases() {
       render: (c) => (
         <div className="min-w-[84px]">
           <div className="flex items-baseline justify-end gap-1.5">
-            <span className="num text-[12px] font-semibold text-ink">{c.compensationCompletionPct}%</span>
+            <span className="num text-xs font-semibold text-ink">{c.compensationCompletionPct}%</span>
           </div>
           <Progress
             value={c.compensationCompletionPct}
             className="mt-1 h-1"
             barClassName={c.compensationCompletionPct > 80 ? 'bg-emerald-500' : 'bg-amber-500'}
           />
-          <p className="mt-0.5 truncate text-[10px] text-ink-3">{c.compensationStatus}</p>
+          <p className="mt-0.5 truncate text-2xs text-ink-3">{c.compensationStatus}</p>
         </div>
       ),
     },
@@ -126,9 +127,9 @@ export default function Cases() {
       align: 'right',
       render: (c) =>
         c.legalCases > 0 ? (
-          <span className="num text-[12px] font-bold text-rose-600 dark:text-rose-400">{c.legalCases}</span>
+          <span className="num text-xs font-bold text-red-700 dark:text-red-300">{c.legalCases}</span>
         ) : (
-          <span className="text-[12px] text-ink-3">—</span>
+          <span className="text-xs text-ink-3">—</span>
         ),
     },
     {
@@ -137,7 +138,7 @@ export default function Cases() {
       sortKey: 'inactivity',
       align: 'right',
       render: (c) => (
-        <span className={cn('num text-[12px]', c.inactivityDays > 120 && 'font-semibold text-amber-600 dark:text-amber-400')}>
+        <span className={cn('num text-xs', c.inactivityDays > 120 && 'font-semibold text-amber-700 dark:text-amber-300')}>
           {c.inactivityDays}d
         </span>
       ),
@@ -149,8 +150,8 @@ export default function Cases() {
       align: 'right',
       render: (c) => (
         <div>
-          <span className="num text-[11.5px]">{formatDate(c.milestoneDueDate)}</span>
-          <p className={cn('text-[10.5px] num', c.daysToMilestone < 0 ? 'font-semibold text-rose-500' : 'text-ink-3')}>
+          <span className="num text-xs">{formatDate(c.milestoneDueDate)}</span>
+          <p className={cn('text-xs num', c.daysToMilestone < 0 ? 'font-medium text-red-700 dark:text-red-300' : 'text-ink-3')}>
             {c.daysToMilestone < 0 ? `${Math.abs(c.daysToMilestone)}d overdue` : `${c.daysToMilestone}d left`}
           </p>
         </div>
@@ -159,9 +160,10 @@ export default function Cases() {
     {
       key: 'quality',
       header: 'Quality',
+      hideOnMobile: true,
       sortKey: 'quality',
       align: 'right',
-      render: (c) => <span className="num text-[12px] text-ink-2">{c.dataQuality}%</span>,
+      render: (c) => <span className="num text-xs text-ink-2">{c.dataQuality}%</span>,
     },
     {
       key: 'risk',
@@ -172,7 +174,7 @@ export default function Cases() {
         <div className="flex flex-col items-end gap-1">
           <RiskPill level={c.riskBand} score={c.riskScore} />
           {values.status !== 'open' && (
-            <Badge className={cn('text-[9.5px]', OUTCOME_CLASS[c.outcome])}>{c.outcome}</Badge>
+            <Badge className={cn('text-2xs', OUTCOME_CLASS[c.outcome])}>{c.outcome}</Badge>
           )}
         </div>
       ),
@@ -246,52 +248,32 @@ export default function Cases() {
   if (result.error) return <ErrorState error={result.error} onRetry={result.reload} />;
 
   return (
-    <div className="space-y-4">
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {[
+    <div className="space-y-6">
+      <MetricStrip
+        items={[
           { label: 'Cases in view', value: data ? formatNumber(data.total) : '—' },
           { label: 'Mean predicted risk', value: agg ? `${agg.avgRiskScore}%` : '—' },
-          {
-            label: 'High + Critical',
-            value: agg ? formatCompact(agg.riskMix.High + agg.riskMix.Critical) : '—',
-            tone: 'text-orange-600 dark:text-orange-400',
-          },
-          {
-            label: 'Past deadline',
-            value: agg ? formatCompact(agg.overdueMilestones) : '—',
-            tone: 'text-rose-600 dark:text-rose-400',
-          },
+          { label: 'High or critical', value: agg ? formatCompact(agg.riskMix.High + agg.riskMix.Critical) : '—', tone: 'orange' },
+          { label: 'Past deadline', value: agg ? formatCompact(agg.overdueMilestones) : '—', tone: 'danger' },
           { label: 'Land area', value: agg ? `${formatCompact(agg.totalAreaHa)} ha` : '—' },
           { label: 'Affected families', value: agg ? formatCompact(agg.affectedFamilies) : '—' },
-        ].map((m, i) => (
-          <Card key={m.label} className="p-4 animate-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
-            <p className="label-xs leading-tight">{m.label}</p>
-            <p className={cn('mt-1.5 font-display text-[21px] font-extrabold leading-none num', m.tone ?? 'text-ink')}>
-              {m.value}
-            </p>
-          </Card>
-        ))}
-      </section>
+        ]}
+      />
 
-      <Card className="animate-fade-up">
+      <Card>
         <CardHeader
-          title="Acquisition case registry"
-          subtitle={`${data ? formatNumber(data.total) : '—'} matching records out of 350,000 — every filter is applied server-side`}
-          icon={<Layers className="h-4 w-4" />}
+          title="Case registry"
+          subtitle={
+            <>
+              <span className="num">{data ? formatNumber(data.total) : '—'}</span> matching records{data ? <span className="hidden sm:inline"> · query {data.queryMs} ms</span> : null}
+            </>
+          }
           action={
-            <div className="flex items-center gap-2">
-              {data && (
-                <Badge className="hidden border-line bg-surface-2 text-ink-3 sm:inline-flex">
-                  <Zap className="h-3 w-3" /> {data.queryMs} ms
-                </Badge>
-              )}
-              <DemoDataBadge className="hidden lg:inline-flex" />
-              <a href={casesCsvUrl({ ...query, page: undefined, pageSize: undefined, limit: 20000 })}>
-                <Button size="sm" variant="outline" className="gap-1.5">
-                  <Download className="h-3.5 w-3.5" /> Export
-                </Button>
-              </a>
-            </div>
+            <a href={casesCsvUrl({ ...query, page: undefined, pageSize: undefined, limit: 20000 })}>
+              <Button size="sm" variant="secondary" tabIndex={-1}>
+                <Download className="h-3.5 w-3.5" /> Export CSV
+              </Button>
+            </a>
           }
         />
 
@@ -310,10 +292,8 @@ export default function Cases() {
           }}
           activeCount={activeCount}
           extra={
-            <div className="min-w-0">
-              <p className="label-xs mb-1.5 flex items-center gap-1.5">
-                <Filter className="h-3 w-3" /> Risk band
-              </p>
+            <div className="min-w-0 max-w-full">
+              <p className="mb-1.5 text-xs font-medium text-ink-2">Risk band</p>
               <Tabs
                 tabs={[
                   { id: 'all', label: 'All' },
@@ -350,26 +330,24 @@ export default function Cases() {
       </Card>
 
       {agg && (
-        <Card className="animate-fade-up p-5">
-          <p className="label-xs mb-3">Stage mix of the current selection</p>
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9">
+        <Card className="p-5">
+          <h2 className="text-base font-semibold text-ink">Stage mix of this selection</h2>
+          <p className="mt-0.5 text-sm text-ink-3">Select a stage to filter the registry.</p>
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9">
             {agg.stageMix.map((s) => (
               <button
                 key={s.stage}
-                onClick={() => set({ stage: s.stage })}
-                className={cn(
-                  'rounded-xl border p-3 text-left transition-colors',
-                  values.stage === s.stage ? 'border-brand/45 bg-brand/[0.06]' : 'border-line bg-surface-2 hover:border-line-strong',
-                )}
+                type="button"
+                aria-pressed={values.stage === s.stage}
+                onClick={() => set({ stage: values.stage === s.stage ? 'all' : s.stage })}
+                className={cn('rounded-lg border p-3 text-left transition-colors focus-ring', values.stage === s.stage ? 'border-brand bg-brand-soft/60' : 'border-line hover:border-line-strong hover:bg-surface-2')}
               >
-                <p className="text-[11px] font-semibold leading-tight text-ink-2">{s.stage}</p>
-                <p className="mt-1.5 font-display text-[17px] font-extrabold leading-none text-ink num">
-                  {formatCompact(s.cases)}
-                </p>
+                <p className="truncate text-xs text-ink-3">{s.stage}</p>
+                <p className="mt-1 text-lg font-semibold leading-none text-ink num">{formatCompact(s.cases)}</p>
               </button>
             ))}
           </div>
-          <p className="mt-3 text-[11px] text-ink-3">
+          <p className="mt-4 text-xs text-ink-3">
             The open set is the live portfolio the model predicts on. Closed milestones carry the outcome that was
             actually observed, which is what the model was evaluated against.
           </p>

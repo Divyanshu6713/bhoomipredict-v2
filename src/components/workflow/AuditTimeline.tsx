@@ -23,23 +23,23 @@ function Value({ v }: { v: unknown }) {
 /** Compact audit list: who, role, what, when, before → after. */
 export function AuditTimeline({ entries, empty = 'No audit entries.' }: { entries: AuditEntry[]; empty?: string }) {
   const [open, setOpen] = useState<string | null>(null);
-  if (!entries.length) return <p className="py-6 text-center text-[12px] text-ink-3">{empty}</p>;
+  if (!entries.length) return <p className="py-6 text-center text-xs text-ink-3">{empty}</p>;
   return (
     <ol className="relative space-y-3 border-l border-line pl-4">
       {entries.map((e) => (
         <li key={e.id} className="relative">
           <span className="absolute -left-[21px] top-1 grid h-2.5 w-2.5 place-items-center rounded-full bg-brand ring-4 ring-surface" />
           <button onClick={() => setOpen(open === e.id ? null : e.id)} className="w-full text-left">
-            <p className="text-[12.5px] font-semibold text-ink">
-              {humanise(e.action.replace('.', ' '))} <span className="font-mono text-[11px] font-medium text-ink-3">{e.entityId}</span>
+            <p className="text-sm font-semibold text-ink">
+              {humanise(e.action.replace('.', ' '))} <span className="font-mono text-xs font-medium text-ink-3">{e.entityId}</span>
             </p>
-            <p className="text-[11px] text-ink-3">
+            <p className="text-xs text-ink-3">
               {e.user.name} · {humanise(e.user.role)} · {fmt(e.timestamp)}
             </p>
-            {e.note && <p className="mt-0.5 text-[11.5px] text-ink-2">“{e.note}”</p>}
+            {e.note && <p className="mt-0.5 text-xs text-ink-2">“{e.note}”</p>}
           </button>
           {open === e.id && (e.oldValue !== null || e.newValue !== null) && (
-            <div className="mt-1.5 grid gap-2 rounded-lg border border-line bg-surface-2 p-2.5 text-[11px] sm:grid-cols-2">
+            <div className="mt-1.5 grid gap-2 rounded-lg border border-line bg-surface-2 p-2.5 text-xs sm:grid-cols-2">
               <div>
                 <p className="label-xs mb-1">Before</p>
                 <Value v={e.oldValue} />

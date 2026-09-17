@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Building2, Check, Info, KeyRound, Landmark, Loader2, Search, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
+import { ArrowRight, Building2, Check, ChevronRight, Eye, EyeOff, Info, Landmark, Loader2, Search, SlidersHorizontal, TriangleAlert, Users, UserX } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { Badge, Button, DemoDataBadge, Select } from '@/components/ui';
+import { Badge, Button, DemoDataBadge, EmptyState, Select, Skeleton, Tabs } from '@/components/ui';
 import { Logo } from '@/components/layout/Logo';
 import { AdministrativeChain, PositionBreadcrumb } from '@/components/hierarchy/AdministrativeChain';
 import { useApi } from '@/hooks';
@@ -35,82 +35,121 @@ export default function Login() {
   const [mode, setMode] = useState<Mode>((params.get('mode') as Mode) === 'configure' ? 'configure' : 'directory');
   const next = params.get('next') || '/dashboard';
   const [password, setPassword] = useState('');
+  const [reveal, setReveal] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [needPassword, setNeedPassword] = useState(false);
+  const passwordInput = useRef<HTMLInputElement>(null);
 
   if (user) return <Navigate to={next} replace />;
 
+  const requirePassword = () => {
+    if (password) return true;
+    setNeedPassword(true);
+    passwordInput.current?.focus();
+    return false;
+  };
+
   return (
-    <div className="flex min-h-screen flex-col bg-navy-900 grid-lines">
-      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:py-12">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link to="/" className="focus-ring rounded-lg">
-            <Logo tone="light" />
+    <div className="flex min-h-screen flex-col bg-bg">
+      <header className="border-b border-line bg-surface">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+          <Link to="/" className="rounded-md focus-ring" aria-label={`${BRAND.product} home`}>
+            <Logo />
           </Link>
           <DemoDataBadge />
         </div>
+      </header>
 
-        <div className="mt-10 max-w-3xl">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#FFB866]">{BRAND.tagline}</p>
-          <h1 className="mt-2 font-display text-[28px] font-extrabold tracking-tight text-white sm:text-[34px]">Sign in to {BRAND.product}</h1>
-          <p className="mt-2 text-[14px] leading-relaxed text-white/60">
-            Your administrative position decides what you see: a national authority sees every State and UT, a ministry sees its sector, a zone or state sees its own portfolio, and a district officer sees the district. The API enforces the same scope and permissions.
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+        <div className="max-w-2xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-ink">Sign in</h1>
+          <p className="mt-2 text-md text-ink-2">
+            Your administrative position decides what you see — a national authority sees every State and UT, a district officer sees their district. The API enforces the
+            same scope.
           </p>
         </div>
 
-        <div className="mt-6 flex max-w-3xl flex-wrap items-end gap-3">
-          <label className="block w-full sm:w-80">
-            <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white/50">
-              <KeyRound className="h-3.5 w-3.5" /> Password
-            </span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password, then choose a profile"
-              className="h-10 w-full rounded-xl border border-white/15 bg-white/[0.06] px-3 text-[13.5px] text-white placeholder:text-white/35 focus-ring"
-            />
-          </label>
-          <button type="button" onClick={() => setShowHint((v) => !v)} className="h-10 text-[12px] font-semibold text-white/50 hover:text-white">
-            {showHint ? 'Hide demo access' : 'Demo access?'}
-          </button>
-          {showHint && (
-            <p className="w-full rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-[12px] leading-relaxed text-amber-100/90">
-              Demonstration deployment: every directory profile starts on the shared demo password <code className="rounded bg-black/30 px-1.5 py-0.5 font-mono text-white">LandPulse@2026</code> (set <code className="font-mono">LANDPULSE_DEMO_PASSWORD</code> to change it) and can set its own from My Profile. Five wrong attempts lock a profile for five minutes; sessions expire after 60 idle minutes.
-            </p>
-          )}
-        </div>
+        <ol className="mt-8 space-y-8">
+          <li>
+            <StepHeading n={1} title="Enter your password" />
+            <div className="mt-3 max-w-md">
+              <label htmlFor="login-password" className="sr-only">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="login-password"
+                  ref={passwordInput}
+                  type={reveal ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (e.target.value) setNeedPassword(false);
+                  }}
+                  aria-invalid={needPassword || undefined}
+                  aria-describedby="login-password-help"
+                  placeholder="Password"
+                  className={cn('input h-10 pr-10', needPassword && 'border-red-500 focus:border-red-500 focus:ring-red-500/15')}
+                />
+                <button type="button" onClick={() => setReveal((r) => !r)} aria-label={reveal ? 'Hide password' : 'Show password'} className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-ink-3 hover:text-ink focus-ring">
+                  {reveal ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <div id="login-password-help" className="mt-1.5">
+                {needPassword ? (
+                  <p role="alert" className="flex items-center gap-1.5 text-sm text-red-700 dark:text-red-300">
+                    <TriangleAlert className="h-3.5 w-3.5" /> Enter your password before choosing a profile.
+                  </p>
+                ) : (
+                  <button type="button" onClick={() => setShowHint((v) => !v)} aria-expanded={showHint} className="text-sm font-medium text-brand hover:underline">
+                    {showHint ? 'Hide demo access details' : 'Using the demo deployment?'}
+                  </button>
+                )}
+              </div>
+              {showHint && (
+                <div className="mt-3 flex gap-2.5 rounded-lg border border-line bg-surface px-3.5 py-3 text-sm text-ink-2">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-3" />
+                  <p>
+                    Every directory profile starts on the shared demo password <code className="rounded bg-surface-3 px-1.5 py-0.5 font-mono text-xs text-ink">LandPulse@2026</code> and can set its
+                    own from My profile. Five wrong attempts lock a profile for five minutes; sessions expire after 60 idle minutes.
+                  </p>
+                </div>
+              )}
+            </div>
+          </li>
 
-        <div className="mt-6 inline-flex rounded-xl border border-white/10 bg-white/[0.04] p-1" role="tablist">
-          {(
-            [
-              ['directory', 'Directory profiles', Users],
-              ['configure', 'Configure a position', SlidersHorizontal],
-            ] as const
-          ).map(([id, label, Icon]) => (
-            <button
-              key={id}
-              role="tab"
-              aria-selected={mode === id}
-              onClick={() => setMode(id)}
-              className={cn('flex items-center gap-2 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-colors', mode === id ? 'bg-white text-navy-900' : 'text-white/60 hover:text-white')}
-            >
-              <Icon className="h-4 w-4" /> {label}
-            </button>
-          ))}
-        </div>
+          <li>
+            <StepHeading n={2} title="Choose who you are signing in as" />
+            <div className="mt-3 inline-flex rounded-lg bg-surface-3 p-0.5" role="tablist" aria-label="Sign-in method">
+              {(
+                [
+                  ['directory', 'Directory profiles', Users],
+                  ['configure', 'Configure a position', SlidersHorizontal],
+                ] as const
+              ).map(([id, label, Icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === id}
+                  onClick={() => setMode(id)}
+                  className={cn('flex h-8 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors focus-ring', mode === id ? 'bg-surface text-ink shadow-xs' : 'text-ink-3 hover:text-ink')}
+                >
+                  <Icon className="h-4 w-4" /> {label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-5">{mode === 'directory' ? <Directory next={next} password={password} requirePassword={requirePassword} /> : <Configure next={next} password={password} requirePassword={requirePassword} />}</div>
+          </li>
+        </ol>
+      </main>
 
-        <div className="mt-6">{mode === 'directory' ? <Directory next={next} password={password} /> : <Configure next={next} password={password} />}</div>
-      </div>
-
-      <footer className="border-t border-white/[0.07]">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-[11.5px] text-white/40">
-          <p className="flex items-start gap-2">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400/80" />
-            Demonstration profiles and synthetic data. Names are illustrative personas, not real officials; no government identity system (SSO) is connected.
-          </p>
-          <p>
-            {BRAND.product} · <span className="font-semibold text-white/60">{BRAND.attribution}</span>
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-6xl flex-col gap-1.5 px-4 py-4 text-xs text-ink-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p>Demonstration profiles and synthetic data. Names are illustrative personas, not real officials; no government identity system (SSO) is connected.</p>
+          <p className="shrink-0">
+            {BRAND.product} · {BRAND.attribution}
           </p>
         </div>
       </footer>
@@ -118,9 +157,20 @@ export default function Login() {
   );
 }
 
+function StepHeading({ n, title }: { n: number; title: string }) {
+  return (
+    <h2 className="flex items-center gap-2.5 text-md font-semibold text-ink">
+      <span className="grid h-6 w-6 place-items-center rounded-full border border-line-strong bg-surface text-xs font-medium text-ink-2 num" aria-hidden>
+        {n}
+      </span>
+      {title}
+    </h2>
+  );
+}
+
 /* ---------------------------------------------------------------- directory */
 
-function Directory({ next, password }: { next: string; password: string }) {
+function Directory({ next, password, requirePassword }: { next: string; password: string; requirePassword: () => boolean }) {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const users = useApi((signal) => fetchDemoUsers(signal), []);
@@ -151,10 +201,7 @@ function Directory({ next, password }: { next: string; password: string }) {
   }, [list, tier, query]);
 
   const choose = async (id: string) => {
-    if (!password) {
-      setError('Enter your password first.');
-      return;
-    }
+    if (!requirePassword()) return;
     setBusy(id);
     setError(null);
     try {
@@ -168,61 +215,85 @@ function Directory({ next, password }: { next: string; password: string }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2">
-        {TIER_FILTERS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTier(t.id)}
-            className={cn('rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors', tier === t.id ? 'border-brand/60 bg-brand/25 text-white' : 'border-white/10 bg-white/[0.03] text-white/55 hover:text-white')}
-          >
-            {t.label} <span className="ml-1 text-white/40 num">{counts[t.id] ?? 0}</span>
-          </button>
-        ))}
-        <div className="relative ml-auto w-full sm:w-64">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search ministry, state, role…" className="h-9 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-8 pr-3 text-[13px] text-white placeholder:text-white/35 focus-ring" />
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <Tabs tabs={TIER_FILTERS.map((t) => ({ id: t.id, label: t.label, count: counts[t.id] ?? 0 }))} active={tier} onChange={(id) => setTier(id as 'all' | AuthorityTier)} />
+        <div className="relative w-full md:w-72">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" aria-hidden />
+          <input type="search" aria-label="Search profiles" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search ministry, State, role…" className="input pl-8" />
         </div>
       </div>
 
-      {error && <p className="mt-4 text-[13px] font-medium text-rose-300">{error}</p>}
-      {users.loading && <p className="mt-10 text-white/60">Loading profiles…</p>}
-      {users.error && <p className="mt-10 text-rose-300">Could not reach the API: {users.error.message}</p>}
-      {!users.loading && grouped.length === 0 && list.length > 0 && <p className="mt-10 text-[13px] text-white/50">No profile matches. Try another level, or configure a position.</p>}
+      {error && (
+        <p role="alert" className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-800 dark:border-red-400/25 dark:bg-red-400/10 dark:text-red-200">
+          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" /> {error}
+        </p>
+      )}
+
+      {users.loading && (
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label="Loading profiles">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card p-4">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="mt-2 h-3 w-48" />
+              <Skeleton className="mt-4 h-5 w-24" />
+            </div>
+          ))}
+        </div>
+      )}
+      {users.error && (
+        <div className="card mt-6">
+          <EmptyState
+            icon={<TriangleAlert />}
+            title="Profiles could not be loaded"
+            description="The sign-in service is not reachable. Check that the API is running, then try again."
+            action={
+              <Button variant="secondary" size="sm" onClick={users.reload}>
+                Try again
+              </Button>
+            }
+          />
+        </div>
+      )}
+      {!users.loading && grouped.length === 0 && list.length > 0 && (
+        <div className="card mt-6">
+          <EmptyState icon={<UserX />} title="No profile matches" description="Try another administrative level or search term — or configure a position of your own." />
+        </div>
+      )}
 
       <div className="mt-6 space-y-7">
         {grouped.map(([group, members]) => (
-          <div key={group}>
-            <p className="mb-2.5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
-              {group === 'Government of India' ? <Landmark className="h-3.5 w-3.5" /> : <Building2 className="h-3.5 w-3.5" />} {group}
-            </p>
+          <section key={group} aria-label={group}>
+            <h3 className="mb-2.5 flex items-center gap-2 text-sm font-medium text-ink-2">
+              {group === 'Government of India' ? <Landmark className="h-4 w-4 text-ink-3" /> : <Building2 className="h-4 w-4 text-ink-3" />} {group}
+              <span className="text-ink-3 num">{members.length}</span>
+            </h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {members.map((u) => (
                 <button
                   key={u.id}
+                  type="button"
                   onClick={() => choose(u.id)}
                   disabled={busy !== null}
-                  className={cn('group rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition-all hover:border-brand/50 hover:bg-white/[0.07]', busy === u.id && 'border-brand/60')}
+                  className={cn('group card flex flex-col p-4 text-left transition-[border-color,box-shadow] hover:border-brand/50 hover:shadow-card-hover focus-ring disabled:cursor-wait', busy === u.id && 'border-brand')}
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex w-full items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-[14px] font-bold text-white">{u.name}</p>
-                      <p className="mt-0.5 text-[12px] leading-snug text-white/60">{u.designation}</p>
+                      <p className="text-base font-semibold text-ink">{u.name}</p>
+                      <p className="mt-0.5 text-sm text-ink-2">{u.designation}</p>
                     </div>
-                    {busy === u.id ? <Loader2 className="h-4 w-4 animate-spin text-white/60" /> : <ArrowRight className="h-4 w-4 text-white/30 transition-transform group-hover:translate-x-0.5 group-hover:text-white/70" />}
+                    {busy === u.id ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-brand" /> : <ChevronRight className="h-4 w-4 shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5 group-hover:text-brand" />}
                   </div>
-                  <p className="mt-2 text-[11px] leading-snug text-white/45">{u.department}</p>
+                  <p className="mt-1 text-xs text-ink-3">{u.department}</p>
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    <Badge className="border-brand/30 bg-brand/15 text-[#9DBBFF]">
-                      <ShieldCheck className="h-3 w-3" /> {u.roleLabel}
-                    </Badge>
-                    <Badge className="border-white/15 bg-white/5 text-white/65">{u.position.tierLabel}</Badge>
+                    <Badge tone="brand">{u.roleLabel}</Badge>
+                    <Badge>{u.position.tierLabel}</Badge>
+                    {!u.permissions.length && <Badge>Read-only</Badge>}
                   </div>
-                  <PositionBreadcrumb position={u.position} className="mt-2.5 text-white/45 [&_.font-semibold]:text-white/75" />
-                  <p className="mt-1.5 text-[10.5px] text-white/35">{u.permissions.length ? `${u.permissions.length} write permissions` : 'Read-only'} · {u.position.portfolio.label}</p>
+                  <PositionBreadcrumb position={u.position} className="mt-2.5" />
                 </button>
               ))}
             </div>
-          </div>
+          </section>
         ))}
       </div>
     </div>
@@ -233,7 +304,7 @@ function Directory({ next, password }: { next: string; password: string }) {
 
 type Government = 'central' | 'state';
 
-function Configure({ next, password }: { next: string; password: string }) {
+function Configure({ next, password, requirePassword }: { next: string; password: string; requirePassword: () => boolean }) {
   const { signInWithPosition } = useAuth();
   const navigate = useNavigate();
   const config = useApi((signal) => fetchHierarchy(signal), []);
@@ -271,10 +342,7 @@ function Configure({ next, password }: { next: string; password: string }) {
 
   const submit = async () => {
     if (!orgId || !role) return;
-    if (!password) {
-      setError('Enter the password at the top of the page first.');
-      return;
-    }
+    if (!requirePassword()) return;
     setBusy(true);
     setError(null);
     try {
@@ -286,15 +354,36 @@ function Configure({ next, password }: { next: string; password: string }) {
     }
   };
 
-  if (config.error) return <p className="text-rose-300">Could not load the hierarchy: {config.error.message}</p>;
-  if (!config.data) return <p className="text-white/60">Loading the national hierarchy…</p>;
+  if (config.error)
+    return (
+      <div className="card">
+        <EmptyState
+          icon={<TriangleAlert />}
+          title="The national hierarchy could not be loaded"
+          description="Check that the API is running, then try again."
+          action={
+            <Button variant="secondary" size="sm" onClick={config.reload}>
+              Try again
+            </Button>
+          }
+        />
+      </div>
+    );
+  if (!config.data)
+    return (
+      <div className="card space-y-4 p-5" aria-busy="true" aria-label="Loading hierarchy">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-9 w-2/3" />
+      </div>
+    );
   const h = config.data;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
-      <div className="card space-y-5 p-5">
-        <Step n={1} title="Authority" hint="Which government the position belongs to">
-          <div className="grid grid-cols-2 gap-2">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="card divide-y divide-line">
+        <Step title="Government" hint="Which government the position belongs to">
+          <div className="grid gap-2 sm:grid-cols-2">
             {(
               [
                 ['central', 'Central Government', 'Ministries and central organisations'],
@@ -303,34 +392,63 @@ function Configure({ next, password }: { next: string; password: string }) {
             ).map(([id, label, desc]) => (
               <button
                 key={id}
+                type="button"
+                aria-pressed={government === id}
                 onClick={() => {
                   setGovernment(id);
                   setUnits({});
                 }}
-                className={cn('rounded-xl border px-3 py-2.5 text-left transition-colors', government === id ? 'border-brand/50 bg-brand/[0.07]' : 'border-line bg-surface-2 hover:border-line-strong')}
+                className={cn('rounded-lg border px-3 py-2.5 text-left transition-colors focus-ring', government === id ? 'border-brand bg-brand-soft/60' : 'border-line hover:border-line-strong hover:bg-surface-2')}
               >
-                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
-                  {government === id && <Check className="h-3.5 w-3.5 text-brand" />} {label}
+                <span className="flex items-center justify-between gap-2 text-sm font-medium text-ink">
+                  {label}
+                  {government === id && <Check className="h-4 w-4 text-brand" />}
                 </span>
-                <span className="block text-[11px] text-ink-3">{desc}</span>
+                <span className="block text-xs text-ink-3">{desc}</span>
               </button>
             ))}
           </div>
         </Step>
 
-        <Step n={2} title="Organisation" hint={government === 'central' ? 'Ministry, then optionally an organisation under it' : 'State or UT, then the department or agency'}>
+        <Step title="Organisation" hint={government === 'central' ? 'Ministry, then optionally an organisation under it' : 'State or UT, then the department or agency'}>
           {government === 'central' ? (
-            <CentralPicker h={h} ministry={ministry} centralOrg={centralOrg} onMinistry={(v) => { setMinistry(v); setCentralOrg(''); setUnits({}); }} onCentralOrg={(v) => { setCentralOrg(v); setUnits({}); }} />
+            <CentralPicker
+              h={h}
+              ministry={ministry}
+              centralOrg={centralOrg}
+              onMinistry={(v) => {
+                setMinistry(v);
+                setCentralOrg('');
+                setUnits({});
+              }}
+              onCentralOrg={(v) => {
+                setCentralOrg(v);
+                setUnits({});
+              }}
+            />
           ) : (
-            <StatePicker h={h} stateName={stateName} stateOrg={stateOrg} onState={(v) => { setStateName(v); setStateOrg(''); setUnits({}); }} onStateOrg={(v) => { setStateOrg(v); setUnits({}); }} />
+            <StatePicker
+              h={h}
+              stateName={stateName}
+              stateOrg={stateOrg}
+              onState={(v) => {
+                setStateName(v);
+                setStateOrg('');
+                setUnits({});
+              }}
+              onStateOrg={(v) => {
+                setStateOrg(v);
+                setUnits({});
+              }}
+            />
           )}
         </Step>
 
-        <Step n={3} title="Jurisdiction" hint="Leave a level on “All” to hold the position above it">
+        <Step title="Jurisdiction" hint="Leave a level on “All” to hold the position above it">
           {!orgId ? (
-            <p className="text-[12px] text-ink-3">Choose an organisation first.</p>
+            <p className="text-sm text-ink-3">Choose an organisation first.</p>
           ) : !options.data ? (
-            <p className="text-[12px] text-ink-3">{options.error ? options.error.message : 'Loading levels…'}</p>
+            options.error ? <p className="text-sm text-red-700 dark:text-red-300">Levels for this organisation could not be loaded.</p> : <Skeleton className="h-9 w-full" />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {(['region', 'state', 'division', 'district'] as const)
@@ -347,7 +465,10 @@ function Configure({ next, password }: { next: string; password: string }) {
                       label={label}
                       value={units[lv] ?? ''}
                       onChange={(v) => setUnit(lv, v)}
-                      options={[{ label: { region: 'All regions / zones', state: 'All States & UTs', division: 'All divisions', district: 'All districts' }[lv], value: '' }, ...opts.map((o) => ({ label: `${o.label}${o.projects ? ` · ${o.projects} project${o.projects === 1 ? '' : 's'}` : ' · no demo projects'}`, value: o.id }))]}
+                      options={[
+                        { label: { region: 'All regions / zones', state: 'All States & UTs', division: 'All divisions', district: 'All districts' }[lv], value: '' },
+                        ...opts.map((o) => ({ label: `${o.label}${o.projects ? ` · ${o.projects} project${o.projects === 1 ? '' : 's'}` : ' · no demo projects'}`, value: o.id })),
+                      ]}
                     />
                   );
                 })}
@@ -355,53 +476,56 @@ function Configure({ next, password }: { next: string; password: string }) {
           )}
         </Step>
 
-        <Step n={4} title="Role" hint="Roles normally held at this level">
+        <Step title="Role" hint="Roles normally held at this level">
           <Select label="Role" value={role} onChange={(v) => setRole(v as RoleId)} options={(options.data?.roles ?? []).map((r) => ({ label: r.permissions || /read-only/.test(r.label) ? r.label : `${r.label} (read-only)`, value: r.id }))} />
-          {options.data && role && <p className="mt-1.5 text-[11px] text-ink-3">{options.data.roles.find((r) => r.id === role)?.summary}</p>}
+          {options.data && role && <p className="mt-1.5 text-xs text-ink-3">{options.data.roles.find((r) => r.id === role)?.summary}</p>}
         </Step>
       </div>
 
-      <div className="card flex flex-col p-5">
-        <p className="label-xs">Position preview</p>
+      <aside className="card flex flex-col p-5 lg:sticky lg:top-6 lg:self-start">
+        <p className="text-xs font-medium text-ink-3">Position preview</p>
         {options.data ? (
           <>
-            <p className="mt-2 font-display text-[16px] font-extrabold leading-snug text-ink">{options.data.position.organisation.name}</p>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <Badge className="border-brand/25 bg-brand/10 text-brand">{options.data.position.tierLabel} scope</Badge>
+            <p className="mt-1.5 text-md font-semibold text-ink">{options.data.position.organisation.name}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Badge tone="brand">{options.data.position.tierLabel} scope</Badge>
               <Badge>{options.data.position.organisation.kindLabel}</Badge>
             </div>
             <AdministrativeChain position={options.data.position} className="mt-4" />
-            <div className="mt-4 rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-[12px] text-ink-2">
+            <div className="mt-4 border-t border-line pt-3 text-sm text-ink-2">
               <p>
-                <span className="font-display text-[18px] font-extrabold text-ink num">{options.data.projectsInPosition}</span> demo project{options.data.projectsInPosition === 1 ? '' : 's'} in this scope
+                <span className="text-lg font-semibold text-ink num">{options.data.projectsInPosition}</span> demo project{options.data.projectsInPosition === 1 ? '' : 's'} in this scope
               </p>
-              <p className="mt-0.5 text-[11px] text-ink-3">Portfolio: {options.data.position.portfolio.label}</p>
-              {options.data.projectsInPosition === 0 && <p className="mt-1.5 text-[11px] text-amber-700 dark:text-amber-400">The synthetic corpus has no projects here. The position still works; screens will show empty states.</p>}
+              <p className="mt-0.5 text-xs text-ink-3">Portfolio: {options.data.position.portfolio.label}</p>
+              {options.data.projectsInPosition === 0 && <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">The synthetic dataset has no projects here. The position still works; screens will show empty states.</p>}
             </div>
-            {options.data.position.organisation.illustrative && <p className="mt-2 text-[11px] text-ink-3">{options.data.position.organisation.description}</p>}
+            {options.data.position.organisation.illustrative && <p className="mt-2 text-xs text-ink-3">{options.data.position.organisation.description}</p>}
           </>
         ) : (
-          <p className="mt-3 text-[12px] text-ink-3">Choose an organisation to preview the position.</p>
+          <p className="mt-2 text-sm text-ink-3">Choose an organisation to preview the position.</p>
         )}
-        {error && <p className="mt-3 text-[12px] font-medium text-rose-600">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-3 flex items-start gap-1.5 text-sm text-red-700 dark:text-red-300">
+            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {error}
+          </p>
+        )}
         <div className="mt-auto pt-5">
-          <Button className="w-full gap-2" disabled={!options.data || !role || busy} onClick={submit}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />} Sign in with this position
+          <Button className="w-full" size="lg" disabled={!options.data || !role} loading={busy} onClick={submit}>
+            {!busy && <ArrowRight className="h-4 w-4" />} Sign in with this position
           </Button>
-          <p className="mt-2 text-center text-[10.5px] text-ink-3">Session-only demo officer. National administration is available from the directory.</p>
+          <p className="mt-2 text-center text-xs text-ink-3">Session-only demo officer. National administration is available from the directory.</p>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }
 
-function Step({ n, title, hint, children }: { n: number; title: string; hint: string; children: React.ReactNode }) {
+function Step({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
   return (
-    <section>
-      <div className="mb-2 flex items-baseline gap-2">
-        <span className="grid h-5 w-5 place-items-center rounded-md bg-brand text-[10.5px] font-bold text-white">{n}</span>
-        <p className="font-display text-[14px] font-bold text-ink">{title}</p>
-        <p className="text-[11px] text-ink-3">{hint}</p>
+    <section className="p-5">
+      <div className="mb-3">
+        <h3 className="text-base font-semibold text-ink">{title}</h3>
+        <p className="text-xs text-ink-3">{hint}</p>
       </div>
       {children}
     </section>
@@ -413,19 +537,9 @@ function CentralPicker({ h, ministry, centralOrg, onMinistry, onCentralOrg }: { 
   const children = h.organisations.filter((o) => o.parentId === ministry && o.kind === 'central_organisation');
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <Select
-        label="Ministry / national authority"
-        value={ministry}
-        onChange={onMinistry}
-        options={tops.map((o) => ({ label: `${o.name}${o.lens === 'oversight' ? ' (oversight)' : ''}`, value: o.id }))}
-      />
-      <Select
-        label="Organisation (optional)"
-        value={centralOrg}
-        onChange={onCentralOrg}
-        options={[{ label: children.length ? 'Ministry level' : 'No organisations configured', value: '' }, ...children.map((o) => ({ label: o.name, value: o.id }))]}
-      />
-      <p className="text-[11px] leading-relaxed text-ink-3 sm:col-span-2">{h.organisations.find((o) => o.id === (centralOrg || ministry))?.description ?? `Portfolio: ${h.organisations.find((o) => o.id === (centralOrg || ministry))?.portfolio ?? ''}`}</p>
+      <Select label="Ministry / national authority" value={ministry} onChange={onMinistry} options={tops.map((o) => ({ label: `${o.name}${o.lens === 'oversight' ? ' (oversight)' : ''}`, value: o.id }))} />
+      <Select label="Organisation (optional)" value={centralOrg} onChange={onCentralOrg} options={[{ label: children.length ? 'Ministry level' : 'No organisations configured', value: '' }, ...children.map((o) => ({ label: o.name, value: o.id }))]} />
+      <p className="text-xs text-ink-3 sm:col-span-2">{h.organisations.find((o) => o.id === (centralOrg || ministry))?.description ?? `Portfolio: ${h.organisations.find((o) => o.id === (centralOrg || ministry))?.portfolio ?? ''}`}</p>
     </div>
   );
 }
@@ -439,25 +553,17 @@ function StatePicker({ h, stateName, stateOrg, onState, onStateOrg }: { h: Hiera
   const uts = h.states.filter((s) => s.type !== 'State');
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <Select
-        label="State / Union Territory"
-        value={stateName}
-        onChange={onState}
-        options={[{ label: 'Select a State or UT', value: '' }, ...states.map((s) => ({ label: s.label, value: s.id })), ...uts.map((s) => ({ label: `${s.label} (UT)`, value: s.id }))]}
-      />
+      <Select label="State / Union Territory" value={stateName} onChange={onState} options={[{ label: 'Select a State or UT', value: '' }, ...states.map((s) => ({ label: s.label, value: s.id })), ...uts.map((s) => ({ label: `${s.label} (UT)`, value: s.id }))]} />
       <Select
         label="Department / agency"
         value={stateOrg}
         onChange={onStateOrg}
-        options={
-          state
-            ? [{ label: `${state.government} (whole government)`, value: '' }, ...departments.map((o) => ({ label: o.name, value: o.id })), ...agencies.map((o) => ({ label: `Agency · ${o.name}`, value: o.id }))]
-            : [{ label: 'Select a State or UT first', value: '' }]
-        }
+        disabled={!state}
+        options={state ? [{ label: `${state.government} (whole government)`, value: '' }, ...departments.map((o) => ({ label: o.name, value: o.id })), ...agencies.map((o) => ({ label: `Agency · ${o.name}`, value: o.id }))] : [{ label: 'Select a State or UT first', value: '' }]}
       />
       {state && (
-        <p className="text-[11px] leading-relaxed text-ink-3 sm:col-span-2">
-          {state.officialName} · {state.type} · {state.zonalCouncil} zone · {state.profile === 'configured' ? 'state profile configured in the registry' : 'generic designations (no state profile configured yet)'}
+        <p className="text-xs text-ink-3 sm:col-span-2">
+          {state.officialName} · {state.type} · {state.zonalCouncil} zone · {state.profile === 'configured' ? 'State profile configured in the registry' : 'generic designations (no State profile configured yet)'}
           {state.divisions ? ` · ${state.divisions} revenue divisions` : ''}
         </p>
       )}

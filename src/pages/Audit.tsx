@@ -41,7 +41,7 @@ export default function Audit() {
       </div>
       {d && d.pages > 1 && (
         <div className="flex items-center justify-between border-t border-line px-5 py-3">
-          <p className="text-[11.5px] text-ink-3 num">
+          <p className="text-xs text-ink-3 num">
             Page {d.page} of {d.pages}
           </p>
           <div className="flex gap-2">

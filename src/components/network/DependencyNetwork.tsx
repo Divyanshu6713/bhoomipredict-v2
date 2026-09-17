@@ -48,15 +48,15 @@ export function DependencyNetwork({
   return (
     <div className="space-y-4">
       {framework && (
-        <div className="flex flex-wrap items-start gap-2 rounded-xl border border-line bg-surface-2 px-3.5 py-2.5">
+        <div className="flex flex-wrap items-start gap-2 rounded-lg border border-line bg-surface-2 px-3.5 py-2.5">
           <Scale className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
           <div className="min-w-0 flex-1">
-            <p className="text-[12.5px] font-bold text-ink">{framework.name}</p>
-            <p className="text-[11px] text-ink-3">
+            <p className="text-sm font-bold text-ink">{framework.name}</p>
+            <p className="text-xs text-ink-3">
               {framework.mode === 'ownership' ? 'Acquisition of ownership' : framework.mode === 'right_of_user' ? 'Acquisition of a right of user' : 'Right of way — land is not acquired'}
               {framework.siaRequired ? ' · Social Impact Assessment required' : ' · SIA chapter not applicable'}
             </p>
-            {framework.note && <p className="mt-1 text-[11px] leading-relaxed text-ink-2">{framework.note}</p>}
+            {framework.note && <p className="mt-1 text-xs text-ink-2">{framework.note}</p>}
           </div>
         </div>
       )}
@@ -86,17 +86,17 @@ export function DependencyNetwork({
                       </button>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-ink-3">{n.role}</span>
+                          <span className="eyebrow">{n.role}</span>
                           {n.gate && (
-                            <Badge className="border-rose-500/20 bg-rose-500/5 px-1.5 py-0.5 text-[9.5px] text-rose-600 dark:text-rose-400">
+                            <Badge className="border-red-500/20 bg-red-500/5 px-1.5 py-0.5 text-2xs text-red-700 dark:text-red-300">
                               <ShieldCheck className="h-3 w-3" /> gates stage
                             </Badge>
                           )}
-                          <Badge className={cn('px-1.5 py-0.5 text-[9.5px]', BASIS_CLASS[n.basis])}>{BASIS_LABEL[n.basis]}</Badge>
+                          <Badge className={cn('px-1.5 py-0.5 text-2xs', BASIS_CLASS[n.basis])}>{BASIS_LABEL[n.basis]}</Badge>
                         </div>
-                        <p className="mt-0.5 text-[12.5px] font-semibold leading-snug text-ink">{n.name}</p>
+                        <p className="mt-0.5 text-sm font-semibold leading-snug text-ink">{n.name}</p>
                         {!compact && (
-                          <p className="mt-0.5 text-[11px] text-ink-3">
+                          <p className="mt-0.5 text-xs text-ink-3">
                             Affects: {n.stages.join(' · ')}
                             {currentStage && (relevant ? ` — gates ${currentStage}` : ` — not active at ${currentStage}`)}
                           </p>
@@ -109,32 +109,32 @@ export function DependencyNetwork({
                               onClick={() => onTogglePending?.(n.code)}
                               disabled={!onTogglePending}
                               className={cn(
-                                'rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors',
-                                pending ? 'border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'border-line bg-surface-2 text-ink-3 hover:border-line-strong',
+                                'rounded-lg border px-2 py-1 text-xs font-semibold transition-colors',
+                                pending ? 'border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300' : 'border-line bg-surface-2 text-ink-3 hover:border-line-strong',
                               )}
                             >
                               {pending ? 'Action pending' : 'No pending action'}
                             </button>
                           ) : (
-                            <span className="text-[10.5px] text-ink-3">not at this stage</span>
+                            <span className="text-xs text-ink-3">not at this stage</span>
                           )
                         ) : pending ? (
-                          <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 num">
+                          <span className="text-xs font-bold text-red-700 dark:text-red-300 num">
                             pending on {(n.pendingCurrentStage ?? 0).toLocaleString('en-IN')} cases
-                            <span className="block text-[10px] font-medium text-ink-3">{Math.round((share ?? 0) * 100)}% of current-stage cases</span>
+                            <span className="block text-2xs font-medium text-ink-3">{Math.round((share ?? 0) * 100)}% of current-stage cases</span>
                           </span>
                         ) : (
-                          <span className="text-[10.5px] text-ink-3">{relevant ? 'nothing pending now' : '—'}</span>
+                          <span className="text-xs text-ink-3">{relevant ? 'nothing pending now' : '—'}</span>
                         )}
                         {scenario && relevant && (
-                          <p className="mt-1 text-[10px] text-ink-3 num">
+                          <p className="mt-1 text-2xs text-ink-3 num">
                             {pending ? `+${n.influence.pointsIfPending.toFixed(1)} pts when pending` : `+${n.influence.pointsIfPending.toFixed(1)} pts if pending`}
                           </p>
                         )}
                       </div>
                     </div>
                     {expanded && (
-                      <div className="border-t border-line bg-surface-2 px-10 py-2.5 text-[11.5px] leading-relaxed text-ink-2">
+                      <div className="border-t border-line bg-surface-2 px-10 py-2.5 text-xs text-ink-2">
                         <p>
                           <span className="font-semibold text-ink">Why this dependency exists: </span>
                           {n.why}
@@ -158,7 +158,7 @@ export function DependencyNetwork({
           </div>
         );
       })}
-      {note && <p className="text-[10.5px] leading-relaxed text-ink-3">{note}</p>}
+      {note && <p className="text-xs text-ink-3">{note}</p>}
     </div>
   );
 }

@@ -26,34 +26,34 @@ export default function DataSources() {
   return (
     <div className="space-y-4">
       <Card className="overflow-hidden">
-        <div className="bg-navy-900 px-5 py-6 grid-lines sm:px-7">
+        <div className="px-5 py-6 sm:px-7">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge className="border-emerald-400/30 bg-emerald-400/10 text-emerald-300" dot="bg-emerald-400">
-              Government Data Integration Ready
+            <Badge tone="success">Integration-ready</Badge>
+            <Badge>
+              <span className="num">{s.connectedOfficialSources}</span> official sources connected
             </Badge>
-            <Badge className="border-white/15 bg-white/[0.06] text-white/70">{s.connectedOfficialSources} official sources connected</Badge>
           </div>
-          <h2 className="mt-3 max-w-3xl font-display text-[22px] font-extrabold tracking-tight text-white sm:text-[26px]">Integration-ready, not integrated</h2>
-          <p className="mt-2 max-w-3xl text-[13.5px] leading-relaxed text-white/60">{s.statement}</p>
+          <h2 className="mt-3 max-w-3xl text-2xl font-semibold tracking-tight text-ink">Integration-ready, not integrated</h2>
+          <p className="mt-2 max-w-3xl text-md text-ink-2">{s.statement}</p>
 
-          <div className="mt-6 flex flex-col gap-2 md:flex-row md:items-stretch">
+          <ol className="mt-6 flex flex-col gap-2 md:flex-row md:items-stretch">
             {s.architecture.map((layer, i) => {
               const Icon = LAYER_ICON[i] ?? Boxes;
               const last = i === s.architecture.length - 1;
               return (
-                <div key={layer} className="flex flex-1 items-center gap-2">
-                  <div className={cn('flex flex-1 items-center gap-3 rounded-xl border px-3.5 py-3', last ? 'border-dashed border-emerald-400/35 bg-emerald-400/[0.05]' : 'border-white/12 bg-white/[0.05]')}>
-                    <Icon className={cn('h-4 w-4 shrink-0', last ? 'text-emerald-300' : 'text-[#9DBBFF]')} />
+                <li key={layer} className="flex flex-1 items-center gap-2">
+                  <div className={cn('flex flex-1 items-center gap-3 rounded-lg border px-3.5 py-3', last ? 'border-dashed border-line-strong bg-surface' : 'border-line bg-surface-2')}>
+                    <Icon className={cn('h-4 w-4 shrink-0', last ? 'text-ink-3' : 'text-brand')} aria-hidden />
                     <div>
-                      <p className="text-[12.5px] font-semibold text-white">{layer === 'LandPulse AI API' ? `${BRAND.product} API` : layer}</p>
-                      <p className="text-[10.5px] text-white/45">{['React client', 'Scoped HTTP endpoints', 'Contracts + adapters', 'Future: official systems'][i]}</p>
+                      <p className="text-sm font-medium text-ink">{layer === 'LandPulse AI API' ? `${BRAND.product} API` : layer}</p>
+                      <p className="text-xs text-ink-3">{['React client', 'Scoped HTTP endpoints', 'Contracts + adapters', 'Future: official systems'][i]}</p>
                     </div>
                   </div>
-                  {!last && <ArrowRight className="hidden h-4 w-4 shrink-0 text-white/30 md:block" />}
-                </div>
+                  {!last && <ArrowRight className="hidden h-4 w-4 shrink-0 text-ink-3 md:block" aria-hidden />}
+                </li>
               );
             })}
-          </div>
+          </ol>
         </div>
       </Card>
 
@@ -63,8 +63,8 @@ export default function DataSources() {
           {(['synthetic', 'user', 'model', 'integration'] as DataMode[]).map((m) => (
             <div key={m} className="rounded-xl border border-line bg-surface-2 p-3.5">
               <ProvenanceBadge mode={m} />
-              <p className="mt-2 text-[12px] leading-relaxed text-ink-2">{PROVENANCE[m].description}</p>
-              <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">
+              <p className="mt-2 text-xs text-ink-2">{PROVENANCE[m].description}</p>
+              <p className="mt-1.5 text-xs text-ink-3">
                 {
                   {
                     synthetic: `${health.data ? `${health.data.rows.toLocaleString('en-IN')} parcel-level cases across ${health.data.projects} projects.` : 'The acquisition corpus.'} Administrative boundaries, State / district names and statutory frameworks are real; records are not.`,
@@ -87,8 +87,8 @@ export default function DataSources() {
             <div key={p.kind} className="rounded-xl border border-line bg-surface p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-display text-[14px] font-bold text-ink">{p.label}</p>
-                  <p className="text-[11.5px] leading-relaxed text-ink-3">{p.description}</p>
+                  <p className="text-base font-bold text-ink">{p.label}</p>
+                  <p className="text-xs text-ink-3">{p.description}</p>
                 </div>
                 {p.connected ? (
                   <Badge className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700" dot="bg-emerald-500">
@@ -100,14 +100,14 @@ export default function DataSources() {
                   </Badge>
                 )}
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-[11.5px] text-ink-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-2">
                 <span className="text-ink-3">Active adapter:</span>
-                <span className="font-mono text-[11px]">{p.adapter.id}</span>
+                <span className="font-mono text-xs">{p.adapter.id}</span>
                 <ProvenanceBadge mode={p.adapter.mode} compact />
               </div>
               <div className="mt-2.5 space-y-1">
                 {p.methods.map((m) => (
-                  <p key={m.name} className="flex items-start gap-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5 font-mono text-[10.5px] leading-relaxed text-ink-2">
+                  <p key={m.name} className="flex items-start gap-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5 font-mono text-xs text-ink-2">
                     <Code2 className="mt-0.5 h-3 w-3 shrink-0 text-brand" />
                     <span className="min-w-0 break-words">
                       {m.name}({m.input}) → {m.returns}
@@ -119,13 +119,13 @@ export default function DataSources() {
                 <p className="label-xs mb-1">Potential official sources (future, not connected)</p>
                 <ul className="space-y-0.5">
                   {p.futureSources.map((f) => (
-                    <li key={f} className="flex items-start gap-1.5 text-[11.5px] leading-relaxed text-ink-2">
+                    <li key={f} className="flex items-start gap-1.5 text-xs text-ink-2">
                       <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-ink-3" /> {f}
                     </li>
                   ))}
                 </ul>
               </div>
-              <p className="mt-2 text-[10.5px] text-ink-3">
+              <p className="mt-2 text-xs text-ink-3">
                 Selected by <span className="font-mono">{p.envVariable}</span> · registered: {p.registeredAdapters.join(', ')}
               </p>
             </div>
@@ -143,11 +143,11 @@ export default function DataSources() {
             ['Nothing else changes', 'Screens, scoring and the issue engine read the contract. Provenance switches to “Official source” automatically.'],
           ].map(([title, text], i) => (
             <li key={title} className="rounded-xl border border-line bg-surface-2 p-3.5">
-              <p className="flex items-center gap-2 text-[12.5px] font-semibold text-ink">
-                {i === 3 ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <span className="grid h-5 w-5 place-items-center rounded-md bg-brand text-[10.5px] font-bold text-white">{i + 1}</span>}
+              <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+                {i === 3 ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <span className="grid h-5 w-5 place-items-center rounded-md bg-brand text-xs font-bold text-white">{i + 1}</span>}
                 {title}
               </p>
-              <p className="mt-1.5 text-[11.5px] leading-relaxed text-ink-2">{text}</p>
+              <p className="mt-1.5 text-xs text-ink-2">{text}</p>
             </li>
           ))}
         </ol>

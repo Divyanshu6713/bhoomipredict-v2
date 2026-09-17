@@ -16,10 +16,10 @@ import {
 } from 'recharts';
 import { BarChart3, ChevronRight, Layers, Table2, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { Card, CardHeader, DemoDataBadge, SkeletonCard, Tabs } from '@/components/ui';
+import { Card, CardHeader, DemoDataBadge, MetricStrip, PageSkeleton, Tabs } from '@/components/ui';
 import { ChartTooltip, ChartLegend } from '@/components/charts';
 import { ErrorState, RiskPill } from '@/components/ui/primitives';
-import { CHART_COLORS, RISK_HEX, riskFromScore } from '@/lib/risk';
+import { AXIS_TICK, CHART_COLORS, RISK_HEX, riskFromScore, shortStage } from '@/lib/risk';
 import { formatCompact, formatNumber } from '@/lib/format';
 import { useApi, useFilters } from '@/hooks';
 import { fetchBreakdown, fetchProjects, fetchSummary } from '@/api/client';
@@ -80,11 +80,11 @@ export default function Analytics() {
   );
 
   if (summary.error) return <ErrorState error={summary.error} onRetry={summary.reload} />;
-  if (summary.loading || !s) return <SkeletonCard lines={10} />;
+  if (summary.loading || !s) return <PageSkeleton />;
 
   return (
     <div className="space-y-4">
-      <Card className="animate-fade-up">
+      <Card>
         <CardHeader
           title="Portfolio breakdown"
           subtitle="Any dimension of the corpus, aggregated server-side across all 350,000 records"
@@ -112,7 +112,7 @@ export default function Analytics() {
                 key={d.id}
                 onClick={() => set({ by: d.id })}
                 className={cn(
-                  'rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition-colors',
+                  'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
                   values.by === d.id
                     ? 'border-brand/45 bg-brand/[0.08] text-brand'
                     : 'border-line bg-surface-2 text-ink-2 hover:border-line-strong',
@@ -150,7 +150,7 @@ export default function Analytics() {
             </ResponsiveContainer>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[440px]">
               <thead>
                 <tr className="border-b border-line">
@@ -158,7 +158,7 @@ export default function Analytics() {
                     <th
                       key={h}
                       className={cn(
-                        'py-2.5 text-[10.5px] font-bold uppercase tracking-wider text-ink-3',
+                        'py-2.5 text-xs font-medium text-ink-3',
                         i === 0 ? 'text-left' : 'text-right',
                       )}
                     >
@@ -170,28 +170,28 @@ export default function Analytics() {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.key} className="border-b border-line/70 last:border-0">
-                    <td className="max-w-[180px] truncate py-2.5 text-[12.5px] font-semibold text-ink">{r.key}</td>
-                    <td className="py-2.5 text-right text-[12.5px] text-ink-2 num">{formatNumber(r.cases)}</td>
+                    <td className="max-w-[180px] truncate py-2.5 text-sm font-semibold text-ink">{r.key}</td>
+                    <td className="py-2.5 text-right text-sm text-ink-2 num">{formatNumber(r.cases)}</td>
                     <td className="py-2.5 text-right">
                       <RiskPill level={riskFromScore(r.riskScore)} score={r.riskScore} size="sm" />
                     </td>
-                    <td className="py-2.5 text-right text-[12.5px] font-semibold text-orange-600 dark:text-orange-400 num">
+                    <td className="py-2.5 text-right text-sm font-semibold text-orange-700 dark:text-orange-300 num">
                       {formatNumber(r.highRisk)}
                     </td>
-                    <td className="py-2.5 text-right text-[12.5px] text-ink-2 num">
+                    <td className="py-2.5 text-right text-sm text-ink-2 num">
                       {r.observedDelayRate === null ? '—' : `${(r.observedDelayRate * 100).toFixed(0)}%`}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {breakdown.loading && <p className="py-6 text-center text-[12px] text-ink-3">Aggregating…</p>}
+            {breakdown.loading && <p className="py-6 text-center text-xs text-ink-3">Aggregating…</p>}
           </div>
         </div>
       </Card>
 
       <section className="grid gap-4 xl:grid-cols-[1.15fr_1fr]">
-        <Card className="animate-fade-up">
+        <Card>
           <CardHeader
             title="Stage throughput and slip"
             subtitle="Median allowed duration per stage against the share of milestones that slipped"
@@ -208,7 +208,7 @@ export default function Analytics() {
           <div className="h-[300px] px-2 pb-4">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={throughput} margin={{ top: 8, right: 18, left: -16, bottom: 4 }}>
-                <XAxis dataKey="stage" tickLine={false} axisLine={false} tick={{ fill: 'rgb(var(--c-ink-3))', fontSize: 10 }} interval={0} />
+                <XAxis dataKey="stage" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={0} tickFormatter={shortStage} />
                 <YAxis yAxisId="left" tickLine={false} axisLine={false} tick={{ fill: 'rgb(var(--c-ink-3))' }} width={42} unit="d" />
                 <YAxis yAxisId="right" orientation="right" tickLine={false} axisLine={false} tick={{ fill: 'rgb(var(--c-ink-3))' }} width={40} unit="%" domain={[0, 100]} />
                 <Tooltip
@@ -234,13 +234,13 @@ export default function Analytics() {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          <p className="border-t border-line px-5 py-2.5 text-[11px] text-ink-3">
+          <p className="border-t border-line px-5 py-2.5 text-xs text-ink-3">
             Compensation and R&amp;R are both the longest stages and the ones most likely to slip — length and fragility
             compound rather than offset.
           </p>
         </Card>
 
-        <Card className="animate-fade-up" style={{ animationDelay: '60ms' }}>
+        <Card>
           <CardHeader
             title="Litigation load against predicted risk"
             subtitle="One point per project; bubble size is its parcel count"
@@ -284,25 +284,25 @@ export default function Analytics() {
               </ScatterChart>
             </ResponsiveContainer>
           </div>
-          <p className="border-t border-line px-5 py-2.5 text-[11px] leading-relaxed text-ink-3">
+          <p className="border-t border-line px-5 py-2.5 text-xs text-ink-3">
             Litigation load and predicted risk move together, but the spread is wide: projects with the same case count
             land in different bands once compensation progress, documentation and inactivity are taken into account.
           </p>
         </Card>
       </section>
 
-      <Card className="animate-fade-up">
+      <Card>
         <CardHeader
           title="Project comparison"
           subtitle="Highest concentrations of high-risk cases, with lifecycle position"
           icon={<BarChart3 className="h-4 w-4" />}
           action={
-            <Link to="/projects" className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand hover:underline">
+            <Link to="/projects" className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline">
               Full registry <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           }
         />
-        <div className="overflow-x-auto px-5 pb-5">
+        <div className="relative overflow-x-auto px-5 pb-5">
           <table className="w-full min-w-[880px]">
             <thead>
               <tr className="border-b border-line">
@@ -310,7 +310,7 @@ export default function Analytics() {
                   <th
                     key={h}
                     className={cn(
-                      'py-2.5 text-[10.5px] font-bold uppercase tracking-wider text-ink-3',
+                      'py-2.5 text-xs font-medium text-ink-3',
                       i < 3 ? 'text-left' : 'text-right',
                     )}
                   >
@@ -323,18 +323,18 @@ export default function Analytics() {
               {(projects.data?.projects ?? []).slice(0, 12).map((p) => (
                 <tr key={p.id} className="border-b border-line/70 last:border-0">
                   <td className="max-w-[240px] truncate py-2.5">
-                    <Link to={`/projects/${p.id}`} className="text-[12.5px] font-semibold text-ink hover:text-brand">
+                    <Link to={`/projects/${p.id}`} className="text-sm font-semibold text-ink hover:text-brand">
                       {p.name}
                     </Link>
                   </td>
-                  <td className="py-2.5 text-[12px] text-ink-2">{p.state}</td>
-                  <td className="py-2.5 text-[12px] text-ink-2">{p.currentStage}</td>
-                  <td className="py-2.5 text-right text-[12px] text-ink-2 num">{formatNumber(p.totalParcels)}</td>
-                  <td className="py-2.5 text-right text-[12px] text-ink-2 num">{formatNumber(p.openCases)}</td>
-                  <td className="py-2.5 text-right text-[12px] font-semibold text-orange-600 dark:text-orange-400 num">
+                  <td className="py-2.5 text-xs text-ink-2">{p.state}</td>
+                  <td className="py-2.5 text-xs text-ink-2">{p.currentStage}</td>
+                  <td className="py-2.5 text-right text-xs text-ink-2 num">{formatNumber(p.totalParcels)}</td>
+                  <td className="py-2.5 text-right text-xs text-ink-2 num">{formatNumber(p.openCases)}</td>
+                  <td className="py-2.5 text-right text-xs font-semibold text-orange-700 dark:text-orange-300 num">
                     {formatNumber(p.highRiskCases)}
                   </td>
-                  <td className="py-2.5 text-right text-[12px] text-ink-2 num">{p.compensationCompletionPct.toFixed(0)}%</td>
+                  <td className="py-2.5 text-right text-xs text-ink-2 num">{p.compensationCompletionPct.toFixed(0)}%</td>
                   <td className="py-2.5 text-right">
                     <RiskPill level={p.riskBand} score={p.riskScore} size="sm" />
                   </td>
@@ -345,19 +345,14 @@ export default function Analytics() {
         </div>
       </Card>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
+      <MetricStrip
+        items={[
           { label: 'States covered', value: formatNumber(s.totals.states) },
           { label: 'Districts covered', value: formatNumber(s.totals.districts) },
           { label: 'Closed milestones analysed', value: formatCompact(s.totals.observedCases) },
           { label: 'Assessment months spanned', value: formatNumber(s.months.length) },
-        ].map((m, i) => (
-          <Card key={m.label} className="p-4 animate-fade-up" style={{ animationDelay: `${i * 40}ms` }}>
-            <p className="label-xs">{m.label}</p>
-            <p className="mt-1.5 font-display text-[21px] font-extrabold leading-none text-ink num">{m.value}</p>
-          </Card>
-        ))}
-      </section>
+        ]}
+      />
     </div>
   );
 }

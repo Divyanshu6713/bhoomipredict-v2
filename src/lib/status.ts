@@ -1,3 +1,4 @@
+import { TONE_CHIP, TONE_DOT } from './tone';
 import type { AlertStatus, InterventionStatus, Severity, StageStatus } from '@/data/types';
 
 /**
@@ -14,26 +15,26 @@ export const STAGE_STATUS_LABEL: Record<StageStatus, string> = {
 };
 
 export const STAGE_STATUS_CLASS: Record<StageStatus, string> = {
-  COMPLETED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25',
-  IN_PROGRESS: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/25',
-  DELAYED: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30',
-  BLOCKED: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25',
-  PENDING: 'bg-slate-500/10 text-ink-3 border-line-strong',
+  COMPLETED: TONE_CHIP.success,
+  IN_PROGRESS: TONE_CHIP.info,
+  DELAYED: TONE_CHIP.warning,
+  BLOCKED: TONE_CHIP.danger,
+  PENDING: TONE_CHIP.neutral,
 };
 
 export const STAGE_STATUS_DOT: Record<StageStatus, string> = {
-  COMPLETED: 'bg-emerald-500',
-  IN_PROGRESS: 'bg-sky-500',
-  DELAYED: 'bg-amber-500',
-  BLOCKED: 'bg-rose-500',
-  PENDING: 'bg-slate-400',
+  COMPLETED: TONE_DOT.success,
+  IN_PROGRESS: TONE_DOT.info,
+  DELAYED: TONE_DOT.warning,
+  BLOCKED: TONE_DOT.danger,
+  PENDING: TONE_DOT.neutral,
 };
 
 export const SEVERITY_CLASS: Record<Severity, string> = {
-  Critical: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25',
-  High: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/25',
-  Medium: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25',
-  Low: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/25',
+  Critical: TONE_CHIP.danger,
+  High: TONE_CHIP.orange,
+  Medium: TONE_CHIP.warning,
+  Low: TONE_CHIP.info,
 };
 
 export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
@@ -45,11 +46,11 @@ export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
 };
 
 export const INTERVENTION_STATUS_CLASS: Record<InterventionStatus, string> = {
-  OPEN: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25',
-  ACKNOWLEDGED: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25',
-  IN_PROGRESS: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/25',
-  RESOLVED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25',
-  DISMISSED: 'bg-slate-500/10 text-ink-3 border-line-strong',
+  OPEN: TONE_CHIP.danger,
+  ACKNOWLEDGED: TONE_CHIP.warning,
+  IN_PROGRESS: TONE_CHIP.info,
+  RESOLVED: TONE_CHIP.success,
+  DISMISSED: TONE_CHIP.neutral,
 };
 
 /** Allowed next statuses, mirroring server/lib/workflow.mjs. */
@@ -62,9 +63,9 @@ export const INTERVENTION_NEXT: Record<InterventionStatus, InterventionStatus[]>
 };
 
 export const ALERT_STATUS_CLASS: Record<AlertStatus, string> = {
-  UNREAD: 'bg-brand/10 text-brand border-brand/25',
-  ACKNOWLEDGED: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25',
-  RESOLVED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25',
+  UNREAD: TONE_CHIP.brand,
+  ACKNOWLEDGED: TONE_CHIP.warning,
+  RESOLVED: TONE_CHIP.success,
 };
 
 export const CATEGORY_LABEL: Record<string, string> = {

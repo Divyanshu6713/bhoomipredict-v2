@@ -67,13 +67,13 @@ export function NotificationPanel() {
           </div>
         }
       />
-      {msg && <p className="px-5 pb-2 text-[12px] text-ink-2">{msg}</p>}
+      {msg && <p className="px-5 pb-2 text-xs text-ink-2">{msg}</p>}
       {d && (
         <div className="flex flex-wrap gap-2 px-5 pb-3">
           {d.channels.map((c) => {
             const Icon = CHANNEL_ICON[c.id] ?? Send;
             return (
-              <span key={c.id} className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px]', c.connected ? 'border-emerald-500/30 text-emerald-600' : 'border-line text-ink-3')} title={c.adapter}>
+              <span key={c.id} className={cn('inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs', c.connected ? 'border-emerald-500/30 text-emerald-700' : 'border-line text-ink-3')} title={c.adapter}>
                 <Icon className="h-3 w-3" /> {c.label}: {c.adapter}
                 {c.rule ? ` · ${c.rule}` : ''}
               </span>
@@ -86,42 +86,42 @@ export function NotificationPanel() {
         {d?.items.map((x) => (
           <div key={x.id} className={cn('px-5 py-3', !x.read && view === 'mine' && 'bg-brand/[0.03]')}>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[12.5px] font-bold text-ink">{x.subject}</p>
-              <p className="text-[10.5px] text-ink-3 num">
+              <p className="text-sm font-bold text-ink">{x.subject}</p>
+              <p className="text-xs text-ink-3 num">
                 {x.id} · {new Date(x.at).toLocaleString('en-IN')}
               </p>
             </div>
             {view === 'all' && (
-              <p className="text-[11px] text-ink-3">
+              <p className="text-xs text-ink-3">
                 To {x.recipient.name}, {x.recipient.designation}
               </p>
             )}
             <div className="mt-1.5 space-y-1">
               {x.items.slice(0, 3).map((it) => (
-                <p key={`${it.kind}${it.id}`} className="flex flex-wrap items-center gap-1.5 text-[11.5px] text-ink-2">
+                <p key={`${it.kind}${it.id}`} className="flex flex-wrap items-center gap-1.5 text-xs text-ink-2">
                   <SeverityBadge severity={it.severity} />
-                  {it.kind === 'escalation' && <Badge className="border-rose-500/25 bg-rose-500/10 text-rose-600">escalation</Badge>}
+                  {it.kind === 'escalation' && <Badge className="border-red-500/25 bg-red-500/10 text-red-600">escalation</Badge>}
                   <Link to={it.link} className="font-semibold hover:text-brand">
                     {it.title}
                   </Link>
                   <span className="text-ink-3">· {it.projectName}</span>
                 </p>
               ))}
-              {x.itemCount > 3 && <p className="text-[10.5px] text-ink-3">+ {x.itemCount - 3} more in this digest</p>}
+              {x.itemCount > 3 && <p className="text-xs text-ink-3">+ {x.itemCount - 3} more in this digest</p>}
             </div>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {x.channels.map((c) => (
-                <span key={c.channel} className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-ink-3" title={c.detail}>
+                <span key={c.channel} className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-2xs text-ink-3" title={c.detail}>
                   {c.channel} · {c.status}
                 </span>
               ))}
             </div>
           </div>
         ))}
-        {d && d.items.length === 0 && <p className="px-5 py-8 text-center text-[12px] text-ink-3">{view === 'mine' ? 'No notifications addressed to you yet.' : 'No deliveries yet — run a scan.'}</p>}
+        {d && d.items.length === 0 && <p className="px-5 py-8 text-center text-xs text-ink-3">{view === 'mine' ? 'No notifications addressed to you yet.' : 'No deliveries yet — run a scan.'}</p>}
       </div>
       <div className="flex items-center justify-between border-t border-line px-5 py-2.5">
-        <p className="text-[10.5px] text-ink-3">Email and SMS are rendered and recorded in an outbox — no gateway is connected in this prototype. Webhooks POST for real when a URL is configured.</p>
+        <p className="text-xs text-ink-3">Email and SMS are rendered and recorded in an outbox — no gateway is connected in this prototype. Webhooks POST for real when a URL is configured.</p>
         {view === 'mine' && (d?.unread ?? 0) > 0 && (
           <Button
             size="sm"

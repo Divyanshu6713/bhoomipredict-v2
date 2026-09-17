@@ -1,35 +1,39 @@
-import { useEffect, type ReactNode } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
+import { LogoMark } from '@/components/layout/Logo';
 import { AuthProvider, useAuth } from '@/auth/AuthContext';
-import { SkeletonCard } from '@/components/ui';
+import { Button, Card, EmptyState, PageSkeleton } from '@/components/ui';
 import Landing from '@/pages/Landing';
 import Login from '@/pages/Login';
-import Dashboard from '@/pages/Dashboard';
-import Projects from '@/pages/Projects';
-import ProjectDetail from '@/pages/ProjectDetail';
-import ProjectForm from '@/pages/ProjectForm';
-import Cases from '@/pages/Cases';
-import CaseDetail from '@/pages/CaseDetail';
-import Prediction from '@/pages/Prediction';
-import RiskAnalysis from '@/pages/RiskAnalysis';
-import Queue from '@/pages/Queue';
-import GeographicMap from '@/pages/GeographicMap';
-import Analytics from '@/pages/Analytics';
-import DataAndModel from '@/pages/DataAndModel';
-import Alerts from '@/pages/Alerts';
-import Reports from '@/pages/Reports';
-import About from '@/pages/About';
-import Admin from '@/pages/Admin';
-import Audit from '@/pages/Audit';
-import Documents from '@/pages/Documents';
-import Profile from '@/pages/Profile';
-import Registry from '@/pages/Registry';
-import PortfolioHierarchy from '@/pages/PortfolioHierarchy';
-import DataSources from '@/pages/DataSources';
-import Trends from '@/pages/Trends';
-import ModelLifecycle from '@/pages/ModelLifecycle';
-import Integrations from '@/pages/Integrations';
+
+// Signed-in screens load on demand so the landing and sign-in pages stay light.
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const Projects = lazy(() => import('@/pages/Projects'));
+const ProjectDetail = lazy(() => import('@/pages/ProjectDetail'));
+const ProjectForm = lazy(() => import('@/pages/ProjectForm'));
+const Cases = lazy(() => import('@/pages/Cases'));
+const CaseDetail = lazy(() => import('@/pages/CaseDetail'));
+const Prediction = lazy(() => import('@/pages/Prediction'));
+const RiskAnalysis = lazy(() => import('@/pages/RiskAnalysis'));
+const Queue = lazy(() => import('@/pages/Queue'));
+const GeographicMap = lazy(() => import('@/pages/GeographicMap'));
+const Analytics = lazy(() => import('@/pages/Analytics'));
+const DataAndModel = lazy(() => import('@/pages/DataAndModel'));
+const Alerts = lazy(() => import('@/pages/Alerts'));
+const Reports = lazy(() => import('@/pages/Reports'));
+const About = lazy(() => import('@/pages/About'));
+const Admin = lazy(() => import('@/pages/Admin'));
+const Audit = lazy(() => import('@/pages/Audit'));
+const Documents = lazy(() => import('@/pages/Documents'));
+const Profile = lazy(() => import('@/pages/Profile'));
+const Registry = lazy(() => import('@/pages/Registry'));
+const PortfolioHierarchy = lazy(() => import('@/pages/PortfolioHierarchy'));
+const DataSources = lazy(() => import('@/pages/DataSources'));
+const Trends = lazy(() => import('@/pages/Trends'));
+const ModelLifecycle = lazy(() => import('@/pages/ModelLifecycle'));
+const Integrations = lazy(() => import('@/pages/Integrations'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -54,62 +58,84 @@ function RequirePermission({ permission, children }: { permission: string; child
   const { can, user } = useAuth();
   if (!can(permission)) {
     return (
-      <div className="card p-8 text-center">
-        <p className="font-display text-[16px] font-bold text-ink">Not available for your role</p>
-        <p className="mt-1 text-[12.5px] text-ink-3">
-          {user?.roleLabel} does not have the <code className="font-mono">{permission}</code> permission. Switch to a profile with that role to use this screen.
-        </p>
-      </div>
+      <Card>
+        <EmptyState
+          icon={<Lock />}
+          title="Not available for your role"
+          description={
+            <>
+              {user?.roleLabel} does not include the <code className="rounded bg-surface-3 px-1 font-mono text-xs">{permission}</code> permission. Sign in with a profile that
+              holds it to use this screen.
+            </>
+          }
+          action={
+            <Link to="/dashboard">
+              <Button variant="secondary" size="sm" tabIndex={-1}>
+                Back to overview
+              </Button>
+            </Link>
+          }
+        />
+      </Card>
     );
   }
   return <>{children}</>;
 }
 
+function BootScreen() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-bg" aria-busy="true" aria-label="Loading LandPulse AI">
+      <div className="flex flex-col items-center gap-3">
+        <LogoMark className="h-9 w-9" />
+        <div className="h-0.5 w-24 overflow-hidden rounded-full bg-surface-3">
+          <div className="h-full w-1/3 animate-indeterminate bg-brand" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Shell() {
   const { user, loading } = useAuth();
   const location = useLocation();
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-3xl p-10">
-        <SkeletonCard lines={6} />
-      </div>
-    );
-  }
+  if (loading) return <BootScreen />;
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   return (
     <AppShell>
-      <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/new" element={<RequirePermission permission="project.create"><ProjectForm /></RequirePermission>} />
-        <Route path="/projects/:id/edit" element={<RequirePermission permission="project.edit"><ProjectForm /></RequirePermission>} />
-        <Route path="/projects/:id" element={<ProjectDetail />} />
-        <Route path="/cases" element={<Cases />} />
-        <Route path="/cases/:id" element={<CaseDetail />} />
-        <Route path="/parcels" element={<ParcelsRedirect />} />
-        <Route path="/parcels/:id" element={<ParcelRedirect />} />
-        <Route path="/predict" element={<Prediction />} />
-        <Route path="/risk" element={<RiskAnalysis />} />
-        <Route path="/queue" element={<Queue />} />
-        <Route path="/interventions" element={<Navigate to="/queue" replace />} />
-        <Route path="/map" element={<GeographicMap />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/trends" element={<Trends />} />
-        <Route path="/learning" element={<RequirePermission permission="admin.view"><ModelLifecycle /></RequirePermission>} />
-        <Route path="/integrations" element={<Integrations />} />
-        <Route path="/data" element={<DataAndModel />} />
-        <Route path="/alerts" element={<Alerts />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/documents" element={<Documents />} />
-        <Route path="/registry" element={<Registry />} />
-        <Route path="/hierarchy" element={<PortfolioHierarchy />} />
-        <Route path="/data-sources" element={<DataSources />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/admin" element={<RequirePermission permission="admin.view"><Admin /></RequirePermission>} />
-        <Route path="/audit" element={<RequirePermission permission="audit.view"><Audit /></RequirePermission>} />
-        <Route path="/about" element={<About />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+      <Suspense fallback={<PageSkeleton />}>
+        <Routes>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/projects/new" element={<RequirePermission permission="project.create"><ProjectForm /></RequirePermission>} />
+          <Route path="/projects/:id/edit" element={<RequirePermission permission="project.edit"><ProjectForm /></RequirePermission>} />
+          <Route path="/projects/:id" element={<ProjectDetail />} />
+          <Route path="/cases" element={<Cases />} />
+          <Route path="/cases/:id" element={<CaseDetail />} />
+          <Route path="/parcels" element={<ParcelsRedirect />} />
+          <Route path="/parcels/:id" element={<ParcelRedirect />} />
+          <Route path="/predict" element={<Prediction />} />
+          <Route path="/risk" element={<RiskAnalysis />} />
+          <Route path="/queue" element={<Queue />} />
+          <Route path="/interventions" element={<Navigate to="/queue" replace />} />
+          <Route path="/map" element={<GeographicMap />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/trends" element={<Trends />} />
+          <Route path="/learning" element={<RequirePermission permission="admin.view"><ModelLifecycle /></RequirePermission>} />
+          <Route path="/integrations" element={<Integrations />} />
+          <Route path="/data" element={<DataAndModel />} />
+          <Route path="/alerts" element={<Alerts />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/documents" element={<Documents />} />
+          <Route path="/registry" element={<Registry />} />
+          <Route path="/hierarchy" element={<PortfolioHierarchy />} />
+          <Route path="/data-sources" element={<DataSources />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={<RequirePermission permission="admin.view"><Admin /></RequirePermission>} />
+          <Route path="/audit" element={<RequirePermission permission="audit.view"><Audit /></RequirePermission>} />
+          <Route path="/about" element={<About />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </Suspense>
     </AppShell>
   );
 }

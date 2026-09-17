@@ -23,7 +23,7 @@ export default function Integrations() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="max-w-3xl text-[12.5px] leading-relaxed text-ink-2">
+        <p className="max-w-3xl text-sm text-ink-2">
           Existing land-acquisition management systems, state portals and government databases connect through a versioned REST API: they read risk, forecasts and recommendations for their jurisdiction, push project status updates that re-score immediately, and send completed-milestone outcomes that feed continuous learning. Inbound government data sources plug into the{' '}
           <Link to="/data-sources" className="font-semibold text-brand hover:underline">
             data integration layer
@@ -48,25 +48,25 @@ export default function Integrations() {
             }
           />
           {!can('integration.manage') ? (
-            <p className="px-5 pb-5 text-[12px] text-ink-3">Issuing API keys needs the integration.manage permission (National or State Administrator).</p>
+            <p className="px-5 pb-5 text-xs text-ink-3">Issuing API keys needs the integration.manage permission (National or State Administrator).</p>
           ) : clients.error ? (
             <ErrorState error={clients.error} />
           ) : !clients.data ? (
             <SkeletonCard lines={3} />
           ) : (
             <div className="divide-y divide-line border-t border-line">
-              {clients.data.clients.length === 0 && <p className="px-5 py-5 text-[12px] text-ink-3">No API clients yet.</p>}
+              {clients.data.clients.length === 0 && <p className="px-5 py-5 text-xs text-ink-3">No API clients yet.</p>}
               {clients.data.clients.map((c) => (
                 <div key={c.id} className="flex flex-wrap items-start gap-3 px-5 py-3">
                   <div className="min-w-[240px] flex-1">
-                    <p className="flex items-center gap-2 text-[13px] font-bold text-ink">
+                    <p className="flex items-center gap-2 text-sm font-bold text-ink">
                       {c.name}
-                      <Badge className={c.active ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600' : 'border-rose-500/25 bg-rose-500/10 text-rose-600'}>{c.active ? 'active' : 'revoked'}</Badge>
+                      <Badge className={c.active ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700' : 'border-red-500/25 bg-red-500/10 text-red-600'}>{c.active ? 'active' : 'revoked'}</Badge>
                     </p>
-                    <p className="font-mono text-[11px] text-ink-3">
+                    <p className="font-mono text-xs text-ink-3">
                       {c.id} · {c.keyPreview} · {c.rateLimitPerMinute}/min
                     </p>
-                    <p className="mt-1 text-[11.5px] text-ink-2">Jurisdiction: {c.jurisdiction}</p>
+                    <p className="mt-1 text-xs text-ink-2">Jurisdiction: {c.jurisdiction}</p>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {c.scopes.map((sc) => (
                         <Badge key={sc} className="border-brand/25 bg-brand/10 font-mono text-brand">
@@ -80,14 +80,14 @@ export default function Integrations() {
                       )}
                     </div>
                   </div>
-                  <div className="text-right text-[11px] text-ink-3">
+                  <div className="text-right text-xs text-ink-3">
                     <p>created {formatDate(c.createdAt)} by {c.createdBy.name}</p>
                     <p>{formatNumber(c.requests)} requests{c.lastUsedAt ? ` · last ${formatDate(c.lastUsedAt)}` : ''}</p>
                     {c.active && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="mt-1 gap-1 text-rose-600"
+                        className="mt-1 gap-1 text-red-600"
                         onClick={async () => {
                           await revokeApiClient(c.id);
                           setN((x) => x + 1);
@@ -105,7 +105,7 @@ export default function Integrations() {
 
         <Card>
           <CardHeader title="Security posture" subtitle="What protects the platform and its integrations today" icon={<Lock className="h-4 w-4" />} />
-          <div className="space-y-2 px-5 pb-5 text-[12px]">
+          <div className="space-y-2 px-5 pb-5 text-xs">
             {posture.data &&
               (
                 [
@@ -126,17 +126,17 @@ export default function Integrations() {
                 </div>
               ))}
             {audit.data && (
-              <div className={cn('mt-3 rounded-xl border px-3 py-2.5', audit.data.valid ? 'border-emerald-500/30 bg-emerald-500/[0.07]' : 'border-rose-500/30 bg-rose-500/[0.07]')}>
+              <div className={cn('mt-3 rounded-xl border px-3 py-2.5', audit.data.valid ? 'border-emerald-500/30 bg-emerald-500/[0.07]' : 'border-red-500/30 bg-red-500/[0.07]')}>
                 <p className="flex items-center gap-1.5 font-semibold text-ink">
-                  <ShieldCheck className={cn('h-4 w-4', audit.data.valid ? 'text-emerald-500' : 'text-rose-500')} /> Audit chain {audit.data.valid ? 'verified' : 'BROKEN'}
+                  <ShieldCheck className={cn('h-4 w-4', audit.data.valid ? 'text-emerald-500' : 'text-red-500')} /> Audit chain {audit.data.valid ? 'verified' : 'BROKEN'}
                 </p>
-                <p className="mt-0.5 text-[11px] text-ink-3">
+                <p className="mt-0.5 text-xs text-ink-3">
                   {formatNumber(audit.data.chained)} hash-chained entries{audit.data.legacyUnchained ? ` · ${audit.data.legacyUnchained} earlier unchained` : ''} · head <span className="font-mono">{audit.data.head.slice(0, 12)}…</span>
                 </p>
-                {audit.data.brokenAt && <p className="mt-1 text-[11px] text-rose-600">Line {audit.data.brokenAt.line}: {audit.data.brokenAt.reason}</p>}
+                {audit.data.brokenAt && <p className="mt-1 text-xs text-red-600">Line {audit.data.brokenAt.line}: {audit.data.brokenAt.reason}</p>}
               </div>
             )}
-            <p className="pt-1 text-[10.5px] leading-relaxed text-ink-3">Production path: government SSO with multi-factor authentication, TLS termination, a transactional database with row-level security, and data-protection controls for landowner personal data.</p>
+            <p className="pt-1 text-xs text-ink-3">Production path: government SSO with multi-factor authentication, TLS termination, a transactional database with row-level security, and data-protection controls for landowner personal data.</p>
           </div>
         </Card>
       </section>
@@ -160,17 +160,17 @@ export default function Integrations() {
             Object.entries(spec.data.paths).flatMap(([path, methods]) =>
               Object.entries(methods).map(([method, op]) => (
                 <div key={`${method}${path}`} className="flex flex-wrap items-start gap-3 px-5 py-2.5">
-                  <Badge className={cn('w-14 justify-center font-mono uppercase', method === 'get' ? 'border-sky-500/25 bg-sky-500/10 text-sky-600' : method === 'post' ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600' : 'border-amber-500/25 bg-amber-500/10 text-amber-600')}>{method}</Badge>
-                  <code className="w-56 font-mono text-[12px] font-semibold text-ink">/api/v1{path}</code>
+                  <Badge className={cn('w-14 justify-center font-mono uppercase', method === 'get' ? 'border-sky-500/25 bg-sky-500/10 text-sky-700' : method === 'post' ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700' : 'border-amber-500/25 bg-amber-500/10 text-amber-700')}>{method}</Badge>
+                  <code className="w-56 font-mono text-xs font-semibold text-ink">/api/v1{path}</code>
                   <div className="min-w-[260px] flex-1">
-                    <p className="text-[12.5px] font-semibold text-ink">{op.summary}</p>
-                    <p className="text-[11px] text-ink-3">{op.description}</p>
+                    <p className="text-sm font-semibold text-ink">{op.summary}</p>
+                    <p className="text-xs text-ink-3">{op.description}</p>
                   </div>
                 </div>
               )),
             )}
         </div>
-        <pre className="m-5 overflow-x-auto rounded-xl bg-navy-900 p-3 font-mono text-[11px] leading-relaxed text-white/80">{`curl -H "X-API-Key: lp_xxxxxx_…" ${location.origin}/api/v1/projects/LAP-1000/risk
+        <pre className="m-5 overflow-x-auto rounded-xl bg-navy-900 p-3 font-mono text-xs text-white/80">{`curl -H "X-API-Key: lp_xxxxxx_…" ${location.origin}/api/v1/projects/LAP-1000/risk
 
 curl -X PATCH -H "X-API-Key: …" -H "Content-Type: application/json" \\
      -d '{"compensationCompletionPct": 72, "approvalDelayDays": 20}' ${location.origin}/api/v1/projects/LAP-1000
@@ -227,7 +227,7 @@ function CreateClient({ scopes, defaultPosition, onClose, onCreated }: { scopes:
     >
       {key ? (
         <div className="space-y-2">
-          <code className="block break-all rounded-lg bg-navy-900 p-3 font-mono text-[12px] text-white">{key}</code>
+          <code className="block break-all rounded-lg bg-navy-900 p-3 font-mono text-xs text-white">{key}</code>
           <Button
             size="sm"
             variant="outline"
@@ -248,7 +248,7 @@ function CreateClient({ scopes, defaultPosition, onClose, onCreated }: { scopes:
           <Field label="Scopes">
             <div className="space-y-1.5">
               {Object.entries(scopes).map(([id, desc]) => (
-                <label key={id} className="flex items-start gap-2 text-[12px]">
+                <label key={id} className="flex items-start gap-2 text-xs">
                   <input type="checkbox" className="mt-0.5" checked={chosen.includes(id)} onChange={(e) => setChosen((c) => (e.target.checked ? [...c, id] : c.filter((x) => x !== id)))} />
                   <span>
                     <code className="font-mono font-semibold text-ink">{id}</code> <span className="text-ink-3">— {desc}</span>
@@ -265,7 +265,7 @@ function CreateClient({ scopes, defaultPosition, onClose, onCreated }: { scopes:
               <input className={inputClass} value={webhook} onChange={(e) => setWebhook(e.target.value)} placeholder="https://…" />
             </Field>
           </div>
-          {error && <p className="text-[12px] font-medium text-rose-600">{error}</p>}
+          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
         </div>
       )}
     </Modal>

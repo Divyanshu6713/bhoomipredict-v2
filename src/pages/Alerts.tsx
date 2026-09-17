@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Bell, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Badge, Button, Card, CardHeader, DemoDataBadge, Tabs } from '@/components/ui';
+import { Button, Card, CardHeader, DemoDataBadge, MetricStrip, Tabs } from '@/components/ui';
 import { ErrorState } from '@/components/ui/primitives';
 import { FilterBar, allOption, toOptions } from '@/components/ui/FilterBar';
 import { AlertRow } from '@/components/workflow';
@@ -8,7 +8,7 @@ import { NotificationPanel } from '@/components/workflow/NotificationPanel';
 import { useApi, useFilters } from '@/hooks';
 import { useAuth } from '@/auth/AuthContext';
 import { fetchAlerts, fetchFacets } from '@/api/client';
-import { CATEGORY_LABEL, SEVERITY_CLASS } from '@/lib/status';
+import { CATEGORY_LABEL } from '@/lib/status';
 import { formatNumber } from '@/lib/format';
 import type { AlertItem, AlertList } from '@/data/types';
 
@@ -29,28 +29,24 @@ export default function Alerts() {
 
   return (
     <div className="space-y-4">
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {(['Critical', 'High', 'Medium'] as const).map((sev) => {
-          const row = data?.counts.bySeverity.find((c) => c.key === sev);
-          return (
-            <button key={sev} onClick={() => set({ severity: values.severity === sev ? 'all' : sev })} className="card p-4 text-left hover:border-line-strong">
-              <div className="flex items-center justify-between">
-                <p className="label-xs">{sev} alerts</p>
-                <Badge className={SEVERITY_CLASS[sev]}>{sev}</Badge>
-              </div>
-              <p className="mt-2 font-display text-[24px] font-extrabold leading-none text-ink num">{formatNumber(row?.count ?? 0)}</p>
-              <p className="mt-1 text-[10.5px] text-ink-3 num">{formatNumber(row?.unread ?? 0)} unread</p>
-            </button>
-          );
-        })}
-        <div className="card p-4">
-          <p className="label-xs">Unread in view</p>
-          <p className="mt-2 font-display text-[24px] font-extrabold leading-none text-brand num">{formatNumber(data?.counts.unread ?? 0)}</p>
-          <p className="mt-1 text-[10.5px] text-ink-3">{user?.scopeLabel}</p>
-        </div>
-      </section>
+      <MetricStrip
+        items={[
+          ...(['Critical', 'High', 'Medium'] as const).map((sev) => {
+            const row = data?.counts.bySeverity.find((c) => c.key === sev);
+            return {
+              label: `${sev} alerts`,
+              value: formatNumber(row?.count ?? 0),
+              hint: `${formatNumber(row?.unread ?? 0)} unread`,
+              tone: sev === 'Critical' ? ('danger' as const) : sev === 'High' ? ('orange' as const) : undefined,
+              active: values.severity === sev,
+              onClick: () => set({ severity: values.severity === sev ? 'all' : sev }),
+            };
+          }),
+          { label: 'Unread in view', value: formatNumber(data?.counts.unread ?? 0), hint: user?.scopeLabel },
+        ]}
+      />
 
-      <Card className="animate-fade-up">
+      <Card>
         <CardHeader
           title="Alert centre"
           subtitle="Critical risk, risk increases, deadline breaches, compensation and legal load, documentation failures, blocked stages, dependency blockages, case backlog and timeline overruns"
@@ -80,7 +76,7 @@ export default function Alerts() {
           onReset={reset}
           activeCount={activeCount}
           extra={
-            <label className="flex items-center gap-1.5 pb-2.5 text-[12px] text-ink-2">
+            <label className="flex items-center gap-1.5 pb-2.5 text-xs text-ink-2">
               <input type="checkbox" checked={values.focus === '1'} onChange={(e) => set({ focus: e.target.checked ? '1' : '' })} className="accent-[rgb(var(--c-brand))]" /> Only my role's focus areas
             </label>
           }
@@ -89,12 +85,12 @@ export default function Alerts() {
           {(data?.items ?? []).map((a) => (
             <AlertRow key={a.id} alert={a} canUpdate={can('alert.update')} onChanged={replace} />
           ))}
-          {result.loading && <p className="px-5 py-10 text-center text-[12px] text-ink-3">Evaluating rules…</p>}
-          {!result.loading && (data?.items.length ?? 0) === 0 && <p className="px-5 py-12 text-center text-[12.5px] text-ink-3">No alerts in this view.</p>}
+          {result.loading && <p className="px-5 py-10 text-center text-xs text-ink-3">Evaluating rules…</p>}
+          {!result.loading && (data?.items.length ?? 0) === 0 && <p className="px-5 py-12 text-center text-sm text-ink-3">No alerts in this view.</p>}
         </div>
         {data && data.pages > 1 && (
           <div className="flex items-center justify-between border-t border-line px-5 py-3">
-            <p className="text-[11.5px] text-ink-3 num">
+            <p className="text-xs text-ink-3 num">
               Page {data.page} of {data.pages} · {formatNumber(data.total)} alerts
             </p>
             <div className="flex gap-2">
@@ -107,7 +103,7 @@ export default function Alerts() {
             </div>
           </div>
         )}
-        <p className="border-t border-line px-5 py-3 text-[11px] text-ink-3">Alert status is stored and audited. Opening an alert's link from an unread alert marks it acknowledged. An alert disappears from the active list when its trigger condition no longer holds.</p>
+        <p className="border-t border-line px-5 py-3 text-xs text-ink-3">Alert status is stored and audited. Opening an alert's link from an unread alert marks it acknowledged. An alert disappears from the active list when its trigger condition no longer holds.</p>
       </Card>
 
       <NotificationPanel />

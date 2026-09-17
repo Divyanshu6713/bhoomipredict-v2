@@ -2,47 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Colour tokens (RGB triplets so Tailwind can apply opacity).
+ * Light is the product default; dark is an opt-in neutral theme.
+ */
 @layer base {
   :root {
-    --c-bg: 244 246 250;
-    --c-surface: 255 255 255;
-    --c-surface-2: 248 250 252;
-    --c-surface-3: 241 245 249;
-    --c-line: 226 232 240;
-    --c-line-strong: 203 213 225;
-    --c-ink: 10 20 40;
-    --c-ink-2: 71 85 105;
-    --c-ink-3: 130 143 163;
-    --c-brand: 29 78 216;
-    --c-brand-soft: 219 234 254;
-    --c-brand-ink: 30 58 138;
+    --c-bg: 247 248 250;          /* page ground */
+    --c-surface: 255 255 255;     /* cards, panels */
+    --c-surface-2: 249 250 251;   /* subtle fills, table headers */
+    --c-surface-3: 241 243 246;   /* tracks, hovers, skeletons */
+    --c-line: 230 232 236;        /* default borders */
+    --c-line-strong: 208 213 221; /* inputs, emphasised borders */
+    --c-ink: 17 24 39;            /* primary text */
+    --c-ink-2: 71 84 103;         /* secondary text */
+    --c-ink-3: 102 112 133;       /* metadata (4.8:1 on white) */
+    --c-brand: 37 99 235;         /* primary action */
+    --c-brand-soft: 239 244 255;
+    --c-brand-ink: 29 78 216;
+    --c-success: 22 128 84;
+    --c-warning: 181 110 8;
+    --c-danger: 200 40 40;
+    color-scheme: light;
   }
 
   .dark {
-    --c-bg: 5 10 22;
-    --c-surface: 11 23 48;
-    --c-surface-2: 15 30 61;
-    --c-surface-3: 20 41 79;
-    --c-line: 25 50 96;
-    --c-line-strong: 34 68 127;
-    --c-ink: 232 240 254;
-    --c-ink-2: 160 178 208;
-    --c-ink-3: 120 140 174;
-    --c-brand: 96 150 255;
-    --c-brand-soft: 16 38 82;
-    --c-brand-ink: 186 214 255;
+    --c-bg: 12 13 16;
+    --c-surface: 20 22 26;
+    --c-surface-2: 25 27 32;
+    --c-surface-3: 33 36 42;
+    --c-line: 40 43 50;
+    --c-line-strong: 56 60 69;
+    --c-ink: 236 238 242;
+    --c-ink-2: 170 176 188;
+    --c-ink-3: 134 141 155;
+    --c-brand: 96 145 250;
+    --c-brand-soft: 25 36 60;
+    --c-brand-ink: 150 185 255;
+    --c-success: 74 196 140;
+    --c-warning: 232 176 72;
+    --c-danger: 244 112 112;
+    color-scheme: dark;
   }
 
   * { border-color: rgb(var(--c-line)); }
 
-  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  html { -webkit-text-size-adjust: 100%; }
 
   body {
-    @apply bg-bg text-ink font-sans antialiased;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'ss01';
+    @apply bg-bg text-base text-ink font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+    text-rendering: optimizeLegibility;
   }
 
-  ::selection { background: rgb(var(--c-brand) / 0.18); }
+  h1, h2, h3, h4 { letter-spacing: -0.011em; }
+
+  ::selection { background: rgb(var(--c-brand) / 0.16); }
+
+  :focus-visible { outline: 2px solid rgb(var(--c-brand) / 0.55); outline-offset: 2px; }
 
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -54,6 +71,8 @@
   }
   ::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-ink-3)); background-clip: content-box; }
 
+  input[type='range'] { accent-color: rgb(var(--c-brand)); }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: .001ms !important;
@@ -64,36 +83,47 @@
 }
 
 @layer components {
+  /* Surfaces */
+  /* min-w-0 lets a card shrink inside grid and flex tracks instead of forcing overflow. */
   .card {
-    @apply bg-surface border border-line rounded-2xl shadow-card;
+    @apply min-w-0 rounded-xl border border-line bg-surface shadow-card;
   }
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-card-hover hover:border-line-strong hover:-translate-y-0.5;
+    @apply transition-[border-color,box-shadow] duration-150 hover:border-line-strong hover:shadow-card-hover;
   }
+
+  /* Text roles */
   .label-xs {
-    @apply text-[11px] font-semibold uppercase tracking-[0.09em] text-ink-3;
+    @apply text-xs font-medium text-ink-2;
+  }
+  .eyebrow {
+    @apply text-xs font-medium text-ink-3;
   }
   .num {
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
+    font-feature-settings: 'tnum', 'cv11';
   }
+
+  /* Interaction */
   .focus-ring {
-    @apply outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg;
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-1 focus-visible:ring-offset-surface;
   }
-  .grid-lines {
-    background-image:
-      linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px);
-    background-size: 44px 44px;
+  .input {
+    @apply h-9 w-full rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink shadow-xs placeholder:text-ink-3 transition-[border-color,box-shadow] duration-150 hover:border-ink-3/60 focus:border-brand focus:outline-none focus:ring-[3px] focus:ring-brand/15 disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-ink-3;
   }
-  .glass {
-    background: rgba(9, 19, 40, 0.55);
-    backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  .link {
+    @apply font-medium text-brand hover:text-brand-ink hover:underline underline-offset-2;
   }
+
+  /* Legacy decorative helpers from the previous design — intentionally inert. */
+  .grid-lines { background-image: none; }
+  .glass { background: rgb(var(--c-surface)); }
+
   .scrollbar-none::-webkit-scrollbar { display: none; }
   .scrollbar-none { scrollbar-width: none; }
 }
 
 .recharts-surface:focus { outline: none; }
-.recharts-cartesian-axis-tick text { font-size: 11px; }
+.recharts-cartesian-axis-tick text { font-size: 11px; fill: rgb(var(--c-ink-3)); }
+.recharts-legend-item-text { color: rgb(var(--c-ink-2)) !important; font-size: 12px; }
+.recharts-default-legend { font-size: 12px; }

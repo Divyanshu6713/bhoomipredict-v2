@@ -22,9 +22,9 @@ export function StageForecast({ forecast, className }: { forecast: ProjectForeca
         icon={<CalendarRange className="h-4 w-4" />}
       />
       <div className="grid gap-4 px-5 pb-5 lg:grid-cols-[1.5fr_1fr]">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-[12px]">
-            <thead className="text-left text-[10.5px] uppercase tracking-wider text-ink-3">
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-[560px] text-xs">
+            <thead className="text-left text-xs font-medium text-ink-3">
               <tr>
                 <th className="py-1.5 pr-3">Stage</th>
                 <th className="py-1.5 pr-3">P(late &gt; 30 days)</th>
@@ -42,7 +42,7 @@ export function StageForecast({ forecast, className }: { forecast: ProjectForeca
                   <tr key={s.stage}>
                     <td className="py-2 pr-3">
                       <span className={cn('font-semibold text-ink', s.phase === 'current' && 'text-brand')}>{s.stage}</span>
-                      <span className="block text-[10px] text-ink-3" title={s.basis}>
+                      <span className="block text-2xs text-ink-3" title={s.basis}>
                         {s.phase === 'current' ? 'current · ' : ''}
                         {s.phase === 'current' ? s.basis : `history ${Math.round((s.historicalDelayRate ?? 0) * 100)}% · adjusted for this project`}
                       </span>
@@ -71,13 +71,13 @@ export function StageForecast({ forecast, className }: { forecast: ProjectForeca
           <KeyValue
             columns={2}
             rows={[
-              { label: 'Chance of missing target', value: `${miss}%`, tone: miss >= 50 ? 'text-rose-600 dark:text-rose-400' : miss >= 25 ? 'text-amber-600' : 'text-emerald-600', hint: `target ${formatDate(c.targetCompletionDate)}` },
+              { label: 'Chance of missing target', value: `${miss}%`, tone: miss >= 50 ? 'text-red-700 dark:text-red-300' : miss >= 25 ? 'text-amber-700' : 'text-emerald-700', hint: `target ${formatDate(c.targetCompletionDate)}` },
               { label: 'Likely overrun (P50)', value: c.p50OverrunDays ? `${c.p50OverrunDays} days` : 'none', hint: 'beyond the sanctioned target' },
               { label: 'Completion P50', value: formatDate(c.p50), hint: 'half of runs finish by' },
               { label: 'Completion P80', value: formatDate(c.p80), hint: 'four in five runs finish by' },
             ]}
           />
-          <p className="flex gap-1.5 rounded-xl border border-line bg-surface-2 px-3 py-2 text-[10.5px] leading-relaxed text-ink-3">
+          <p className="flex gap-1.5 rounded-lg border border-line bg-surface-2 px-3 py-2 text-xs text-ink-3">
             <Info className="mt-0.5 h-3 w-3 shrink-0" />
             Project effect {forecast.projectEffectLogOdds >= 0 ? '+' : ''}
             {forecast.projectEffectLogOdds} log-odds vs a typical case at this stage, decaying ×{forecast.effectDecay} per later stage. {forecast.caveat}

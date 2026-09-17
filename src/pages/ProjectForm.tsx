@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Info, Network, Save } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { Badge, Button, Card, CardHeader, DemoDataBadge, Select, SkeletonCard } from '@/components/ui';
+import { Badge, Button, Card, DemoDataBadge, Select, SkeletonCard } from '@/components/ui';
 import { ErrorState } from '@/components/ui/primitives';
 import { Field, inputClass } from '@/components/ui/Modal';
 import { useApi } from '@/hooks';
@@ -156,27 +156,41 @@ export default function ProjectForm() {
 
   const input = (k: string, label: string, props: Record<string, unknown> = {}, hint?: string) => (
     <Field label={label} error={errors[k]} hint={locked(k) ? 'Fixed by the case records for corpus projects' : hint}>
-      <input value={String(form[k] ?? '')} onChange={(e) => set(k, e.target.value)} disabled={locked(k)} className={cn(inputClass, errors[k] && 'border-rose-500', locked(k) && 'opacity-60')} {...props} />
+      <input value={String(form[k] ?? '')} onChange={(e) => set(k, e.target.value)} disabled={locked(k)} className={cn(inputClass, errors[k] && 'border-red-500')} aria-invalid={Boolean(errors[k]) || undefined} {...props} />
     </Field>
   );
 
+  const changedCount = changed.filter((k) => EDITABLE.includes(k)).length;
+  const errorCount = Object.values(errors).filter(Boolean).length;
+
   return (
-    <div className="mx-auto max-w-5xl space-y-4">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-ink-3 hover:text-ink">
+        <button type="button" onClick={() => navigate(-1)} className="inline-flex items-center gap-1 rounded text-sm text-ink-3 hover:text-ink focus-ring">
           <ArrowLeft className="h-3.5 w-3.5" /> Back
         </button>
         <DemoDataBadge />
       </div>
 
-      {general && <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-[12.5px] font-medium text-rose-700 dark:text-rose-300">{general}</div>}
+      {editing && <h2 className="text-xl font-semibold tracking-tight text-ink">Edit {existing.data?.project.name}</h2>}
 
-      <Card>
-        <CardHeader title={editing ? `Edit ${existing.data?.project.name}` : 'New acquisition project'} subtitle="Validated server-side: state and district must exist, the acquiring body must be eligible for the type and place, coordinates must fall inside the district, and progress must fit the stage." icon={<Info className="h-4 w-4" />} />
-        <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="flex items-start gap-2.5 rounded-lg border border-line bg-surface px-4 py-3 text-sm text-ink-2">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-ink-3" aria-hidden />
+        <p>Checked on save: the State and district must exist, the acquiring body must be eligible for the type and place, coordinates must fall inside the district, and progress must fit the stage.</p>
+      </div>
+
+      {general && (
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-400/25 dark:bg-red-400/10 dark:text-red-200">
+          <p className="font-medium">{general}</p>
+          {errorCount > 0 && <p className="mt-0.5">The fields that need attention are marked below.</p>}
+        </div>
+      )}
+
+      <Card className="divide-y divide-line">
+        <FormSection title="Basics" description="How the project is named and classified.">
           <div className="sm:col-span-2 lg:col-span-3">{input('name', 'Project name', { placeholder: 'e.g. Outer Ring Road — Segment 2' })}</div>
           <Field label="Project type" error={errors.type} hint={locked('type') ? 'Fixed for corpus projects' : undefined}>
-            <Select value={String(form.type)} onChange={(v) => set('type', v)} options={(options.data?.projectTypes ?? []).map((t) => ({ label: t.name, value: t.name }))} className={locked('type') ? 'pointer-events-none opacity-60' : ''} />
+            <Select value={String(form.type)} onChange={(v) => set('type', v)} disabled={locked('type')} options={(options.data?.projectTypes ?? []).map((t) => ({ label: t.name, value: t.name }))} />
           </Field>
           <Field label="Subtype" error={errors.subtype}>
             <Select value={String(form.subtype || typeDef?.subtypes[0] || '')} onChange={(v) => set('subtype', v)} options={(typeDef?.subtypes ?? []).map((s) => ({ label: s, value: s }))} />
@@ -184,72 +198,117 @@ export default function ProjectForm() {
           <Field label="Priority" error={errors.priority}>
             <Select value={String(form.priority)} onChange={(v) => set('priority', v)} options={['Routine', 'Important', 'Critical'].map((s) => ({ label: s, value: s }))} />
           </Field>
+        </FormSection>
+
+        <FormSection title="Location and authority" description="Decides the dependency network — district offices, land records and clearances.">
           <Field label="State" error={errors.state} hint={locked('state') ? 'Fixed for corpus projects' : user?.scope !== 'national' ? 'Limited to your jurisdiction' : undefined}>
-            <Select value={String(form.state)} onChange={(v) => { set('state', v); set('district', ''); }} options={[{ label: 'Select state', value: '' }, ...(options.data?.states ?? []).map((s) => ({ label: s, value: s }))]} className={locked('state') ? 'pointer-events-none opacity-60' : ''} />
+            <Select
+              value={String(form.state)}
+              disabled={locked('state')}
+              onChange={(v) => {
+                set('state', v);
+                set('district', '');
+              }}
+              options={[{ label: 'Select State', value: '' }, ...(options.data?.states ?? []).map((s) => ({ label: s, value: s }))]}
+            />
           </Field>
           <Field label="District" error={errors.district}>
-            <Select value={String(form.district)} onChange={(v) => { set('district', v); set('subDistrict', ''); }} options={[{ label: 'Select district', value: '' }, ...(options.data?.districts ?? []).map((d) => ({ label: d.district, value: d.district }))]} />
+            <Select
+              value={String(form.district)}
+              disabled={!form.state}
+              onChange={(v) => {
+                set('district', v);
+                set('subDistrict', '');
+              }}
+              options={[{ label: form.state ? 'Select district' : 'Select a State first', value: '' }, ...(options.data?.districts ?? []).map((d) => ({ label: d.district, value: d.district }))]}
+            />
           </Field>
           <Field label="Taluk / tehsil" error={errors.subDistrict}>
-            <Select value={String(form.subDistrict)} onChange={(v) => set('subDistrict', v)} options={[{ label: 'Select', value: '' }, ...(districtDef?.subDistricts ?? []).map((s) => ({ label: s, value: s }))]} />
+            <Select value={String(form.subDistrict)} disabled={!form.district} onChange={(v) => set('subDistrict', v)} options={[{ label: 'Select', value: '' }, ...(districtDef?.subDistricts ?? []).map((s) => ({ label: s, value: s }))]} />
           </Field>
           <div className="sm:col-span-2 lg:col-span-3">
-            <Field label="Primary acquiring / requiring body" error={errors.authority} hint="Only bodies eligible for this project type in this state and district are offered.">
+            <Field label="Primary acquiring / requiring body" error={errors.authority} hint="Only bodies eligible for this project type in this State and district are offered.">
               <Select value={String(form.authority || options.data?.authorityOptions?.[0] || '')} onChange={(v) => set('authority', v)} options={(options.data?.authorityOptions ?? []).map((a) => ({ label: a, value: a }))} />
             </Field>
           </div>
+          {input('lat', 'Latitude', { type: 'number', step: '0.0001', inputMode: 'decimal' }, 'Must fall inside the district')}
+          {input('lon', 'Longitude', { type: 'number', step: '0.0001', inputMode: 'decimal' })}
+        </FormSection>
+
+        <FormSection title="Scale and schedule" description="Land requirement, people affected and the statutory timeline.">
           {input('landRequirementHa', 'Land area (ha)', { type: 'number', min: 0 })}
           {input('totalParcels', 'Total parcels', { type: 'number', min: 1 })}
           {input('affectedFamilies', 'Affected families', { type: 'number', min: 0 })}
-          <Field label="Current stage" error={errors.currentStage} hint={locked('currentStage') ? 'Use "Record milestone achieved" on the project page' : undefined}>
-            <Select value={String(form.currentStage)} onChange={(v) => set('currentStage', v)} options={LIFECYCLE_STAGES.map((s) => ({ label: s, value: s }))} className={locked('currentStage') ? 'pointer-events-none opacity-60' : ''} />
+          <Field label="Current stage" error={errors.currentStage} hint={locked('currentStage') ? 'Use “Record milestone” on the project page' : undefined}>
+            <Select value={String(form.currentStage)} disabled={locked('currentStage')} onChange={(v) => set('currentStage', v)} options={LIFECYCLE_STAGES.map((s) => ({ label: s, value: s }))} />
           </Field>
           {input('startDate', 'Start date', { type: 'date' })}
           {input('targetCompletionDate', 'Expected completion date', { type: 'date' })}
-          {input('compensationCompletionPct', 'Compensation completion %', { type: 'number', min: 0, max: 100 }, 'Must be 0 before Valuation')}
-          {input('possessionCompletionPct', 'Possession completion %', { type: 'number', min: 0, max: 100 }, 'Must be 0 before Possession')}
-          {input('rrProgressPct', 'R&R completion %', { type: 'number', min: 0, max: 100 })}
-          {input('avgDocumentCompleteness', 'Documentation completeness %', { type: 'number', min: 0, max: 100 })}
-          {input('legalCases', 'Legal dispute count', { type: 'number', min: 0 })}
+        </FormSection>
+
+        <FormSection title="Progress and blockers" description="The signals the model weighs most heavily.">
+          {input('compensationCompletionPct', 'Compensation completion (%)', { type: 'number', min: 0, max: 100 }, 'Must be 0 before Valuation')}
+          {input('possessionCompletionPct', 'Possession completion (%)', { type: 'number', min: 0, max: 100 }, 'Must be 0 before Possession')}
+          {input('rrProgressPct', 'R&R completion (%)', { type: 'number', min: 0, max: 100 })}
+          {input('avgDocumentCompleteness', 'Documentation completeness (%)', { type: 'number', min: 0, max: 100 })}
+          {input('legalCases', 'Legal disputes', { type: 'number', min: 0 })}
           {input('approvalDelayDays', 'Approval delay (days)', { type: 'number', min: 0 })}
+        </FormSection>
+
+        <FormSection title="Site conditions" description="Ownership, stakeholders and crossings that add dependencies.">
           <Field label="Ownership complexity">
             <Select value={String(form.dominantOwnership)} onChange={(v) => set('dominantOwnership', v)} options={['Single', 'Joint', 'Fragmented', 'Disputed'].map((s) => ({ label: s, value: s }))} />
           </Field>
           <Field label="Stakeholder responsiveness">
             <Select value={String(form.stakeholderResponsiveness)} onChange={(v) => set('stakeholderResponsiveness', v)} options={['Low', 'Moderate', 'High'].map((s) => ({ label: s, value: s }))} />
           </Field>
-          <div />
-          {input('lat', 'Latitude', { type: 'number', step: '0.0001' }, 'Must fall inside the district')}
-          {input('lon', 'Longitude', { type: 'number', step: '0.0001' })}
-          <div className="flex flex-col justify-end gap-1.5 pb-1">
-            {(
-              [
-                ['forestLand', 'Forest land in alignment'],
-                ['crossesRailway', 'Crosses a railway line'],
-                ['crossesHighway', 'Crosses a national highway'],
-              ] as const
-            ).map(([k, label]) => (
-              <label key={k} className="flex items-center gap-2 text-[12.5px] text-ink-2">
-                <input type="checkbox" checked={Boolean(form[k])} onChange={(e) => set(k, e.target.checked)} className="accent-[rgb(var(--c-brand))]" /> {label}
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-2 px-5 py-3">
-          <p className="flex items-center gap-1.5 text-[11.5px] text-ink-3">
-            <Network className="h-3.5 w-3.5" /> The dependency network, lifecycle and risk are recomputed from these fields when saved.
-            {editing && <Badge className="ml-1">{changed.filter((k) => EDITABLE.includes(k)).length} changed</Badge>}
+          <fieldset className="sm:col-span-2 lg:col-span-3">
+            <legend className="mb-2 text-xs font-medium text-ink-2">Crossings and land type</legend>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              {(
+                [
+                  ['forestLand', 'Forest land in alignment'],
+                  ['crossesRailway', 'Crosses a railway line'],
+                  ['crossesHighway', 'Crosses a national highway'],
+                ] as const
+              ).map(([k, label]) => (
+                <label key={k} className="flex cursor-pointer items-center gap-2 text-sm text-ink-2">
+                  <input type="checkbox" checked={Boolean(form[k])} onChange={(e) => set(k, e.target.checked)} className="h-4 w-4 rounded border-line-strong accent-[rgb(var(--c-brand))]" /> {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </FormSection>
+
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-b-xl bg-surface-2/95 px-5 py-3 backdrop-blur">
+          <p className="flex items-center gap-1.5 text-sm text-ink-3">
+            <Network className="h-4 w-4" aria-hidden /> Dependencies, lifecycle and risk are recomputed on save.
+            {editing && <Badge className="ml-1">{changedCount} changed</Badge>}
           </p>
           <div className="flex gap-2">
             <Link to={editing ? `/projects/${id}` : '/projects'}>
-              <Button variant="ghost">Cancel</Button>
+              <Button variant="ghost" tabIndex={-1}>
+                Cancel
+              </Button>
             </Link>
-            <Button onClick={submit} disabled={busy || (editing && changed.filter((k) => EDITABLE.includes(k)).length === 0)} className="gap-1.5">
-              <Save className="h-4 w-4" /> {busy ? 'Saving…' : editing ? 'Save changes' : 'Create project'}
+            <Button onClick={submit} loading={busy} disabled={editing && changedCount === 0}>
+              {!busy && <Save className="h-4 w-4" />} {editing ? 'Save changes' : 'Create project'}
             </Button>
           </div>
         </div>
       </Card>
     </div>
+  );
+}
+
+function FormSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="grid gap-5 px-5 py-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+      <div>
+        <h3 className="text-base font-semibold text-ink">{title}</h3>
+        <p className="mt-1 text-sm text-ink-3">{description}</p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+    </section>
   );
 }
