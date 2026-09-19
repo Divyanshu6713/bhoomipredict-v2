@@ -181,7 +181,7 @@ export default function Reports() {
           String(ps.reduce((a, p) => a + p.legalCases, 0)),
           String(ps.reduce((a, p) => a + p.affectedFamilies, 0)),
         ];
-        const head = ['Area', 'Projects', 'Mean risk %', 'High/Critical', 'Delayed', 'Blocked', 'Open cases', 'Residual backlog', 'Compensation % (due)', 'R&R % (due)', 'Legal cases', 'Affected families'];
+        const head = ['Area', 'Projects', 'Mean risk %', 'High/Critical', 'Delayed', 'Blocked', 'Open cases', 'Left-behind parcels (finished steps)', 'Compensation % (due)', 'R&R % (due)', 'Legal cases', 'Affected families'];
         return [['STATE SUMMARY'], head, ...group((p) => p.state).map(([k, ps]) => line(k, ps)), [''], ['DISTRICT SUMMARY'], head, ...group((p) => `${p.district}, ${p.state}`).map(([k, ps]) => line(k, ps))];
       }
       case 'departments':
@@ -206,7 +206,7 @@ export default function Reports() {
             ['Average delay probability (%)', (d.kpis.averageDelayProbability * 100).toFixed(1)],
             ['Mean expected slip (days)', String(d.kpis.averagePredictedDelayDays)],
             ['Open cases', String(d.kpis.openCases)],
-            ['Residual backlog in completed stages', String(d.kpis.residualBacklogCases)],
+            ['Parcels left pending in steps already done', String(d.kpis.residualBacklogCases)],
             ['Open interventions', String(d.kpis.openInterventions)],
             ['Affected families', String(d.kpis.affectedFamilies)],
             [''],
@@ -242,7 +242,7 @@ export default function Reports() {
         ];
       case 'risk':
         return [
-          ['Project ID', 'Project', 'Type', 'State', 'District', 'Primary authority', 'Stage', 'Stage status', 'Milestone deadline', 'Days remaining', 'Delay probability %', 'Band', 'Expected slip (days)', 'Open cases', 'Residual backlog', 'Leading contributor'],
+          ['Project ID', 'Project', 'Type', 'State', 'District', 'Primary authority', 'Stage', 'Stage status', 'Milestone deadline', 'Days remaining', 'Delay probability %', 'Band', 'Expected slip (days)', 'Open cases', 'Left-behind parcels (finished steps)', 'Leading contributor'],
           ...(projects.data?.projects ?? []).map((p) => [
             p.id,
             p.name,

@@ -19,6 +19,7 @@
  */
 
 import { scoreWithEnsemble } from './ensemble.mjs';
+import { riskScoreOf } from '../domain/risk.mjs';
 
 const sigmoid = (z) => 1 / (1 + Math.exp(-z));
 
@@ -115,7 +116,7 @@ export function scoreRecord(surrogate, raw) {
     probability: Number(probability.toFixed(4)),
     // Clamped off the endpoints for the same reason as stored scores: a
     // predicted probability is never a certainty, and 0% or 100% reads as one.
-    riskScore: Math.min(99, Math.max(1, Math.round(probability * 100))),
+    riskScore: riskScoreOf(probability),
     riskBand: band,
     logOdds: Number(z.toFixed(4)),
     predictedDelayDays: conditionalSlip === null ? null : Math.round(probability * conditionalSlip),

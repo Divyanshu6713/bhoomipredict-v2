@@ -10,6 +10,8 @@ import { effectiveProjects } from './projects.mjs';
 import { allInterventions, allAlerts } from './workflow.mjs';
 import { authorityOptions, LIFECYCLE_STAGES } from '../domain/registry.mjs';
 import { inDistrict, stateAt } from '../domain/geography.mjs';
+import { riskScoreOf } from '../domain/risk.mjs';
+import { dayFromISO } from '../domain/lifecycle.mjs';
 
 export function runConsistencyChecks(store) {
   const { list } = effectiveProjects();
@@ -97,6 +99,38 @@ export function runConsistencyChecks(store) {
       if (rem.length !== LIFECYCLE_STAGES.length - p.currentStageIndex) return true;
       return rem.some((s) => s.delayProbability < 0 || s.delayProbability > 1 || s.p80Completion < s.p50Completion);
     }).map((p) => p.id));
+
+  // The risk card: probability, score, expected delay, target and forecast completion must agree.
+  check('risk-score-is-probability', 'Every project risk score is its delay probability on a 0–100 scale (one variable, not two)',
+    list.filter((p) => p.riskScore !== riskScoreOf(p.delayProbability)).map((p) => `${p.id}: p=${p.delayProbability} score ${p.riskScore}`));
+
+  check('headline-completion-arithmetic', 'Forecast completion = sanctioned target + days vs target (calendar days), and is the forecast P50',
+    list.filter((p) => {
+      const h = p.forecast?.headline;
+      if (!h) return true;
+      return h.targetCompletionDate !== p.targetCompletionDate || h.forecastCompletion !== p.forecast.completion.p50 || dayFromISO(h.forecastCompletion) - dayFromISO(h.targetCompletionDate) !== h.daysVsTarget || p.forecast.completion.p50OverrunDays !== Math.max(0, h.daysVsTarget);
+    }).map((p) => `${p.id}: ${p.forecast?.headline?.targetCompletionDate} + ${p.forecast?.headline?.daysVsTarget} ≠ ${p.forecast?.headline?.forecastCompletion}`));
+
+  check('headline-single-source', 'The risk card, the stage forecast and every list show the same expected delay, probability and score',
+    list.filter((p) => {
+      const h = p.forecast?.headline;
+      const cur = p.forecast?.stages.find((s) => s.phase === 'current');
+      if (!h || !cur) return true;
+      const prob = h.stepAlreadyLate ? 1 : Number(p.delayProbability.toFixed(3));
+      return p.predictedDelayDays !== h.expectedDelayDays || cur.expectedSlipDays !== h.expectedDelayDays || cur.delayProbability !== prob || h.riskScore !== p.riskScore || h.probability !== p.delayProbability;
+    }).map((p) => `${p.id}: card ${p.forecast?.headline?.expectedDelayDays} d, list ${p.predictedDelayDays} d`));
+
+  check('headline-delay-is-model', 'Where the step deadline has not passed, the expected delay is the model’s own expected slip (±1 day of rounding)',
+    list.filter((p) => {
+      const h = p.forecast?.headline;
+      return h && h.overdueDays === 0 && h.modelExpectedDelayDays !== null && Math.abs(h.expectedDelayDays - h.modelExpectedDelayDays) > 1;
+    }).map((p) => `${p.id}: forecast ${p.forecast.headline.expectedDelayDays} vs model ${p.forecast.headline.modelExpectedDelayDays}`));
+
+  check('headline-delay-covers-overdue', 'Where the step deadline has already passed by more than 30 days, the expected delay is at least the days already elapsed',
+    list.filter((p) => {
+      const h = p.forecast?.headline;
+      return h && h.stepAlreadyLate && h.expectedDelayDays < h.overdueDays;
+    }).map((p) => `${p.id}: ${p.forecast.headline.expectedDelayDays} d < ${p.forecast.headline.overdueDays} d overdue`));
 
   check('recommendation-impact', 'Every recommendation with an action category carries a model-estimated impact',
     list.flatMap((p) => p.recommendations.filter((r) => r.category !== 'risk' && !r.impact && ['compensation', 'legal', 'documentation', 'approval', 'dependency', 'coordination', 'rr', 'stakeholder', 'schedule', 'backlog', 'possession'].includes(r.category)).map((r) => r.id)));

@@ -19,7 +19,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getState, saveState, recordAudit, RUNTIME } from './persistence.mjs';
-import { allAlerts, allInterventions } from './workflow.mjs';
+import { allAlerts, allInterventions, ESCALATION } from './workflow.mjs';
 import { effectiveProjects } from './projects.mjs';
 import { USERS, ROLES, inScope, userById } from '../domain/roles.mjs';
 import { severityRank } from '../domain/rules.mjs';
@@ -36,17 +36,6 @@ export const CHANNELS = [
   { id: 'webhook', label: 'Webhook', adapter: WEBHOOK_URL ? 'HTTP POST' : 'per API client (none global)', connected: Boolean(WEBHOOK_URL) },
 ];
 
-/** Who supervises a role when an intervention goes overdue. */
-const ESCALATION = {
-  FIELD_OFFICER: 'DISTRICT_ADMIN',
-  REVENUE_OFFICER: 'DISTRICT_ADMIN',
-  LAND_ACQUISITION_OFFICER: 'DISTRICT_ADMIN',
-  LEGAL_OFFICER: 'STATE_ADMIN',
-  PROJECT_AUTHORITY: 'SECTOR_NODAL_OFFICER',
-  DISTRICT_ADMIN: 'STATE_ADMIN',
-  STATE_ADMIN: 'NATIONAL_ADMIN',
-  SECTOR_NODAL_OFFICER: 'NATIONAL_ADMIN',
-};
 
 const slug = (name) => name.toLowerCase().replace(/[^a-z]+/g, '.').replace(/^\.|\.$/g, '');
 export const contactOf = (u) => ({ email: `${slug(u.name)}@demo.landpulse.invalid`, phone: `+91-90000-${String(Math.abs([...u.id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)) % 100000).padStart(5, '0')}` });

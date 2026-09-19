@@ -13,11 +13,18 @@ export const formatCrore = (cr: number) =>
 
 export const formatHa = (ha: number) => `${formatNumber(Math.round(ha))} ha`;
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+const zoneFor = (iso: string) => (DATE_ONLY.test(iso) ? { timeZone: 'UTC' } : {});
+
 export const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', ...zoneFor(iso) });
 
 export const formatDateShort = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', ...zoneFor(iso) });
+
+/** "177 days after target" / "12 days before target" / "on target". */
+export const formatVsTarget = (days: number) =>
+  days === 0 ? 'on target' : `${Math.abs(days).toLocaleString('en-IN')} day${Math.abs(days) === 1 ? '' : 's'} ${days > 0 ? 'after' : 'before'} target`;
 
 export const formatRelative = (iso: string, now = new Date('2026-09-11T09:00:00Z')) => {
   const diff = now.getTime() - new Date(iso).getTime();

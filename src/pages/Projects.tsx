@@ -106,14 +106,18 @@ export default function Projects() {
     },
     {
       key: 'stage',
-      header: 'Current stage',
+      header: 'Current step',
       render: (p) => (
         <div className="min-w-[150px]">
           <p className="text-sm font-semibold text-ink">{p.currentStage}</p>
           <Badge className={cn('mt-1', STAGE_STATUS_CLASS[p.stageStatus])}>
             {STAGE_STATUS_LABEL[p.stageStatus]} · {p.daysRemaining < 0 ? `${Math.abs(p.daysRemaining)}d overdue` : `${p.daysRemaining}d left`}
           </Badge>
-          {p.residualBacklog > 0 && <p className="mt-1 text-xs text-amber-700 dark:text-amber-400 num">{formatNumber(p.residualBacklog)} residual cases in completed stages</p>}
+          {p.residualBacklog > 0 && (
+            <p className="mt-1 text-xs text-amber-700 dark:text-amber-400 num" title="Earlier steps are done for the project, but these parcels were left behind in them and still need to be cleared">
+              + {formatNumber(p.residualBacklog)} parcels left pending in earlier steps
+            </p>
+          )}
         </div>
       ),
     },
@@ -168,7 +172,7 @@ export default function Projects() {
       render: (p) => (
         <div>
           <span className={cn('num text-sm font-bold', p.actionCount ? 'text-orange-700 dark:text-orange-300' : 'text-ink-3')}>{p.actionCount}</span>
-          <p className="text-xs text-ink-3 num">{p.predictedDelayDays !== null ? `~${p.predictedDelayDays}d slip` : ''}</p>
+          <p className="text-xs text-ink-3 num">{p.predictedDelayDays !== null ? `~${p.predictedDelayDays}d expected delay` : ''}</p>
         </div>
       ),
     },
@@ -255,10 +259,10 @@ export default function Projects() {
         items={[
           { label: 'Projects in view', value: data ? formatNumber(data.total) : '—' },
           { label: 'Parcels covered', value: agg ? formatCompact(agg.totalParcels) : '—' },
-          { label: 'Open cases', value: agg ? formatCompact(agg.openCases) : '—' },
-          { label: 'High-risk cases', value: agg ? formatCompact(agg.highRiskCases) : '—', tone: 'orange' },
+          { label: 'Parcels pending', value: agg ? formatCompact(agg.openCases) : '—' },
+          { label: 'High-risk parcels', value: agg ? formatCompact(agg.highRiskCases) : '—', tone: 'orange' },
           { label: 'Delayed · blocked', value: agg ? `${formatNumber(agg.delayedProjects)} · ${formatNumber(agg.blockedProjects)}` : '—', tone: 'danger' },
-          { label: 'Residual backlog', value: agg ? formatCompact(agg.residualBacklog) : '—', hint: 'cases in completed stages' },
+          { label: 'Left behind', value: agg ? formatCompact(agg.residualBacklog) : '—', hint: 'parcels pending in steps already done' },
         ]}
       />
 

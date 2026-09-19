@@ -43,7 +43,7 @@ const IS = [
 ];
 
 const IS_NOT = [
-  'A replacement for BhoomiRashi, DILRMP or any system of record',
+  'A replacement for Bhoomi Rashi, DILRMP or any system of record',
   'A predictor of court outcomes or judgments',
   'A causal account of why a delay happened — contributions describe the model, not the world',
   'Evidence of real-world accuracy: every figure here is computed on synthetic data',

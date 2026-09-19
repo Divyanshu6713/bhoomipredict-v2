@@ -94,18 +94,18 @@ export function deriveLifecycle(project, { todayDay, stageRisk = [], stageDepend
     if (status === 'COMPLETED') {
       explanation =
         open > 0
-          ? `Statutory stage completed on ${fmt(s.actualCompletion)}${delayDays ? ` (${delayDays} days after its working deadline)` : ''}. ${open.toLocaleString('en-IN')} residual case${open === 1 ? '' : 's'} remain open — ${resolutionPct}% of ${total.toLocaleString('en-IN')} resolved.`
-          : `Statutory stage completed on ${fmt(s.actualCompletion)}; all ${total.toLocaleString('en-IN')} associated cases resolved.`;
+          ? `Step done for the project on ${fmt(s.actualCompletion)}${delayDays ? ` (${delayDays} days after its deadline)` : ''}. ${open.toLocaleString('en-IN')} parcel${open === 1 ? '' : 's'} still pending here — left-over residual cases to be closed one by one; ${resolved.toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')} cleared.`
+          : `Step done for the project on ${fmt(s.actualCompletion)}; all ${total.toLocaleString('en-IN')} parcels cleared.`;
     } else if (status === 'BLOCKED') {
-      explanation = `Blocked: ${blockedBy.map((b) => `${b.role} (${Math.round(b.share * 100)}% of open cases)`).join(', ')} pending${dep.approvalDelayMean ? `, approvals outstanding ${Math.round(dep.approvalDelayMean)} days on average` : ''}. ${open.toLocaleString('en-IN')} cases open.`;
+      explanation = `Held up by ${blockedBy.map((b) => `${b.role} (action pending on ${Math.round(b.share * 100)}% of pending parcels)`).join(', ')}${dep.approvalDelayMean ? `; approvals have waited ${Math.round(dep.approvalDelayMean)} days on average` : ''}. ${open.toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')} parcels still pending.`;
     } else if (status === 'DELAYED') {
-      explanation = `Working deadline ${fmt(s.expectedCompletion)} passed ${delayDays} days ago; ${open.toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')} cases still open.`;
+      explanation = `Deadline ${fmt(s.expectedCompletion)} passed ${delayDays} days ago; ${open.toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')} parcels still pending.`;
     } else if (status === 'IN_PROGRESS') {
-      explanation = `In progress since ${fmt(startIso)} — ${daysElapsed} of ${s.plannedDays} planned days used, deadline ${fmt(s.expectedCompletion)}; ${open.toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')} cases open.`;
+      explanation = `Under way since ${fmt(startIso)} — ${daysElapsed} of ${s.plannedDays} planned days used, deadline ${fmt(s.expectedCompletion)}; ${open.toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')} parcels still pending.`;
     } else {
       explanation =
         open > 0
-          ? `Not yet started at project level. ${open.toLocaleString('en-IN')} parcel${open === 1 ? ' is' : 's are'} already progressing ahead of the project frontier.`
+          ? `The project has not reached this step yet. ${open.toLocaleString('en-IN')} parcel${open === 1 ? ' has' : 's have'} started it early, ahead of the rest.`
           : `Not started. Planned to run ${s.plannedDays} days from ${fmt(s.plannedStart)}.`;
     }
 
@@ -132,6 +132,10 @@ export function deriveLifecycle(project, { todayDay, stageRisk = [], stageDepend
     };
   });
 
+  // "On-plan" finish: the current step's deadline (or today, if that has passed)
+  // plus the planned days of the steps after it — i.e. assuming NO further delay.
+  // It is a schedule reference, not the forecast; the forecast (which applies the
+  // model's delay risk) is server/lib/forecast.mjs.
   const current = stages[frontier];
   const remainingPlanned = stages.slice(frontier + 1).reduce((a, s) => a + s.plannedDays, 0);
   const forecastDay = Math.max(dayFromISO(current.expectedCompletion), todayDay) + remainingPlanned;
@@ -144,8 +148,8 @@ export function deriveLifecycle(project, { todayDay, stageRisk = [], stageDepend
     isBlocked: current.status === 'BLOCKED',
     residualBacklog: stages.filter((s) => s.status === 'COMPLETED').reduce((a, s) => a + s.openCases, 0),
     parcelsAhead: stages.filter((s) => s.status === 'PENDING').reduce((a, s) => a + s.openCases, 0),
-    forecastCompletion: isoFromDay(forecastDay),
-    timelineOverrunDays: Math.max(0, forecastDay - targetDay),
+    onPlanCompletion: isoFromDay(forecastDay),
+    onPlanOverrunDays: Math.max(0, forecastDay - targetDay),
     notificationStatus:
       frontier < 2
         ? 'Not yet notified'

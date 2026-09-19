@@ -1,0 +1,462 @@
+/* Cinematic landing — every rule is scoped under .cine so the light dashboard is untouched. */
+
+.cine {
+  --bg: #05070a;
+  --panel: rgba(11, 16, 22, 0.74);
+  --panel-solid: #0b1016;
+  --line: rgba(159, 211, 223, 0.13);
+  --line-strong: rgba(159, 211, 223, 0.28);
+  --text: #e3eaee;
+  --muted: #8d9ba6;
+  --gis: #72b8c8;
+  --low: #5f9b86;
+  --med: #e1a43c;
+  --high: #e0612f;
+  --ok: #5aa37f;
+  --legal: #b35a78;
+  color-scheme: dark;
+}
+
+.cine {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+html.cine-page,
+html.cine-page body {
+  background: #05070a;
+}
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.cine {
+  background: var(--bg);
+  font-family: 'Inter Variable', system-ui, sans-serif;
+  overflow-x: clip;
+  /* the app body uses a fixed 21px line-height; the landing's type needs proportional leading */
+  line-height: 1.5;
+}
+:where(.cine) ::selection {
+  background: rgba(114, 184, 200, 0.35);
+}
+
+/* custom cursor: only for fine pointers, never for text entry */
+html.has-cursor,
+html.has-cursor * {
+  cursor: none !important;
+}
+html.has-cursor input,
+html.has-cursor textarea {
+  cursor: text !important;
+}
+
+:where(.cine) .world {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+:where(.cine) .world canvas {
+  touch-action: pan-y;
+}
+
+/* page layers above the world: containers let the pointer through to the 3D land */
+:where(.cine) .stage {
+  position: relative;
+  z-index: 10;
+  pointer-events: none;
+}
+:where(.cine) .stage .pe {
+  pointer-events: auto;
+}
+
+:where(.cine) :focus-visible {
+  outline: 2px solid var(--gis);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+
+/* ---------- labels rendered inside the 3D scene (drei Html) ---------- */
+:where(.cine) .fx-in {
+  animation: fxIn 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes fxIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+:where(.cine) .data-chip,
+:where(.cine) .bar-label,
+:where(.cine) .action-chip,
+:where(.cine) .layer-tag,
+:where(.cine) .check-tag,
+:where(.cine) .feat-label,
+:where(.cine) .map-callout,
+:where(.cine) .map-label,
+:where(.cine) .wf-label,
+:where(.cine) .risk-bubble {
+  font-family: 'Inter Variable', system-ui, sans-serif;
+  white-space: nowrap;
+  color: var(--text);
+  background: rgba(8, 12, 16, 0.82);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  user-select: none;
+}
+:where(.cine) .data-chip {
+  padding: 7px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: opacity 0.5s;
+}
+:where(.cine) .data-chip span,
+:where(.cine) .bar-label span,
+:where(.cine) .map-label span,
+:where(.cine) .map-callout span,
+:where(.cine) .wf-label span,
+:where(.cine) .layer-tag span {
+  font: 500 10px/1.2 'JetBrains Mono', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+:where(.cine) .data-chip b {
+  font-size: 13px;
+  font-weight: 600;
+}
+:where(.cine) .data-chip.is-faded {
+  opacity: 0.28;
+}
+:where(.cine) .risk-bubble {
+  padding: 12px 16px 12px;
+  text-align: center;
+  white-space: normal;
+  width: 210px;
+  border-color: rgba(224, 97, 47, 0.55);
+  box-shadow: 0 0 40px rgba(224, 97, 47, 0.16);
+}
+:where(.cine) .risk-bubble b {
+  display: block;
+  font: 600 40px/1 'Space Grotesk Variable', sans-serif;
+  letter-spacing: -0.03em;
+  color: #ff9b6a;
+}
+:where(.cine) .risk-bubble span {
+  display: block;
+  margin-top: 6px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+:where(.cine) .bar-label {
+  padding: 6px 10px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+:where(.cine) .bar-label b {
+  font: 600 13px 'JetBrains Mono', monospace;
+  color: #f0c77f;
+}
+:where(.cine) .action-chip {
+  padding: 9px 12px;
+  font-size: 12.5px;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  border-color: rgba(114, 184, 200, 0.45);
+}
+:where(.cine) .action-chip i {
+  font: 600 10px 'JetBrains Mono', monospace;
+  color: var(--gis);
+  font-style: normal;
+}
+:where(.cine) .chain-label {
+  background: none;
+  border: none;
+  font: 500 11px 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7f97a0;
+  white-space: nowrap;
+  display: flex;
+  gap: 6px;
+  transition: color 0.25s;
+}
+:where(.cine) .chain-label i {
+  font-style: normal;
+  opacity: 0.55;
+}
+:where(.cine) .chain-label.is-on {
+  color: #fff;
+}
+:where(.cine) .chain-label.is-dep {
+  color: #f0c77f;
+}
+:where(.cine) .layer-tag {
+  padding: 8px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 210px;
+  position: relative;
+  overflow: hidden;
+}
+:where(.cine) .layer-tag b {
+  font-size: 13px;
+  font-weight: 600;
+}
+:where(.cine) .layer-tag em {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--med), var(--high));
+}
+:where(.cine) .check-tag {
+  transform: translateX(-100%);
+  padding: 8px 11px;
+  font-size: 12px;
+  width: max-content;
+  max-width: 250px;
+  white-space: normal;
+  border-color: rgba(114, 184, 200, 0.45);
+}
+:where(.cine) .check-tag i {
+  display: block;
+  font: 600 9.5px 'JetBrains Mono', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gis);
+  font-style: normal;
+  margin-bottom: 2px;
+}
+:where(.cine) .feat-label {
+  padding: 5px 9px;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  width: max-content;
+  max-width: 250px;
+  white-space: nowrap;
+  transition: opacity 0.25s, transform 0.25s;
+}
+:where(.cine) .feat-label span {
+  font-size: 11.5px;
+}
+:where(.cine) .feat-label.is-on {
+  white-space: normal;
+  width: 250px;
+}
+:where(.cine) .feat-label b {
+  font: 600 12px 'JetBrains Mono', monospace;
+  color: #f0c77f;
+}
+:where(.cine) .feat-label p {
+  flex-basis: 100%;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted);
+  margin-top: 4px;
+}
+:where(.cine) .feat-label.is-on {
+  z-index: 10;
+  border-color: rgba(225, 164, 60, 0.7);
+  transform: scale(1.05);
+}
+:where(.cine) .feat-label.is-dim {
+  opacity: 0.35;
+}
+:where(.cine) .map-callout {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+:where(.cine) .map-callout b {
+  font-size: 13px;
+  font-weight: 600;
+}
+:where(.cine) .map-callout[data-tone='high'] {
+  border-color: rgba(224, 97, 47, 0.6);
+}
+:where(.cine) .map-callout[data-tone='high'] b {
+  color: #ff9b6a;
+}
+:where(.cine) .map-callout[data-tone='med'] b {
+  color: #f0c77f;
+}
+:where(.cine) .map-callout[data-tone='ok'] b {
+  color: #8fd1ae;
+}
+:where(.cine) .map-callout--big {
+  padding: 12px 16px;
+}
+:where(.cine) .map-callout--big b {
+  font: 600 18px 'Space Grotesk Variable', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+:where(.cine) .map-label {
+  padding: 5px 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+:where(.cine) .map-label b {
+  font: 600 12px 'JetBrains Mono', monospace;
+}
+:where(.cine) .map-label--muted {
+  font: 500 11px 'JetBrains Mono', monospace;
+  color: var(--muted);
+  background: none;
+  border: none;
+}
+:where(.cine) .wf-label {
+  padding: 4px 9px;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+:where(.cine) .wf-label b {
+  font: 700 12px 'JetBrains Mono', monospace;
+}
+:where(.cine) .wf-label[data-state='blocked'] {
+  border-color: rgba(224, 97, 47, 0.7);
+}
+:where(.cine) .wf-label[data-state='blocked'] b {
+  color: #ff9b6a;
+}
+:where(.cine) .wf-label[data-state='partial'] b {
+  color: #f0c77f;
+}
+:where(.cine) .wf-label[data-state='open'] b {
+  color: #8fd1ae;
+}
+:where(.cine) .stack-label {
+  font: 600 12px 'JetBrains Mono', monospace;
+  letter-spacing: 0.14em;
+  color: #7f97a0;
+  white-space: nowrap;
+  transition: color 0.2s, transform 0.2s;
+}
+:where(.cine) .stack-label.is-on {
+  color: #fff;
+  transform: translateX(6px);
+}
+
+/* ---------- misc ---------- */
+:where(.cine) .grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+:where(.cine) .scrim-left {
+  background: linear-gradient(90deg, rgba(5, 7, 10, 0.88) 0%, rgba(5, 7, 10, 0.55) 38%, rgba(5, 7, 10, 0) 62%);
+}
+:where(.cine) .scrim-right {
+  background: linear-gradient(270deg, rgba(5, 7, 10, 0.9) 0%, rgba(5, 7, 10, 0.55) 40%, rgba(5, 7, 10, 0) 64%);
+}
+:where(.cine) .scrim-bottom {
+  background: linear-gradient(0deg, rgba(5, 7, 10, 0.92) 0%, rgba(5, 7, 10, 0.4) 45%, rgba(5, 7, 10, 0) 70%);
+}
+:where(.cine) .flow-dash {
+  stroke-dasharray: 3 7;
+  animation: dash 1.6s linear infinite;
+}
+@keyframes scan {
+  from {
+    transform: translateY(-40px);
+  }
+  to {
+    transform: translateY(420px);
+  }
+}
+:where(.cine) .hero-in {
+  animation: fxIn 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+:where(.cine) .hero-letter {
+  display: inline-block;
+  animation: letterIn 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes letterIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.35em);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+:where(.cine) .pulse-dot {
+  animation: pulseDot 2s ease-in-out infinite;
+}
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.cine) *,
+  :where(.cine) *::before,
+  :where(.cine) *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+@keyframes loadbar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+/* sign-in header band: the 3D world sits inside the band, not behind the page */
+.cine-banner .world {
+  position: absolute;
+  pointer-events: none;
+}

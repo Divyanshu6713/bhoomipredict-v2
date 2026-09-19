@@ -83,6 +83,74 @@
 }
 
 @layer components {
+  /* Cinematic landing components (src/cinematic). Scoped to .cine; kept in this layer so utilities win, as on the standalone site. */
+  :where(.cine) .cine-eyebrow {
+    @apply font-mono text-[11px] uppercase tracking-label text-gis-400;
+  }
+  :where(.cine) .h-display {
+    @apply font-grotesk font-semibold tracking-[-0.035em] leading-[0.92];
+  }
+  :where(.cine) .h-section {
+    @apply font-grotesk text-[clamp(2.1rem,4.6vw,4.1rem)] font-semibold leading-[0.98] tracking-[-0.03em] text-mist-50;
+  }
+  :where(.cine) .lede {
+    @apply text-[clamp(1rem,1.25vw,1.15rem)] leading-relaxed text-mist-300;
+  }
+  :where(.cine) .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(12px) saturate(1.1);
+    -webkit-backdrop-filter: blur(12px) saturate(1.1);
+    @apply rounded-2xl;
+  }
+  :where(.cine) .panel-solid {
+    background: var(--panel-solid);
+    border: 1px solid var(--line);
+    @apply rounded-2xl;
+  }
+  :where(.cine) .hair {
+    border-color: var(--line);
+  }
+  :where(.cine) .tag {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.12em];
+    border-color: var(--line-strong);
+    color: var(--muted);
+  }
+  :where(.cine) .tag-warn {
+    border-color: rgba(225, 164, 60, 0.45);
+    color: #f0c77f;
+    background: rgba(225, 164, 60, 0.06);
+  }
+  :where(.cine) .btn {
+    @apply relative inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 font-grotesk text-[13px] font-semibold uppercase tracking-[0.14em] transition-colors;
+  }
+  :where(.cine) .btn-primary {
+    @apply bg-mist-50 text-cine-950 hover:bg-white;
+  }
+  :where(.cine) .btn-ghost {
+    @apply border text-mist-100 hover:bg-white/5;
+    border-color: var(--line-strong);
+  }
+  :where(.cine) .seg-btn {
+    @apply rounded-full border px-3.5 py-2 text-[12.5px] font-medium text-mist-300 transition-colors hover:text-mist-50;
+    border-color: var(--line);
+  }
+  :where(.cine) .seg-btn[aria-pressed='true'],
+  :where(.cine) .seg-btn[aria-selected='true'] {
+    @apply bg-mist-50 text-cine-950;
+    border-color: transparent;
+  }
+  :where(.cine) .kv {
+    @apply flex items-baseline justify-between gap-4 border-b py-2 text-[13px];
+    border-color: var(--line);
+  }
+  :where(.cine) .kv > span:first-child {
+    @apply text-mist-400;
+  }
+  :where(.cine) .kv > span:last-child {
+    @apply text-right text-mist-100;
+  }
+
   /* Surfaces */
   /* min-w-0 lets a card shrink inside grid and flex tracks instead of forcing overflow. */
   .card {
@@ -127,3 +195,102 @@
 .recharts-cartesian-axis-tick text { font-size: 11px; fill: rgb(var(--c-ink-3)); }
 .recharts-legend-item-text { color: rgb(var(--c-ink-2)) !important; font-size: 12px; }
 .recharts-default-legend { font-size: 12px; }
+
+/* ---------------- route transition veil (components/transition/Portal) ---------------- */
+.portal-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: all;
+}
+.portal-dark {
+  position: absolute;
+  inset: 0;
+  background: #05070a;
+  display: grid;
+  place-items: center;
+}
+.portal-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.portal-label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  font: 500 11px/1 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #98a6b1;
+}
+.portal-iris {
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--c-bg));
+  clip-path: circle(0% at 50% 50%);
+}
+.portal-veil.is-closing .portal-dark {
+  animation: pv-close 720ms cubic-bezier(0.7, 0, 0.3, 1) both;
+}
+.portal-veil.is-closing .portal-grid {
+  animation: pv-grid-in 720ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.portal-veil.is-closing .portal-label {
+  animation: pv-label 720ms ease both;
+}
+.portal-veil.is-dive.is-opening .portal-dark {
+  animation: pv-open 820ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.portal-veil.is-dive.is-opening .portal-grid {
+  animation: pv-grid-out 820ms ease both;
+}
+.portal-veil.is-rise.is-opening .portal-iris {
+  animation: pv-iris 700ms cubic-bezier(0.7, 0, 0.2, 1) both;
+}
+.portal-veil.is-rise.is-opening {
+  animation: pv-fade 820ms ease both;
+}
+.portal-ring {
+  transform-origin: 500px 500px;
+  animation: pv-ring 1.4s ease-out infinite;
+}
+@keyframes pv-close {
+  from { clip-path: circle(0% at 50% 60%); }
+  to { clip-path: circle(150% at 50% 60%); }
+}
+@keyframes pv-open {
+  0% { opacity: 1; }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes pv-grid-in {
+  from { transform: scale(1.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes pv-grid-out {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.55); opacity: 0; }
+}
+@keyframes pv-label {
+  0%, 40% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes pv-iris {
+  from { clip-path: circle(0% at 50% 50%); }
+  to { clip-path: circle(150% at 50% 50%); }
+}
+@keyframes pv-fade {
+  0%, 75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes pv-ring {
+  from { transform: scale(0.6); opacity: 0.8; }
+  to { transform: scale(2.4); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-veil { display: none; }
+}

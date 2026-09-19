@@ -1,4 +1,4 @@
-<p align="left"><img src="public/brand/landpulse-logo-on-light.svg" alt="LandPulse AI" height="56" /></p>
+<p align="left"><img src="public/brand/landpulse-logo.png" alt="LandPulse AI" height="72" /></p>
 
 # LandPulse AI
 

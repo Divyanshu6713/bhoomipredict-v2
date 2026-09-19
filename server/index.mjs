@@ -11,6 +11,7 @@
  * runs the whole platform.
  */
 import http from 'node:http';
+import { riskScoreOf } from './domain/risk.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -843,7 +844,7 @@ async function handle(req, res, url) {
       record,
       ensemble: {
         probability: Number(store.col.score[row].toFixed(4)),
-        riskScore: Math.min(99, Math.max(1, Math.round(store.col.score[row] * 100))),
+        riskScore: riskScoreOf(store.col.score[row]),
         contributors: contributorsFor(store, row),
       },
       // Re-scored live from the record with the exported trees; equals the stored score.

@@ -14,6 +14,8 @@
  * sum, with the base value, to the model's log-odds.
  */
 
+import { riskScoreOf } from '../domain/risk.mjs';
+
 const sigmoid = (z) => 1 / (1 + Math.exp(-z));
 const isMissing = (v) => v === undefined || v === null || v === '' || (typeof v === 'number' && Number.isNaN(v));
 
@@ -283,7 +285,7 @@ export function scoreWithEnsemble(ensemble, record, { explain = true, bands } = 
   const cut = bands ?? ensemble.riskBands;
   const out = {
     probability: Number(probability.toFixed(4)),
-    riskScore: Math.min(99, Math.max(1, Math.round(probability * 100))),
+    riskScore: riskScoreOf(probability),
     riskBand: bandOf(probability, cut),
     logOdds: Number(z.toFixed(4)),
     predictedDelayDays: conditional === null ? null : Math.round(probability * conditional),

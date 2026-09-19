@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Activity,
@@ -28,6 +28,8 @@ import { cn } from '@/lib/cn';
 import { BRAND } from '@/lib/brand';
 import { Button, DemoDataBadge, Skeleton } from '@/components/ui';
 import { Logo } from '@/components/layout/Logo';
+import { PortalLink } from '@/components/transition/Portal';
+import { EXPERIENCE_HOME, STANDARD_HOME, preloadExperience, rememberHome } from '@/lib/homeView';
 import { useApi } from '@/hooks';
 import { fetchSummary } from '@/api/client';
 import { RISK_CLASS, RISK_HEX, RISK_ICON, RISK_ORDER } from '@/lib/risk';
@@ -80,6 +82,21 @@ const container = 'mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8';
 
 /* ------------------------------------------------------------- sections */
 
+/** Entry into the optional immersive 3D experience. The 3D code starts loading on hover or focus. */
+function ExploreIn3D({ className, children, onClick }: { className?: string; children: ReactNode; onClick?: () => void }) {
+  return (
+    <PortalLink to={EXPERIENCE_HOME} variant="dive" onMouseEnter={preloadExperience} onFocus={preloadExperience} onClick={() => (rememberHome(EXPERIENCE_HOME), onClick?.())} className={cn('focus-ring', className)}>
+      {children}
+    </PortalLink>
+  );
+}
+
+const Sparkle = () => (
+  <span aria-hidden className="text-brand">
+    ✦
+  </span>
+);
+
 function Nav() {
   const [open, setOpen] = useState(false);
   const links = [
@@ -107,6 +124,9 @@ function Nav() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ExploreIn3D className="hidden h-8 items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 text-sm font-medium text-ink shadow-xs transition-colors hover:border-brand/50 hover:bg-surface-2 lg:inline-flex">
+            <Sparkle /> Explore in 3D
+          </ExploreIn3D>
           <Link to="/login" className="hidden sm:block">
             <Button size="sm" variant="ghost" tabIndex={-1}>
               Sign in
@@ -133,6 +153,9 @@ function Nav() {
           <Link to="/about" className="block rounded-md px-2 py-2.5 text-base text-ink-2 hover:bg-surface-3">
             Methodology
           </Link>
+          <ExploreIn3D onClick={() => setOpen(false)} className="mt-1 flex items-center gap-2 rounded-md px-2 py-2.5 text-base font-medium text-ink hover:bg-surface-3">
+            <Sparkle /> Explore in 3D
+          </ExploreIn3D>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Link to="/login">
               <Button variant="secondary" className="w-full" tabIndex={-1}>
@@ -174,6 +197,16 @@ function Hero({ stats }: { stats: PortfolioSummary | null }) {
               </Button>
             </Link>
           </div>
+          <ExploreIn3D className="group mt-5 inline-flex max-w-full items-center gap-3 rounded-full border border-line-strong bg-surface py-1.5 pl-1.5 pr-4 text-sm shadow-xs transition-[border-color,box-shadow] hover:border-brand/50 hover:shadow-pop">
+            <span className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full bg-ink px-3 font-medium text-surface">
+              <span aria-hidden>✦</span> Explore in 3D
+            </span>
+            <span className="min-w-0 truncate text-ink-2">
+              <span className="sm:hidden">Immersive tour</span>
+              <span className="hidden sm:inline">Walk from land parcel to decision, immersively</span>
+            </span>
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-ink-3 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </ExploreIn3D>
           <p className="mt-6 text-sm text-ink-3">
             Demonstration build on synthetic data.{' '}
             <a href="#data" className="link">
@@ -540,6 +573,7 @@ export default function Landing() {
   // skeletons rather than blocking the page.
   const summary = useApi((signal) => fetchSummary(signal), []);
   const stats = summary.data;
+  useEffect(() => rememberHome(STANDARD_HOME), []);
 
   return (
     <div className="min-h-screen bg-bg">

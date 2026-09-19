@@ -40,7 +40,7 @@ export const RULE_THRESHOLDS = {
   residualBacklogMin: 60,
   residualBacklogShare: 0.15,
   residualBacklogHighShare: 0.2,
-  timelineOverrunDays: 120,
+  onPlanOverrunDays: 120,
   dependencyPendingShare: 0.36,
   dependencyPendingHighShare: 0.45,
   possessionMinPct: 30,
@@ -78,7 +78,7 @@ export const RULE_THRESHOLD_OVERRIDES = [
   },
   {
     match: { projectType: 'Airport' },
-    thresholds: { rrMinProgressPct: 58, timelineOverrunDays: 90 },
+    thresholds: { rrMinProgressPct: 58, onPlanOverrunDays: 90 },
     reason: 'Greenfield airports acquire contiguous land pools with resettlement; a short overrun delays the whole construction package.',
   },
 ];
@@ -186,7 +186,7 @@ export function evaluateProject(project, ctx = {}) {
       category: 'risk',
       severity: critical ? 'Critical' : 'High',
       title: `${project.riskBand} predicted delay risk on the ${stageName} milestone`,
-      reason: `Delay risk ${project.riskScore}: the deployed model expects about ${project.riskScore}% of the open parcels at ${stageName} to miss their milestone by more than 30 days${project.predictedDelayDays ? `, with an expected slip of about ${project.predictedDelayDays} days` : ''}.`,
+      reason: `Delay risk ${project.riskScore}: the deployed model expects about ${project.riskScore}% of the open parcels at ${stageName} to miss their milestone by more than 30 days${project.predictedDelayDays ? `; expected delay at this step about ${project.predictedDelayDays} days` : ''}.`,
       trigger: { source: 'model', metric: 'delay_risk', value: project.delayProbability, operator: '>=', threshold: critical ? bands.critical : bands.high },
       owner: owner(project, 'PRIMARY'),
       assignedRole: 'DISTRICT_ADMIN',
@@ -250,24 +250,24 @@ export function evaluateProject(project, ctx = {}) {
       code: 'CASE_BACKLOG',
       category: 'backlog',
       severity: residual >= project.totalParcels * T.residualBacklogHighShare ? 'High' : 'Medium',
-      title: `${residual.toLocaleString('en-IN')} residual cases open in completed stages`,
-      reason: `Stages already completed still carry ${residual.toLocaleString('en-IN')} unresolved cases${worst ? ` — the largest share in ${worst.name} (${worst.openCases.toLocaleString('en-IN')} open, ${worst.resolutionPct}% resolved)` : ''}.`,
+      title: `${residual.toLocaleString('en-IN')} parcels still pending in steps already done`,
+      reason: `The project has finished these steps, but ${residual.toLocaleString('en-IN')} parcels were left behind in them${worst ? ` — the most in ${worst.name} (${worst.openCases.toLocaleString('en-IN')} pending, ${worst.resolutionPct}% cleared)` : ''}.`,
       trigger: { source: 'lifecycle', metric: 'residual_open_cases', value: residual, operator: '>=', threshold: Math.round(Math.max(T.residualBacklogMin, project.totalParcels * T.residualBacklogShare)) },
       stage: worst?.name,
       owner: owner(project, 'LA_OFFICER'),
-      action: 'Run a residual-case disposal drive for the completed stages, oldest cases first.',
+      action: 'Run a drive to clear the left-over parcels in finished steps, oldest first.',
       outcome: 'Residual cases resolved or referred to the dispute forum.',
     });
   }
 
-  if ((project.lifecycle?.timelineOverrunDays ?? 0) >= T.timelineOverrunDays) {
+  if ((project.lifecycle?.onPlanOverrunDays ?? 0) >= T.onPlanOverrunDays) {
     push({
       code: 'TIMELINE_OVERRUN',
       category: 'schedule',
-      severity: project.lifecycle.timelineOverrunDays >= 300 ? 'High' : 'Medium',
-      title: `Forecast completion ${project.lifecycle.timelineOverrunDays} days beyond target`,
-      reason: `At the current working schedule the acquisition completes around ${project.lifecycle.forecastCompletion}, against a sanctioned target of ${project.targetCompletionDate}.`,
-      trigger: { source: 'lifecycle', metric: 'timeline_overrun_days', value: project.lifecycle.timelineOverrunDays, operator: '>=', threshold: T.timelineOverrunDays },
+      severity: project.lifecycle.onPlanOverrunDays >= 300 ? 'High' : 'Medium',
+      title: `Overruns target by ${project.lifecycle.onPlanOverrunDays} days even with no further delay`,
+      reason: `Even if every remaining step now runs exactly to plan, the acquisition completes around ${project.lifecycle.onPlanCompletion}, against a sanctioned target of ${project.targetCompletionDate}.`,
+      trigger: { source: 'lifecycle', metric: 'timeline_overrun_days', value: project.lifecycle.onPlanOverrunDays, operator: '>=', threshold: T.onPlanOverrunDays },
       owner: owner(project, 'PRIMARY'),
       action: 'Re-baseline the project timeline and flag the land-availability impact on construction.',
       outcome: 'Approved revised schedule.',

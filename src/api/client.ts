@@ -285,7 +285,7 @@ export const restoreProject = (id: string) => post<{ project: ProjectSummary }>(
 export const advanceProjectStage = (id: string, body: { completedOn: string; note?: string }) =>
   post<{ project: ProjectSummary }>(`/projects/${encodeURIComponent(id)}/advance-stage`, body);
 
-export const updateInterventionStatus = (id: string, patch: { status?: string; note?: string; assignedRole?: string; assigneeId?: string | null }) =>
+export const updateInterventionStatus = (id: string, patch: { status?: string; note?: string; assignedRole?: string; assigneeId?: string | null; escalate?: boolean }) =>
   request<{ intervention: InterventionItem }>('PATCH', `/interventions/${encodeURIComponent(id)}`, { body: patch });
 export const updateAlertStatus = (id: string, status: string) => request<{ alert: AlertItem }>('PATCH', `/alerts/${encodeURIComponent(id)}`, { body: { status } });
 export const updateCaseStatus = (caseId: string, body: { status: string; note: string }) =>

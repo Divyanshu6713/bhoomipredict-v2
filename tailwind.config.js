@@ -44,14 +44,48 @@ export default {
           medium: '#D99A1E',
           high: '#E0702A',
           critical: '#D43D3D',
+          // cinematic landing palette
+          med: '#e1a43c',
+          crit: '#d8443a',
         },
+        // Cinematic landing (src/cinematic) — only used under the .cine root.
+        cine: {
+          950: '#05070a',
+          900: '#080b0f',
+          850: '#0b0f14',
+          800: '#10151b',
+          700: '#171e26',
+          600: '#222b35',
+          500: '#344150',
+        },
+        mist: {
+          50: '#f2f6f8',
+          100: '#e3eaee',
+          200: '#c3ced6',
+          300: '#98a6b1',
+          400: '#6f7e8a',
+          500: '#52606b',
+          600: '#3c4750',
+        },
+        gis: {
+          300: '#9fd3df',
+          400: '#72b8c8',
+          500: '#4f9db0',
+          600: '#3a7d8e',
+          700: '#2a5c69',
+        },
+        ok: '#5aa37f',
+        saffron: '#ff751f',
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'sans-serif'],
         // One family across the product; "display" only tightens tracking.
         display: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        grotesk: ['"Space Grotesk Variable"', 'Inter', 'system-ui', 'sans-serif'],
       },
+      letterSpacing: { label: '0.16em' },
+      maxWidth: { content: '1320px' },
       fontSize: {
         '2xs': ['11px', { lineHeight: '16px' }],
         xs: ['12px', { lineHeight: '17px' }],

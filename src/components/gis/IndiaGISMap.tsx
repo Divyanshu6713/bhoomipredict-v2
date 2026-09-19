@@ -438,7 +438,7 @@ export function IndiaGISMap({
                 ['Risk score', `${popup.riskScore}/100`],
                 ['Delay probability', `${Math.round(popup.delayProbability * 100)}%`],
                 ['Risk category', popup.riskBand],
-                ['Expected slip', popup.predictedDelayDays !== null ? `${popup.predictedDelayDays} days` : '—'],
+                ['Expected delay (current step)', popup.predictedDelayDays !== null ? `${popup.predictedDelayDays} days` : '—'],
               ].map(([k, v]) => (
                 <div key={k} className="min-w-0">
                   <dt className="eyebrow">{k}</dt>

@@ -7,7 +7,7 @@ import type { AlertStatus, InterventionStatus, Severity, StageStatus } from '@/d
  */
 
 export const STAGE_STATUS_LABEL: Record<StageStatus, string> = {
-  PENDING: 'Pending',
+  PENDING: 'Not started',
   IN_PROGRESS: 'In progress',
   COMPLETED: 'Completed',
   DELAYED: 'Delayed',
@@ -43,6 +43,15 @@ export const INTERVENTION_STATUS_LABEL: Record<InterventionStatus, string> = {
   IN_PROGRESS: 'In progress',
   RESOLVED: 'Resolved',
   DISMISSED: 'Dismissed',
+};
+
+/** Button wording for moving an intervention — what the officer is doing, not the resulting state. */
+export const INTERVENTION_ACTION_LABEL: Record<InterventionStatus, string> = {
+  OPEN: 'Reopen',
+  ACKNOWLEDGED: 'Accept',
+  IN_PROGRESS: 'Start work',
+  RESOLVED: 'Mark done',
+  DISMISSED: 'No action needed',
 };
 
 export const INTERVENTION_STATUS_CLASS: Record<InterventionStatus, string> = {

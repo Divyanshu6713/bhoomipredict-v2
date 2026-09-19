@@ -1,0 +1,388 @@
+<html><head><style>
+body{margin:0;background:#F7F5F2;font:15px Inter,Segoe UI,sans-serif;color:#1a1714;padding:28px}
+h1{font-size:22px;margin:0 0 4px} p{margin:0 0 20px;color:#6e675f}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.card{background:#fff;border:1px solid #ece7e1;border-radius:16px;padding:16px}
+.t{margin-bottom:12px} .t b{color:#F7661C;margin-right:6px}
+.row{display:flex;align-items:center;gap:14px}
+.hub{width:170px;height:170px;border-radius:50%;background:#EEF0FB;display:grid;place-items:center}
+.halo{width:140px;height:140px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 4px 18px rgba(40,40,90,.08)}
+.halo svg{filter:drop-shadow(0 6px 10px rgba(0,0,0,.18))}
+.sizes{display:flex;flex-direction:column;gap:8px;align-items:center}
+.dark{margin-top:14px;background:#141210;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;color:#9c948b;font-size:12px}
+.old{display:flex;align-items:center;gap:14px;margin-bottom:18px;color:#6e675f}
+</style></head><body><h1>Rounded icon: pick a colour</h1><p>Same Land Contours idea, with the soft rounded look of the earlier icon: rounder corners, gentle gradient, light rim, glowing dot.</p>
+<div class="old"><img src="data:image/png;base64,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" width="120"><span>Earlier icon, for reference</span></div>
+<div class="grid"><div class="card"><div class="t"><b>A</b> Saffron</div>
+ <div class="row"><div class="hub"><div class="halo"><svg width="120" height="120" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gA120" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8F45"/><stop offset="1" stop-color="#E24E16"/></linearGradient>
+ <linearGradient id="sA120" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hA120"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gA120)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sA120)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FFFFFF"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hA120)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FFFFFF" stroke="none"/>
+</g></svg></div></div>
+ <div class="sizes"><svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gA64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8F45"/><stop offset="1" stop-color="#E24E16"/></linearGradient>
+ <linearGradient id="sA64" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hA64"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gA64)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sA64)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FFFFFF"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hA64)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FFFFFF" stroke="none"/>
+</g></svg><svg width="40" height="40" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gA40" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8F45"/><stop offset="1" stop-color="#E24E16"/></linearGradient>
+ <linearGradient id="sA40" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hA40"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gA40)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sA40)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FFFFFF"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hA40)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FFFFFF" stroke="none"/>
+</g></svg><svg width="28" height="28" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gA28" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8F45"/><stop offset="1" stop-color="#E24E16"/></linearGradient>
+ <linearGradient id="sA28" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hA28"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gA28)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sA28)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FFFFFF"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hA28)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FFFFFF" stroke="none"/>
+</g></svg><svg width="16" height="16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gA16" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8F45"/><stop offset="1" stop-color="#E24E16"/></linearGradient>
+ <linearGradient id="sA16" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hA16"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gA16)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sA16)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FFFFFF"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hA16)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FFFFFF" stroke="none"/>
+</g></svg></div></div>
+ <div class="dark"><svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gA64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8F45"/><stop offset="1" stop-color="#E24E16"/></linearGradient>
+ <linearGradient id="sA64" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hA64"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gA64)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sA64)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FFFFFF"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hA64)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FFFFFF" stroke="none"/>
+</g></svg><span>on dark</span></div></div><div class="card"><div class="t"><b>B</b> Royal blue (like before)</div>
+ <div class="row"><div class="hub"><div class="halo"><svg width="120" height="120" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gB120" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A6BF0"/><stop offset="1" stop-color="#14287C"/></linearGradient>
+ <linearGradient id="sB120" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hB120"><stop offset="0" stop-color="#FF8A3D" stop-opacity=".55"/><stop offset="1" stop-color="#FF8A3D" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gB120)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sB120)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF8A3D"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hB120)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF8A3D" stroke="none"/>
+</g></svg></div></div>
+ <div class="sizes"><svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gB64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A6BF0"/><stop offset="1" stop-color="#14287C"/></linearGradient>
+ <linearGradient id="sB64" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hB64"><stop offset="0" stop-color="#FF8A3D" stop-opacity=".55"/><stop offset="1" stop-color="#FF8A3D" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gB64)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sB64)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF8A3D"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hB64)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF8A3D" stroke="none"/>
+</g></svg><svg width="40" height="40" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gB40" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A6BF0"/><stop offset="1" stop-color="#14287C"/></linearGradient>
+ <linearGradient id="sB40" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hB40"><stop offset="0" stop-color="#FF8A3D" stop-opacity=".55"/><stop offset="1" stop-color="#FF8A3D" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gB40)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sB40)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF8A3D"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hB40)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF8A3D" stroke="none"/>
+</g></svg><svg width="28" height="28" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gB28" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A6BF0"/><stop offset="1" stop-color="#14287C"/></linearGradient>
+ <linearGradient id="sB28" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hB28"><stop offset="0" stop-color="#FF8A3D" stop-opacity=".55"/><stop offset="1" stop-color="#FF8A3D" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gB28)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sB28)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF8A3D"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hB28)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF8A3D" stroke="none"/>
+</g></svg><svg width="16" height="16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gB16" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A6BF0"/><stop offset="1" stop-color="#14287C"/></linearGradient>
+ <linearGradient id="sB16" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hB16"><stop offset="0" stop-color="#FF8A3D" stop-opacity=".55"/><stop offset="1" stop-color="#FF8A3D" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gB16)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sB16)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF8A3D"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hB16)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF8A3D" stroke="none"/>
+</g></svg></div></div>
+ <div class="dark"><svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gB64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A6BF0"/><stop offset="1" stop-color="#14287C"/></linearGradient>
+ <linearGradient id="sB64" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hB64"><stop offset="0" stop-color="#FF8A3D" stop-opacity=".55"/><stop offset="1" stop-color="#FF8A3D" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gB64)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sB64)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#FFFFFF" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF8A3D"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hB64)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF8A3D" stroke="none"/>
+</g></svg><span>on dark</span></div></div><div class="card"><div class="t"><b>C</b> Soft ink</div>
+ <div class="row"><div class="hub"><div class="halo"><svg width="120" height="120" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gC120" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#40352E"/><stop offset="1" stop-color="#141110"/></linearGradient>
+ <linearGradient id="sC120" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hC120"><stop offset="0" stop-color="#FF7A2A" stop-opacity=".55"/><stop offset="1" stop-color="#FF7A2A" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gC120)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sC120)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.16" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF7A2A"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hC120)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF7A2A" stroke="none"/>
+</g></svg></div></div>
+ <div class="sizes"><svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gC64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#40352E"/><stop offset="1" stop-color="#141110"/></linearGradient>
+ <linearGradient id="sC64" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hC64"><stop offset="0" stop-color="#FF7A2A" stop-opacity=".55"/><stop offset="1" stop-color="#FF7A2A" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gC64)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sC64)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.16" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF7A2A"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hC64)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF7A2A" stroke="none"/>
+</g></svg><svg width="40" height="40" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gC40" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#40352E"/><stop offset="1" stop-color="#141110"/></linearGradient>
+ <linearGradient id="sC40" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hC40"><stop offset="0" stop-color="#FF7A2A" stop-opacity=".55"/><stop offset="1" stop-color="#FF7A2A" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gC40)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sC40)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.16" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF7A2A"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hC40)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF7A2A" stroke="none"/>
+</g></svg><svg width="28" height="28" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gC28" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#40352E"/><stop offset="1" stop-color="#141110"/></linearGradient>
+ <linearGradient id="sC28" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hC28"><stop offset="0" stop-color="#FF7A2A" stop-opacity=".55"/><stop offset="1" stop-color="#FF7A2A" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gC28)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sC28)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.16" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF7A2A"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hC28)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF7A2A" stroke="none"/>
+</g></svg><svg width="16" height="16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gC16" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#40352E"/><stop offset="1" stop-color="#141110"/></linearGradient>
+ <linearGradient id="sC16" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hC16"><stop offset="0" stop-color="#FF7A2A" stop-opacity=".55"/><stop offset="1" stop-color="#FF7A2A" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gC16)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sC16)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.16" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF7A2A"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hC16)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF7A2A" stroke="none"/>
+</g></svg></div></div>
+ <div class="dark"><svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gC64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#40352E"/><stop offset="1" stop-color="#141110"/></linearGradient>
+ <linearGradient id="sC64" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hC64"><stop offset="0" stop-color="#FF7A2A" stop-opacity=".55"/><stop offset="1" stop-color="#FF7A2A" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gC64)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sC64)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.16" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#F6EFE8" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#FF7A2A"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hC64)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#FF7A2A" stroke="none"/>
+</g></svg><span>on dark</span></div></div><div class="card"><div class="t"><b>D</b> Peach cream</div>
+ <div class="row"><div class="hub"><div class="halo"><svg width="120" height="120" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gD120" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF7F0"/><stop offset="1" stop-color="#FFDCC2"/></linearGradient>
+ <linearGradient id="sD120" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hD120"><stop offset="0" stop-color="#F76A1C" stop-opacity=".55"/><stop offset="1" stop-color="#F76A1C" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gD120)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sD120)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#F76A1C"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hD120)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#F76A1C" stroke="none"/>
+</g></svg></div></div>
+ <div class="sizes"><svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gD64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF7F0"/><stop offset="1" stop-color="#FFDCC2"/></linearGradient>
+ <linearGradient id="sD64" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hD64"><stop offset="0" stop-color="#F76A1C" stop-opacity=".55"/><stop offset="1" stop-color="#F76A1C" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gD64)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sD64)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#F76A1C"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hD64)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#F76A1C" stroke="none"/>
+</g></svg><svg width="40" height="40" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gD40" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF7F0"/><stop offset="1" stop-color="#FFDCC2"/></linearGradient>
+ <linearGradient id="sD40" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hD40"><stop offset="0" stop-color="#F76A1C" stop-opacity=".55"/><stop offset="1" stop-color="#F76A1C" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gD40)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sD40)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#F76A1C"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hD40)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#F76A1C" stroke="none"/>
+</g></svg><svg width="28" height="28" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gD28" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF7F0"/><stop offset="1" stop-color="#FFDCC2"/></linearGradient>
+ <linearGradient id="sD28" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hD28"><stop offset="0" stop-color="#F76A1C" stop-opacity=".55"/><stop offset="1" stop-color="#F76A1C" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gD28)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sD28)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#F76A1C"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hD28)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#F76A1C" stroke="none"/>
+</g></svg><svg width="16" height="16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gD16" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF7F0"/><stop offset="1" stop-color="#FFDCC2"/></linearGradient>
+ <linearGradient id="sD16" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hD16"><stop offset="0" stop-color="#F76A1C" stop-opacity=".55"/><stop offset="1" stop-color="#F76A1C" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gD16)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sD16)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#F76A1C"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hD16)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#F76A1C" stroke="none"/>
+</g></svg></div></div>
+ <div class="dark"><svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="gD64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF7F0"/><stop offset="1" stop-color="#FFDCC2"/></linearGradient>
+ <linearGradient id="sD64" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <radialGradient id="hD64"><stop offset="0" stop-color="#F76A1C" stop-opacity=".55"/><stop offset="1" stop-color="#F76A1C" stop-opacity="0"/></radialGradient>
+</defs>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#gD64)"/>
+<rect x="1" y="1" width="62" height="62" rx="16" fill="url(#sD64)"/>
+<rect x="1.8" y="1.8" width="60.4" height="60.4" rx="15.2" fill="none" stroke="#fff" stroke-opacity="0.9" stroke-width="1.2"/>
+<g transform="translate(32 32.5) scale(.68) translate(-32 -32)" stroke-linecap="round" fill="none" stroke-width="6.5">
+ <path d="M10 45 C 22 37, 36 50, 54 41" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 34.5 C 22 26.5, 36 39.5, 54 30.5" stroke="#2A1D16" stroke-opacity=".92"/>
+ <path d="M10 24 C 20 17, 30 26.5, 41 22" stroke="#F76A1C"/>
+ <circle cx="51" cy="18.5" r="11" fill="url(#hD64)" stroke="none"/>
+ <circle cx="51" cy="18.5" r="5.4" fill="#F76A1C" stroke="none"/>
+</g></svg><span>on dark</span></div></div></div></body></html>

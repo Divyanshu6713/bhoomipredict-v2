@@ -15,6 +15,18 @@ import { inScope, ROLES, USERS } from '../domain/roles.mjs';
 import { severityRank } from '../domain/rules.mjs';
 
 export const INTERVENTION_STATUSES = ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS', 'RESOLVED', 'DISMISSED'];
+
+/** Who supervises a role — used when an intervention goes overdue and when an officer escalates it. */
+export const ESCALATION = {
+  FIELD_OFFICER: 'DISTRICT_ADMIN',
+  REVENUE_OFFICER: 'DISTRICT_ADMIN',
+  LAND_ACQUISITION_OFFICER: 'DISTRICT_ADMIN',
+  LEGAL_OFFICER: 'STATE_ADMIN',
+  PROJECT_AUTHORITY: 'SECTOR_NODAL_OFFICER',
+  DISTRICT_ADMIN: 'STATE_ADMIN',
+  STATE_ADMIN: 'NATIONAL_ADMIN',
+  SECTOR_NODAL_OFFICER: 'NATIONAL_ADMIN',
+};
 export const ALERT_STATUSES = ['UNREAD', 'ACKNOWLEDGED', 'RESOLVED'];
 
 const TRANSITIONS = {
@@ -182,7 +194,28 @@ export function updateIntervention(user, id, patch) {
   }
   if (patch.note !== undefined) after.note = String(patch.note).slice(0, 1000);
 
+  // An officer can escalate to the supervising role, with a recorded reason.
+  let escalated = null;
+  if (patch.escalate) {
+    if (['RESOLVED', 'DISMISSED'].includes(after.status)) throw new ServiceError('A closed intervention cannot be escalated — reopen it first', 409);
+    const holdsIt = item.assigned_role === user.role || item.assigneeId === user.id || w.escalatedTo === user.role;
+    if (!holdsIt && !['NATIONAL_ADMIN', 'STATE_ADMIN', 'DISTRICT_ADMIN'].includes(user.role)) throw new ServiceError(`Only the assigned role (${item.assignedRoleLabel}) or a supervising administrator can escalate this intervention`, 403);
+    if (!patch.note || String(patch.note).trim().length < 3) throw new ServiceError('A note is required to escalate an intervention', 422);
+    const level = w.escalationLevel ?? 0;
+    const holder = level === 0 ? item.assigned_role : w.escalatedTo;
+    const to = ESCALATION[holder];
+    if (!to) throw new ServiceError('This intervention is already with the most senior role', 409);
+    escalated = { from: { escalationLevel: level, holder }, to: { escalationLevel: level + 1, escalatedTo: to } };
+    Object.assign(w, { escalationLevel: level + 1, escalatedTo: to, escalatedAt: new Date().toISOString() });
+  }
+
   Object.assign(w, after, { updatedAt: new Date().toISOString(), updatedBy: user.id });
+  if (escalated) {
+    w.history.push({ at: w.updatedAt, by: user.id, from: escalated.from, to: escalated.to });
+    saveState();
+    recordAudit({ user, action: 'intervention.escalated', entity: 'intervention', entityId: id, oldValue: { ...escalated.from, note: before.note }, newValue: { ...escalated.to, note: after.note } });
+    return allInterventions().find((i) => i.id === id);
+  }
   w.history.push({ at: w.updatedAt, by: user.id, from: before, to: after });
   saveState();
   recordAudit({

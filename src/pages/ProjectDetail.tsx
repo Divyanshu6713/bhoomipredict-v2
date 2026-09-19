@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ArrowLeft, Building2, CalendarClock, ChevronRight, FlaskConical, Flag, Gavel, MapPin, Pencil, Trash2 } from 'lucide-react';
@@ -12,6 +12,8 @@ import { StageTimeline } from '@/components/lifecycle/StageTimeline';
 import { DependencyNetwork } from '@/components/network/DependencyNetwork';
 import { AlertRow, InterventionCard, RecommendationList } from '@/components/workflow';
 import { StageForecast } from '@/components/lifecycle/StageForecast';
+import { ProgressKey } from '@/components/lifecycle/ProgressKey';
+import { parcelLine, parcels, stageStory, stepHeadline } from '@/lib/plainStage';
 import { DocumentPanel } from '@/components/documents/DocumentPanel';
 import { AuditTimeline } from '@/components/workflow/AuditTimeline';
 import { IndiaGISMap } from '@/components/gis/IndiaGISMap';
@@ -20,7 +22,7 @@ import { IssueProfilePanel } from '@/components/issues/IssueProfilePanel';
 import { ProvenanceBadge } from '@/components/brand/Provenance';
 import { AXIS_TICK, PRIORITY_CLASS, RISK_HEX } from '@/lib/risk';
 import { RISK_BASIS_LABEL, STAGE_STATUS_CLASS, STAGE_STATUS_LABEL } from '@/lib/status';
-import { formatCompact, formatCrore, formatDate, formatNumber } from '@/lib/format';
+import { formatCompact, formatCrore, formatDate, formatNumber, formatVsTarget } from '@/lib/format';
 import { useApi } from '@/hooks';
 import { useAuth } from '@/auth/AuthContext';
 import { advanceProjectStage, deleteProject, fetchBoundaries, fetchMapPoints, fetchProject, fetchProjectCases } from '@/api/client';
@@ -39,6 +41,7 @@ export default function ProjectDetail() {
   const [completedOn, setCompletedOn] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const casesRef = useRef<HTMLDivElement>(null);
 
   const detail = useApi((signal) => fetchProject(id, signal), [id]);
   const data = detail.data;
@@ -89,7 +92,17 @@ export default function ProjectDetail() {
   const bounds = pts.length
     ? { lat0: Math.min(...pts.map((p) => p.lat), project.lat), lat1: Math.max(...pts.map((p) => p.lat), project.lat), lon0: Math.min(...pts.map((p) => p.lon), project.lon), lon1: Math.max(...pts.map((p) => p.lon), project.lon) }
     : { lat0: project.lat - 0.3, lat1: project.lat + 0.3, lon0: project.lon - 0.3, lon1: project.lon + 0.3 };
+  const stepsDone = project.stages.filter((s) => s.status === 'COMPLETED').length;
+  const story = stageStory(selected);
+  const selLine = parcelLine(selected);
+  const showStageParcels = () => {
+    if (stageIndex === null) setStageIndex(project.currentStageIndex);
+    setCasePage(1);
+    casesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
   const openInterventions = items.filter((i) => !['RESOLVED', 'DISMISSED'].includes(i.status));
+  // Every number on the risk card comes from one server object (forecast.headline).
+  const h = project.forecast?.headline ?? null;
 
   const caseColumns: ServerColumn<CaseRow>[] = [
     {
@@ -105,11 +118,11 @@ export default function ProjectDetail() {
       ),
     },
     { key: 'stage', header: 'Stage', render: (c) => <span className="text-sm">{c.stage}</span> },
-    { key: 'status', header: 'Case status', hideOnMobile: true, render: (c) => <span className="text-sm capitalize">{(c.caseStatus ?? 'OPEN').replace(/_/g, ' ').toLowerCase()}</span> },
+    { key: 'status', header: 'File status', hideOnMobile: true, render: (c) => <span className="text-sm capitalize">{(c.caseStatus ?? 'OPEN').replace(/_/g, ' ').toLowerCase()}</span> },
     { key: 'own', header: 'Ownership', hideOnMobile: true, render: (c) => <span className="text-sm">{c.ownership}</span> },
     { key: 'comp', header: 'Compensation', sortKey: 'compensation', align: 'right', render: (c) => <span className="num text-sm">{c.compensationCompletionPct}%</span> },
     { key: 'legal', header: 'Legal', sortKey: 'legal', align: 'right', render: (c) => <span className={cn('num text-sm', c.legalCases > 0 && 'font-medium text-red-700 dark:text-red-300')}>{c.legalCases}</span> },
-    { key: 'deps', header: 'Dept. pending', align: 'right', hideOnMobile: true, render: (c) => <span className="num text-sm">{c.pendingDependencyCount ?? '—'}</span> },
+    { key: 'deps', header: 'Depts. pending', align: 'right', hideOnMobile: true, render: (c) => <span className="num text-sm">{c.pendingDependencyCount ?? '—'}</span> },
     {
       key: 'due',
       header: 'Milestone due',
@@ -248,14 +261,43 @@ export default function ProjectDetail() {
         <Card className="flex flex-col p-5">
           <RiskVerdict
             level={project.riskBand}
-            score={Math.round(project.delayProbability * 100)}
-            label={`Probability that ${project.currentStage} slips by more than 30 days`}
+            score={project.riskScore}
+            label={`Chance of a delay of more than 30 days at the ${project.currentStage} step`}
             detail={
-              <>
-                Risk score <span className="num">{project.riskScore}</span>/100 · expected slip <span className="num">{project.predictedDelayDays ?? '—'}</span> days · forecast completion {formatDate(project.lifecycle.forecastCompletion)}
-              </>
+              h ? (
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+                  <dt className="text-ink-3">Risk score</dt>
+                  <dd>
+                    <span className="font-medium text-ink num">{h.riskScore}/100</span> <span className="text-ink-3">— the same {h.riskScore}% on a 0–100 scale</span>
+                  </dd>
+                  <dt className="text-ink-3">Expected delay</dt>
+                  <dd>
+                    <span className="font-medium text-ink num">{h.expectedDelayDays} days</span>{' '}
+                    <span className="text-ink-3">
+                      at {h.stage} (due {formatDate(h.stageDeadline)}
+                      {h.overdueDays > 0 ? `, already ${h.overdueDays} days past` : ''}) · about <span className="num">{h.delayIfLateDays}</span> days if it slips
+                    </span>
+                  </dd>
+                  <dt className="text-ink-3">Target</dt>
+                  <dd className="font-medium text-ink num">{formatDate(h.targetCompletionDate)}</dd>
+                  <dt className="text-ink-3">Forecast finish</dt>
+                  <dd>
+                    <span className="font-medium text-ink num">{formatDate(h.forecastCompletion)}</span>{' '}
+                    <span className={cn('num', h.daysVsTarget > 0 ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300')}>{formatVsTarget(h.daysVsTarget)}</span>
+                  </dd>
+                </dl>
+              ) : (
+                <>
+                  Risk score <span className="num">{project.riskScore}</span>/100 · expected delay <span className="num">{project.predictedDelayDays ?? '—'}</span> days
+                </>
+              )
             }
           />
+          {h && (
+            <p className="mt-2 text-xs text-ink-3">
+              Expected delay applies to the current step only. The forecast finish adds the remaining steps and their own delay risk — it is the middle (P50) of {project.forecast?.runs.toLocaleString('en-IN')} simulated schedules, so it is not target + expected delay.
+            </p>
+          )}
           {project.adjustment && (
             <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-ink-2 dark:border-amber-400/20 dark:bg-amber-400/5">
               Recorded edits ({project.adjustment.changedFields.join(', ') || `${project.adjustment.stageAdvances} stage advance`}) moved the risk from the ensemble&rsquo;s {project.previousEnsembleRisk}% by the model&rsquo;s estimate of the change (
@@ -285,8 +327,8 @@ export default function ProjectDetail() {
               rows={[
                 { label: 'Deadline', value: formatDate(project.milestoneDeadline) },
                 { label: current.daysRemaining < 0 ? 'Overdue by' : 'Days left', value: `${Math.abs(current.daysRemaining)} days`, tone: current.daysRemaining < 0 ? 'text-red-700 dark:text-red-300' : undefined },
-                { label: 'Open cases in stage', value: formatNumber(current.openCases) },
-                { label: 'Approvals pending', value: `${current.approvalDelayMean} days`, hint: 'mean over open cases' },
+                { label: 'Parcels pending at this step', value: formatNumber(current.openCases) },
+                { label: 'Avg. wait for approvals', value: `${current.approvalDelayMean} days`, hint: 'across pending parcels' },
               ]}
             />
             {nextStage && (
@@ -338,13 +380,13 @@ export default function ProjectDetail() {
           title="Lifecycle"
           subtitle={
             <>
-              Stage <span className="num">{project.currentStageIndex + 1}</span> of 9 · <span className="num">{project.progressPct.toFixed(1)}%</span> complete ·{' '}
+              Now at step <span className="num">{project.currentStageIndex + 1}</span> of 9 ({project.currentStage}) · <span className="num">{stepsDone}</span> step{stepsDone === 1 ? '' : 's'} done ·{' '}
               {project.source === 'corpus' ? (
                 <>
-                  <span className="num">{formatNumber(project.openCases)}</span> of <span className="num">{formatNumber(project.totalParcels)}</span> cases open
+                  <span className="num">{formatNumber(project.totalParcels - project.openCases)}</span> of <span className="num">{formatNumber(project.totalParcels)}</span> parcels cleared, <span className="num">{formatNumber(project.openCases)}</span> still pending
                 </>
               ) : (
-                'project-level record (no case data)'
+                'project-level record (no parcel data)'
               )}
             </>
           }
@@ -357,11 +399,11 @@ export default function ProjectDetail() {
             { label: 'Land area', value: `${formatCompact(project.landRequirementHa)} ha`, hint: `${formatNumber(project.totalParcels)} parcels` },
             { label: 'Affected families', value: formatNumber(project.affectedFamilies) },
             { label: 'Notification', value: project.lifecycle.notificationStatus.split(' — ')[0], hint: project.lifecycle.notificationStatus.split(' — ')[1] },
-            { label: 'Compensation', value: `${project.compensationCompletionPct.toFixed(0)}%`, hint: project.compensationStatus },
-            { label: 'Possession', value: `${(project.possessionCompletionPct ?? 0).toFixed(0)}%`, hint: project.possessionStatus },
-            { label: 'R&R', value: project.rrProgressPct === null ? 'N/A' : `${project.rrProgressPct.toFixed(0)}%`, hint: project.rrStatus },
-            { label: 'Legal disputes', value: formatNumber(project.legalCases), hint: `${formatNumber(project.legalDisputeParcels)} parcels` },
-            { label: 'Documentation', value: `${project.avgDocumentCompleteness.toFixed(0)}%`, hint: `approvals ${summary.approvalDelayDays} d avg` },
+            { label: 'Compensation paid', value: `${project.compensationCompletionPct.toFixed(0)}%`, hint: `${project.compensationStatus} · avg. per parcel due` },
+            { label: 'Possession taken', value: `${(project.possessionCompletionPct ?? 0).toFixed(0)}%`, hint: project.possessionStatus },
+            { label: 'R&R delivered', value: project.rrProgressPct === null ? 'N/A' : `${project.rrProgressPct.toFixed(0)}%`, hint: project.rrStatus },
+            { label: 'Court cases', value: formatNumber(project.legalCases), hint: `on ${formatNumber(project.legalDisputeParcels)} parcels` },
+            { label: 'Documents complete', value: `${project.avgDocumentCompleteness.toFixed(0)}%`, hint: `approvals wait ${summary.approvalDelayDays} d avg` },
           ].map((m) => (
             <div key={m.label} className="bg-surface px-4 py-3">
               <p className="text-xs text-ink-3">{m.label}</p>
@@ -370,6 +412,7 @@ export default function ProjectDetail() {
             </div>
           ))}
         </div>
+        {project.source === 'corpus' && <ProgressKey stages={project.stages} className="mx-5 mt-4" />}
         <div className="pt-2">
           <StageTimeline
             stages={project.stages}
@@ -385,36 +428,51 @@ export default function ProjectDetail() {
           <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
             <div className="min-w-0">
               <p className="text-xs font-medium text-ink-3">
-                {stageIndex === null ? 'Current stage' : 'Selected stage'} · {selected.name}
+                {stageIndex === null ? 'Current step' : 'Selected step'} · {selected.name}
               </p>
-              <p className="mt-1 text-base font-medium text-ink">{selected.milestone}</p>
+              <p className="mt-1 text-base font-medium text-ink">{stepHeadline(selected)}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                <Badge className={STAGE_STATUS_CLASS[selected.status]}>Stage: {STAGE_STATUS_LABEL[selected.status]}</Badge>
-                {selected.totalCases > 0 && <Badge tone={selected.openCases > 0 ? 'warning' : 'success'}>Case backlog: {selected.openCases > 0 ? `${formatNumber(selected.openCases)} open` : 'cleared'}</Badge>}
+                <Badge className={STAGE_STATUS_CLASS[selected.status]}>Project step: {STAGE_STATUS_LABEL[selected.status]}</Badge>
+                {selected.totalCases > 0 && <Badge tone={selLine.tone}>{selLine.text}</Badge>}
               </div>
-              <p className="mt-2 text-sm text-ink-2">{selected.explanation}</p>
+              <p className="mt-2.5 text-sm text-ink-2">
+                <span className="font-medium text-ink">What this means: </span>
+                {story.means}
+              </p>
+              {story.todo && (
+                <p className="mt-1.5 text-sm text-ink-2">
+                  <span className="font-medium text-ink">What to do: </span>
+                  {story.todo}
+                </p>
+              )}
               {selected.blockedBy.length > 0 && (
                 <ul className="mt-2 space-y-1 text-sm text-red-700 dark:text-red-300">
                   {selected.blockedBy.map((b) => (
                     <li key={b.code}>
-                      Blocked by {b.name}: pending on {formatNumber(b.pendingCases)} cases ({Math.round(b.share * 100)}%)
+                      Held up by {b.name}: action pending on {parcels(b.pendingCases)} ({Math.round(b.share * 100)}% of those pending)
                     </li>
                   ))}
                 </ul>
+              )}
+              <p className="mt-1.5 text-xs text-ink-3">Formal milestone: {selected.milestone}</p>
+              {project.source === 'corpus' && selected.openCases > 0 && (
+                <Button size="sm" variant="secondary" className="mt-3" onClick={showStageParcels}>
+                  Show the {parcels(selected.openCases)} pending here
+                </Button>
               )}
             </div>
             <KeyValue
               columns={2}
               rows={[
-                { label: 'Stage completion', value: selected.actualCompletion ? formatDate(selected.actualCompletion) : '—', hint: selected.actualCompletion ? (selected.delayDays ? `${selected.delayDays} days late` : 'on time') : undefined },
-                { label: 'Working deadline', value: formatDate(selected.expectedCompletion), hint: `baseline ${formatDate(selected.baselineCompletion)}` },
-                { label: 'Cases', value: selected.totalCases ? `${formatNumber(selected.resolvedCases)} / ${formatNumber(selected.totalCases)}` : '—', hint: selected.resolutionPct !== null ? `${selected.resolutionPct}% resolved` : 'no case records' },
-                { label: 'Milestone risk', value: selected.riskProbability !== null ? `${Math.round(selected.riskProbability * 100)}%` : '—', hint: selected.riskProbability === null ? 'no open cases to score' : 'mean over open cases' },
+                { label: 'Step done on', value: selected.actualCompletion ? formatDate(selected.actualCompletion) : 'Not yet', hint: selected.actualCompletion ? (selected.delayDays ? `${selected.delayDays} days late` : 'on time') : undefined },
+                { label: 'Deadline', value: formatDate(selected.expectedCompletion), hint: `original plan ${formatDate(selected.baselineCompletion)}` },
+                { label: 'Parcels cleared', value: selected.totalCases ? `${formatNumber(selected.resolvedCases)} of ${formatNumber(selected.totalCases)}` : '—', hint: selected.totalCases ? `${formatNumber(selected.openCases)} still pending` : 'no parcel records' },
+                { label: 'Delay risk', value: selected.riskProbability !== null ? `${Math.round(selected.riskProbability * 100)}%` : '—', hint: selected.riskProbability === null ? 'nothing pending to score' : 'chance the pending parcels slip > 30 days' },
               ]}
             />
           </div>
         </div>
-        {project.compensationBasis && <p className="border-t border-line px-5 py-2.5 text-xs text-ink-3">Compensation, possession and R&R percentages are measured across parcels for which that step is due.</p>}
+        {project.compensationBasis && <p className="border-t border-line px-5 py-2.5 text-xs text-ink-3">Compensation paid, possession taken and R&R delivered are averages over the parcels for which that step is due, so they can differ from the count of parcels cleared at the step.</p>}
       </Card>
 
       {project.forecast && <StageForecast forecast={project.forecast} />}
@@ -484,9 +542,9 @@ export default function ProjectDetail() {
 
       {/* ------------------------------------------------ case backlog */}
       {project.source === 'corpus' && (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+        <div ref={casesRef} className="grid scroll-mt-20 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
           <Card>
-            <CardHeader title="Cases holding the project back" subtitle="Highest predicted risk among open cases, with the factors behind each" />
+            <CardHeader title="Parcels holding the project back" subtitle="Pending parcels with the highest delay risk, and what is driving each" />
             <ol className="divide-y divide-line border-t border-line">
               {topCases.slice(0, 6).map((c, i) => (
                 <li key={c.caseId}>
@@ -515,13 +573,13 @@ export default function ProjectDetail() {
 
           <Card>
             <CardHeader
-              title={stageIndex === null ? 'All open cases' : `Cases in ${selected.name}`}
-              subtitle={stageIndex !== null ? 'Filtered to the stage selected in the lifecycle' : 'Select a stage in the lifecycle to filter'}
+              title={stageIndex === null ? 'All pending parcels' : `Pending parcels at ${selected.name}`}
+              subtitle={stageIndex !== null ? 'Filtered to the step selected in the lifecycle' : 'Click a step in the lifecycle to filter'}
               action={
                 <div className="flex gap-2">
                   {stageIndex !== null && (
                     <Button size="sm" variant="ghost" onClick={() => setStageIndex(null)}>
-                      Clear stage
+                      Show all steps
                     </Button>
                   )}
                   <Link to={`/cases?projectId=${project.id}`}>
@@ -546,8 +604,8 @@ export default function ProjectDetail() {
               refreshing={cases.refreshing}
               dense
               minWidth={960}
-              emptyTitle="No open cases here"
-              emptyDescription="Every case in this stage has been resolved. Clear the stage filter to see the rest of the backlog."
+              emptyTitle="Nothing pending here"
+              emptyDescription="Every parcel at this step has been cleared. Show all steps to see the rest."
             />
           </Card>
         </div>
@@ -589,8 +647,11 @@ export default function ProjectDetail() {
           <dd className="font-medium text-ink">{summary.responsibleDepartment}</dd>
         </div>
         <div className="flex gap-1.5">
-          <dt>Timeline overrun</dt>
-          <dd className="font-medium text-ink num">{project.lifecycle.timelineOverrunDays} days</dd>
+          <dt title="If every remaining step now runs exactly to plan, with no further delay">On-plan finish (no further delay)</dt>
+          <dd className="font-medium text-ink num">
+            {formatDate(project.lifecycle.onPlanCompletion)}
+            {project.lifecycle.onPlanOverrunDays > 0 ? ` · ${project.lifecycle.onPlanOverrunDays} days after target` : ''}
+          </dd>
         </div>
         <p className="text-xs sm:ml-auto">Synthetic demonstration record — not a real project.</p>
       </dl>
@@ -639,7 +700,7 @@ export default function ProjectDetail() {
         }
       >
         <p className="text-sm text-ink-2">
-          This closes the statutory stage for the project. {current.openCases > 0 ? `${formatNumber(current.openCases)} cases attached to it stay open as residual backlog.` : ''} Risk is re-scored and the change is audited.
+          This marks the step as done for the project as a whole. {current.openCases > 0 ? `The ${parcels(current.openCases)} still pending here stay open and remain on your list until each is cleared.` : ''} Risk is re-scored and the change is audited.
         </p>
         <Field label="Completion date" hint={`Between ${formatDate(current.startDate)} and the snapshot date. Leave blank to use the snapshot date.`} className="mt-4">
           <input type="date" value={completedOn} onChange={(e) => setCompletedOn(e.target.value)} className={inputClass} />

@@ -7,6 +7,7 @@
  * page the caller actually asked for.
  */
 import fs from 'node:fs';
+import { riskScoreOf } from '../domain/risk.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { maskToCodes } from '../domain/registry.mjs';
@@ -212,7 +213,7 @@ export function caseAt(store, row, { withContributors = false } = {}) {
     delayProbability: Number(c.score[row].toFixed(4)),
     // Displayed risk is clamped off the endpoints: a predicted probability is
     // never a certainty, and a score of 0 or 100 would read as one.
-    riskScore: Math.min(99, Math.max(1, Math.round(c.score[row] * 100))),
+    riskScore: riskScoreOf(c.score[row]),
     riskBand: store.bandNames[c.riskBand[row]],
     dataQuality: c.quality[row],
   };
@@ -292,7 +293,7 @@ export function caseRowLite(store, row) {
     inactivityDays: c.inactivity[row],
     milestoneDueDate: isoFromDay(c.dueDay[row]),
     daysToMilestone: c.dueDay[row] - store.todayDay,
-    riskScore: Math.min(99, Math.max(1, Math.round(c.score[row] * 100))),
+    riskScore: riskScoreOf(c.score[row]),
     riskBand: store.bandNames[c.riskBand[row]],
     dataQuality: c.quality[row],
     predictedDelayDays: c.predDelay ? Math.round(c.predDelay[row]) : null,

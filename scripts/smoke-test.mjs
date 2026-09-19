@@ -339,6 +339,14 @@ async function run() {
     const res = await call('PATCH', `/interventions/${encodeURIComponent(target.id)}`, { token: dc, body: { status: 'RESOLVED', note: 'Disbursement camp held' } });
     ok(res.status === 200 && res.json.intervention.status === 'RESOLVED', 'intervention resolved with note');
   }
+  const toEscalate = mine.items.find((i) => ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'].includes(i.status) && !i.escalationLevel);
+  if (toEscalate) {
+    const url = `/interventions/${encodeURIComponent(toEscalate.id)}`;
+    const bare = await call('PATCH', url, { token: slao, body: { escalate: true } });
+    ok(bare.status === 422, 'escalating requires a note');
+    const up = await call('PATCH', url, { token: slao, body: { escalate: true, note: 'Treasury release pending for 60 days' } });
+    ok(up.status === 200 && up.json.intervention.escalationLevel === 1 && up.json.intervention.escalatedTo === 'DISTRICT_ADMIN', 'an officer escalates to the supervising role', up.json.intervention?.escalatedTo);
+  }
   const alert = (await get('/alerts?pageSize=1', dc)).json.items[0];
   if (alert) {
     const a = await call('PATCH', `/alerts/${encodeURIComponent(alert.id)}`, { token: dc, body: { status: 'ACKNOWLEDGED' } });

@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 import { Badge, Button } from '@/components/ui';
 import { Modal, Field, inputClass } from '@/components/ui/Modal';
 import { updateInterventionStatus, updateAlertStatus } from '@/api/client';
-import { CATEGORY_LABEL, INTERVENTION_NEXT, INTERVENTION_STATUS_CLASS, INTERVENTION_STATUS_LABEL, SEVERITY_CLASS, ALERT_STATUS_CLASS, humanise } from '@/lib/status';
+import { CATEGORY_LABEL, INTERVENTION_ACTION_LABEL, INTERVENTION_NEXT, INTERVENTION_STATUS_CLASS, INTERVENTION_STATUS_LABEL, SEVERITY_CLASS, ALERT_STATUS_CLASS, humanise } from '@/lib/status';
 import { formatDate } from '@/lib/format';
 import type { AlertItem, CaseRecommendation, InterventionItem, InterventionStatus, Recommendation, Trigger } from '@/data/types';
 
@@ -109,18 +109,19 @@ export function RecommendationList({ items, max = 20, emptyText = 'No rule is tr
 
 /** Status transition + note for one intervention. */
 export function InterventionActions({ item, canUpdate, onChanged }: { item: InterventionItem; canUpdate: boolean; onChanged: (next: InterventionItem) => void }) {
-  const [target, setTarget] = useState<InterventionStatus | null>(null);
+  const [target, setTarget] = useState<InterventionStatus | 'ESCALATE' | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const needsNote = target === 'RESOLVED' || target === 'DISMISSED';
+  const needsNote = target === 'RESOLVED' || target === 'DISMISSED' || target === 'ESCALATE';
+  const closed = item.status === 'RESOLVED' || item.status === 'DISMISSED';
 
   const submit = async () => {
     if (!target) return;
     setBusy(true);
     setError(null);
     try {
-      const { intervention } = await updateInterventionStatus(item.id, { status: target, note: note || undefined });
+      const { intervention } = await updateInterventionStatus(item.id, target === 'ESCALATE' ? { escalate: true, note } : { status: target, note: note || undefined });
       onChanged(intervention);
       setTarget(null);
       setNote('');
@@ -137,13 +138,18 @@ export function InterventionActions({ item, canUpdate, onChanged }: { item: Inte
       {canUpdate &&
         INTERVENTION_NEXT[item.status].map((s) => (
           <Button key={s} size="sm" variant={s === 'RESOLVED' ? 'primary' : 'outline'} onClick={() => setTarget(s)}>
-            {s === 'OPEN' ? 'Reopen' : INTERVENTION_STATUS_LABEL[s]}
+            {s === 'OPEN' ? 'Reopen' : INTERVENTION_ACTION_LABEL[s]}
           </Button>
         ))}
+      {canUpdate && !closed && (
+        <Button size="sm" variant="ghost" onClick={() => setTarget('ESCALATE')} title="Send to the supervising officer, with a reason">
+          <ArrowUpRight className="h-3.5 w-3.5" /> Escalate
+        </Button>
+      )}
       <Modal
         open={target !== null}
         onClose={() => setTarget(null)}
-        title={`Mark as ${target ? INTERVENTION_STATUS_LABEL[target].toLowerCase() : ''}`}
+        title={target === 'ESCALATE' ? 'Escalate to the supervising officer' : `Mark as ${target ? INTERVENTION_STATUS_LABEL[target].toLowerCase() : ''}`}
         subtitle={item.title}
         footer={
           <>
@@ -157,7 +163,7 @@ export function InterventionActions({ item, canUpdate, onChanged }: { item: Inte
         }
       >
         <Field label={needsNote ? 'Note' : 'Note (optional)'} required={needsNote} hint="Recorded in the audit trail with your name and role.">
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className={cn(inputClass, 'h-auto py-2')} placeholder="What was done, or why this is being closed" />
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className={cn(inputClass, 'h-auto py-2')} placeholder={target === 'ESCALATE' ? 'Why this needs a senior officer — e.g. treasury release pending for 60 days' : 'What was done, or why this is being closed'} />
         </Field>
         {error && (
           <p role="alert" className="mt-3 text-sm text-red-700 dark:text-red-300">

@@ -152,8 +152,10 @@ export interface LifecycleSummary {
   isBlocked: boolean;
   residualBacklog: number;
   parcelsAhead: number;
-  forecastCompletion: string;
-  timelineOverrunDays: number;
+  /** Finish date if every remaining step runs exactly to plan — no further delay. Not the forecast. */
+  onPlanCompletion: string;
+  /** Days past target even with no further delay (0 if on or ahead of target). */
+  onPlanOverrunDays: number;
   notificationStatus: string;
 }
 
@@ -460,11 +462,16 @@ export interface ProjectSummary {
   approvalDelayDays: number;
   coordinationScore: number;
   districtDelayRate: number;
+  /** Delay probability on a 0–100 scale — the same number as delayProbability, not a second metric (server/domain/risk.mjs). */
   riskScore: number;
+  /** Chance that the open parcels at the current step miss their milestone by more than 30 days (deployed model). */
   delayProbability: number;
   riskBand: RiskLevel;
   riskBasis: RiskBasis;
+  /** Expected delay at the current step, in days — the same figure as forecast.headline.expectedDelayDays. */
   predictedDelayDays: number | null;
+  /** The model's own expected slip for the current step, before the "already overdue" floor. */
+  modelExpectedDelayDays?: number | null;
   lat: number;
   lon: number;
   authority: string;
@@ -480,7 +487,9 @@ export interface ProjectSummary {
   residualBacklog: number;
   isDelayed: boolean;
   isBlocked: boolean;
-  timelineOverrunDays: number;
+  onPlanOverrunDays: number;
+  forecastCompletion?: string | null;
+  forecastDaysVsTarget?: number | null;
   topContributor: string | null;
   actionCount: number;
   dataQuality: number | null;
@@ -1466,7 +1475,12 @@ export interface StageForecast {
   modelProbability?: number;
   basis?: string;
   historicalDelayRate?: number;
+  /** delayProbability × delayIfLateDays — the model's definition of expected slip. */
   expectedSlipDays?: number;
+  /** Mean slip in the outcomes that are late (> 30 days). */
+  delayIfLateDays?: number;
+  /** Share of simulated runs that were late — a Monte Carlo check on delayProbability. */
+  simulatedLateShare?: number;
   plannedCompletion?: string;
   p50Completion?: string;
   p80Completion?: string;
@@ -1478,8 +1492,27 @@ export interface ProjectForecast {
   projectEffectLogOdds: number;
   effectDecay: number;
   stages: StageForecast[];
-  completion: { targetCompletionDate: string; p50: string; p80: string; probabilityMissTarget: number; p50OverrunDays: number };
+  completion: { targetCompletionDate: string; p50: string; p80: string; probabilityMissTarget: number; daysVsTarget: number; p50OverrunDays: number };
+  /** Single source of truth for the project risk card (server/lib/forecast.mjs). */
+  headline: ForecastHeadline;
   caveat: string;
+}
+
+export interface ForecastHeadline {
+  stage: StageName;
+  stageDeadline: string;
+  overdueDays: number;
+  stepAlreadyLate: boolean;
+  probability: number;
+  riskScore: number;
+  expectedDelayDays: number;
+  delayIfLateDays: number;
+  modelExpectedDelayDays: number | null;
+  targetCompletionDate: string;
+  /** Median (P50) of the simulated finish dates. */
+  forecastCompletion: string;
+  /** forecastCompletion − targetCompletionDate in calendar days; negative = ahead of target. */
+  daysVsTarget: number;
 }
 
 /* ----------------------------------------------------- trends & performance */

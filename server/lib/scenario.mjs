@@ -243,7 +243,7 @@ export function scoreScenario(store, body) {
     targetCompletionDate: isoFromDay(dayFromISO(today) + 400),
     network: { ...network, nodes: nodes.map((n) => ({ ...n, pendingShareCurrentStage: n.pending ? 1 : 0, pendingCurrentStage: n.pending ? 1 : 0 })) },
     stages: LIFECYCLE_STAGES.map((name, i) => ({ name, status: i === stageIndex ? 'IN_PROGRESS' : i < stageIndex ? 'COMPLETED' : 'PENDING', openCases: 0, blockedBy: [] })),
-    lifecycle: { residualBacklog: 0, timelineOverrunDays: 0 },
+    lifecycle: { residualBacklog: 0, onPlanOverrunDays: 0 },
     contributors: result.increasing.map((g) => ({ group: g.group, value: g.value, share: g.share })),
   };
 

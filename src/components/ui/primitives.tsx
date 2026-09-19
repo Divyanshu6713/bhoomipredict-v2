@@ -170,7 +170,7 @@ export function RiskVerdict({
         </span>
         <span className="text-3xl font-semibold leading-none tracking-tight text-ink num">{score}%</span>
       </div>
-      {detail && <p className="mt-1.5 text-sm text-ink-2">{detail}</p>}
+      {detail && <div className="mt-1.5 text-sm text-ink-2">{detail}</div>}
       <p className="mt-2 text-sm text-ink-2">{meaning ?? RISK_MEANING[level]}</p>
       {children}
     </div>

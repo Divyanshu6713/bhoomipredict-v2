@@ -33,6 +33,7 @@ import { evaluateProject } from '../domain/rules.mjs';
 import { validateProject } from '../domain/validation.mjs';
 import { scoreModel } from './scorer.mjs';
 import { forecastProject } from './forecast.mjs';
+import { riskScoreOf } from '../domain/risk.mjs';
 import { attachImpact } from './impact.mjs';
 import { getState, saveState, recordAudit } from './persistence.mjs';
 import { districtIndex } from '../domain/geography.mjs';
@@ -316,7 +317,7 @@ function materialiseCorpus(base, override) {
     const prob = sigmoid(logit(base.delayProbability) + (after.logOdds - before.logOdds));
     p.previousEnsembleRisk = base.riskScore;
     p.delayProbability = Number(prob.toFixed(4));
-    p.riskScore = Math.min(99, Math.max(1, Math.round(prob * 100)));
+    p.riskScore = riskScoreOf(prob);
     p.riskBand = bandOfProb(prob);
     p.predictedDelayDays = Math.max(0, Math.round((base.predictedDelayDays ?? 0) + ((after.predictedDelayDays ?? 0) - (before.predictedDelayDays ?? 0))));
     p.riskBasis = 'ensemble+adjustment';
@@ -378,7 +379,7 @@ function materialiseUser(raw) {
   const life = deriveLifecycle(p, { todayDay: store.todayDay, stageRisk: p.stageRisk, stageDependency: [] });
   p.stages = life.stages.map((s) => ({
     ...s,
-    explanation: `${s.explanation} No case-level records are attached to this project, so case backlog is not tracked.`,
+    explanation: `${s.explanation} No parcel records are attached to this project, so parcel-level progress is not tracked.`,
   }));
   p.lifecycle = { ...life, stages: undefined };
   p.currentMilestone = p.stages[p.currentStageIndex].milestone;
@@ -438,6 +439,14 @@ export function effectiveProjects() {
   }
 
   for (const p of list) {
+    // The model's own aggregate (mean of P(late) × conditional slip over the open
+    // current-step parcels) is kept as modelExpectedDelayDays. The project's
+    // predictedDelayDays is the forecast's current-step expected delay: identical
+    // to the model figure unless the step deadline has already passed, when the
+    // days already elapsed are a floor. One number, used everywhere.
+    p.modelExpectedDelayDays = p.predictedDelayDays ?? null;
+    p.forecast = forecastProject(store, p);
+    p.predictedDelayDays = p.forecast.headline.expectedDelayDays;
     const snap = snapshot(state, p);
     snapshotsChanged ||= snap.changed;
     p.riskSnapshots = snap.history;
@@ -448,7 +457,6 @@ export function effectiveProjects() {
       bands: store.projectRiskBands,
     });
     p.recommendations = attachImpact(p, recommendations, projectRecord(p), (r) => scoreModel(store, r, { explain: false, level: 'project' }));
-    p.forecast = forecastProject(store, p);
   }
   if (snapshotsChanged) saveState();
 
@@ -520,7 +528,9 @@ export function projectSummary(p) {
     residualBacklog: p.lifecycle.residualBacklog,
     isDelayed: p.lifecycle.isDelayed,
     isBlocked: p.lifecycle.isBlocked,
-    timelineOverrunDays: p.lifecycle.timelineOverrunDays,
+    onPlanOverrunDays: p.lifecycle.onPlanOverrunDays,
+    forecastCompletion: p.forecast?.headline.forecastCompletion ?? null,
+    forecastDaysVsTarget: p.forecast?.headline.daysVsTarget ?? null,
     topContributor: p.topContributor ?? p.contributors?.[0]?.group ?? null,
     actionCount: p.recommendations.filter((r) => r.intervention && r.severity !== 'Low').length,
     dataQuality: p.dataQuality ?? null,

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, Globe2, Layers, MapPin, Target } from 'lucide-react';
+import { Box, ChevronRight, Globe2, Layers, Map as Map2D, MapPin, Target } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge, Button, Card, CardHeader, DemoDataBadge, EmptyState } from '@/components/ui';
 import { ErrorState, KeyValue, RiskPill } from '@/components/ui/primitives';
@@ -13,6 +13,17 @@ import { useApi, useDebounced, useFilters } from '@/hooks';
 import { fetchBoundaries, fetchProjectMap } from '@/api/client';
 import { LIFECYCLE_STAGES, type MapProject, type RiskLevel } from '@/data/types';
 
+// three.js only loads when someone opens the 3D view
+const IndiaMap3D = lazy(() => import('@/components/three/IndiaMap3D'));
+
+const hasWebGL = (() => {
+  try {
+    return !!document.createElement('canvas').getContext('webgl2');
+  } catch {
+    return false;
+  }
+})();
+
 const BANDS: RiskLevel[] = ['Low', 'Medium', 'High', 'Critical'];
 const mean = (xs: number[]) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0);
 
@@ -23,7 +34,8 @@ const mean = (xs: number[]) => (xs.length ? Math.round(xs.reduce((a, b) => a + b
  */
 export default function GeographicMap() {
   const navigate = useNavigate();
-  const { values, set, reset, activeCount } = useFilters({ bands: 'Low,Medium,High,Critical', state: 'all', district: 'all', type: 'all', stage: 'all', q: '' });
+  const { values, set, reset, activeCount } = useFilters({ bands: 'Low,Medium,High,Critical', state: 'all', district: 'all', type: 'all', stage: 'all', q: '', view: hasWebGL ? '3d' : '2d' });
+  const view3d = hasWebGL && values.view === '3d';
   const [search, setSearch] = useState(values.q);
   const q = useDebounced(search.trim().toLowerCase(), 200);
 
@@ -113,7 +125,35 @@ export default function GeographicMap() {
           title="GIS risk map"
           subtitle={`${formatNumber(visible.length)} of ${formatNumber(all.length)} projects shown · India → state → district → project`}
           icon={<Globe2 className="h-4 w-4" />}
-          action={<DemoDataBadge />}
+          action={
+            <div className="flex items-center gap-2">
+              <div className="inline-flex rounded-lg bg-surface-3 p-0.5" role="radiogroup" aria-label="Map view">
+                {(
+                  [
+                    ['2d', '2D map', Map2D],
+                    ['3d', '3D view', Box],
+                  ] as const
+                ).map(([id, label, Icon]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="radio"
+                    aria-checked={(view3d ? '3d' : '2d') === id}
+                    disabled={id === '3d' && !hasWebGL}
+                    title={id === '3d' && !hasWebGL ? '3D needs WebGL2, which this browser does not provide' : undefined}
+                    onClick={() => set({ view: id })}
+                    className={cn(
+                      'flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors focus-ring disabled:opacity-40',
+                      (view3d ? '3d' : '2d') === id ? 'bg-surface text-ink shadow-xs' : 'text-ink-3 hover:text-ink',
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" /> {label}
+                  </button>
+                ))}
+              </div>
+              <DemoDataBadge />
+            </div>
+          }
         />
         <FilterBar
           search={search}
@@ -161,6 +201,23 @@ export default function GeographicMap() {
         />
         <div className="grid gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0">
+            {view3d ? (
+              <Suspense fallback={<div className="grid h-[640px] place-items-center rounded-xl border border-line text-sm text-ink-3">Loading 3D view…</div>}>
+                <IndiaMap3D
+                  states={states.data}
+                  districts={districts.data}
+                  projects={visible}
+                  stateStats={stateStats}
+                  districtStats={districtStats}
+                  selectedState={selectedState}
+                  selectedDistrict={selectedDistrict}
+                  onSelectState={(s) => set({ state: s ?? 'all', district: 'all' })}
+                  onSelectDistrict={(key) => set({ district: key ? key.split('|')[1] : 'all' })}
+                  onOpenProject={(id) => navigate(`/projects/${id}`)}
+                  height={640}
+                />
+              </Suspense>
+            ) : (
             <IndiaGISMap
               outline={outline.data}
               states={states.data}
@@ -175,8 +232,10 @@ export default function GeographicMap() {
               onOpenProject={(id) => navigate(`/projects/${id}`)}
               height={640}
             />
+            )}
             <div className="mt-3">
               <GISLegend />
+              {view3d && <p className="mt-1.5 text-xs text-ink-3">In 3D, height encodes mean project risk (not terrain). Pillars are projects, coloured by risk band.</p>}
             </div>
           </div>
 

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ArrowRight, ChevronRight, FolderSearch } from 'lucide-react';
@@ -12,6 +13,16 @@ import { useApi, useFilters } from '@/hooks';
 import { useAuth } from '@/auth/AuthContext';
 import { fetchDashboard, fetchFacets, fetchTrends } from '@/api/client';
 import type { DashboardSummary } from '@/data/types';
+
+// three.js loads with this card only, after the rest of the overview has rendered
+const PortfolioRelief3D = lazy(() => import('@/components/three/PortfolioRelief3D'));
+const webgl2 = (() => {
+  try {
+    return !!document.createElement('canvas').getContext('webgl2');
+  } catch {
+    return false;
+  }
+})();
 
 const STAGE_COLORS = { inProgress: '#A9BEE8', delayed: RISK_HEX.Medium, blocked: RISK_HEX.Critical };
 
@@ -70,7 +81,7 @@ export default function Dashboard() {
               { label: 'High risk', value: formatNumber(k.highRiskProjects), hint: '45–60% likely to slip', tone: 'orange', onClick: () => go({ risk: 'High' }) },
               { label: 'Need immediate action', value: formatNumber(k.immediateActionRequired), hint: 'Open critical intervention', onClick: () => go({ flag: 'action' }) },
               { label: 'Behind schedule', value: formatNumber(k.delayedProjects), hint: `${k.blockedProjects} blocked by a dependency`, onClick: () => go({ flag: 'delayed' }) },
-              { label: 'Mean delay probability', value: `${Math.round(k.averageDelayProbability * 100)}%`, hint: `~${k.averagePredictedDelayDays} days expected slip`, onClick: () => go({ sort: 'risk' }) },
+              { label: 'Mean delay probability', value: `${Math.round(k.averageDelayProbability * 100)}%`, hint: `~${k.averagePredictedDelayDays} days expected delay at the current step`, onClick: () => go({ sort: 'risk' }) },
             ]}
           />
 
@@ -156,6 +167,28 @@ export default function Dashboard() {
 
           {/* Geography */}
           <PageSection title="Where risk concentrates" description="Mean predicted project risk — select a State to focus the whole overview">
+            {webgl2 && (
+              <Card className="mb-5 overflow-hidden">
+                <CardHeader
+                  title="3D risk relief"
+                  subtitle="States raised by mean project risk; pillars are projects. Drag to turn, select a State to focus the overview."
+                  action={
+                    <Link to={`/map${values.state !== 'all' ? `?state=${encodeURIComponent(values.state)}` : ''}`} className="link text-sm">
+                      Open in the risk map
+                    </Link>
+                  }
+                />
+                <div className="px-5 pb-5">
+                  <Suspense fallback={<div className="grid h-[380px] place-items-center rounded-xl border border-line text-sm text-ink-3">Loading 3D view…</div>}>
+                    <PortfolioRelief3D
+                      stateRisk={s.stateRisk}
+                      selectedState={values.state === 'all' ? null : values.state}
+                      onSelectState={(st) => set({ state: st ?? 'all', district: 'all' })}
+                    />
+                  </Suspense>
+                </div>
+              </Card>
+            )}
             <div className="grid gap-5 lg:grid-cols-2">
               <Card>
                 <CardHeader title={values.state === 'all' ? 'By State' : 'By State in view'} />

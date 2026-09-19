@@ -176,12 +176,16 @@ export function dashboardSummary(user, f = {}, store) {
       onTrack: projects.filter((p) => p.lifecycle.currentStatus === 'IN_PROGRESS').length,
       delayed: projects.filter((p) => p.lifecycle.currentStatus === 'DELAYED').length,
       blocked: projects.filter((p) => p.lifecycle.currentStatus === 'BLOCKED').length,
-      overrunBuckets: [
-        { key: 'On or ahead of target', count: projects.filter((p) => p.lifecycle.timelineOverrunDays === 0).length },
-        { key: '1–90 days', count: projects.filter((p) => p.lifecycle.timelineOverrunDays > 0 && p.lifecycle.timelineOverrunDays <= 90).length },
-        { key: '91–240 days', count: projects.filter((p) => p.lifecycle.timelineOverrunDays > 90 && p.lifecycle.timelineOverrunDays <= 240).length },
-        { key: 'Over 240 days', count: projects.filter((p) => p.lifecycle.timelineOverrunDays > 240).length },
-      ],
+      // Same figure as each project's risk card: forecast (P50) finish minus target.
+      overrunBuckets: (() => {
+        const v = projects.map((p) => p.forecast?.headline.daysVsTarget ?? 0);
+        return [
+          { key: 'On or ahead of target', count: v.filter((d) => d <= 0).length },
+          { key: '1–90 days', count: v.filter((d) => d > 0 && d <= 90).length },
+          { key: '91–240 days', count: v.filter((d) => d > 90 && d <= 240).length },
+          { key: 'Over 240 days', count: v.filter((d) => d > 240).length },
+        ];
+      })(),
     },
     departmentBottlenecks: {
       byRole: Array.from(roles.values()).sort((a, b) => b.currentStagePending - a.currentStagePending),

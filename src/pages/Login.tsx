@@ -1,14 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Building2, Check, ChevronRight, Eye, EyeOff, Info, Landmark, Loader2, Search, SlidersHorizontal, TriangleAlert, Users, UserX } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge, Button, DemoDataBadge, EmptyState, Select, Skeleton, Tabs } from '@/components/ui';
-import { Logo } from '@/components/layout/Logo';
 import { AdministrativeChain, PositionBreadcrumb } from '@/components/hierarchy/AdministrativeChain';
 import { useApi } from '@/hooks';
 import { useAuth } from '@/auth/AuthContext';
 import { fetchDemoUsers, fetchHierarchy, fetchHierarchyOptions } from '@/api/client';
 import { BRAND } from '@/lib/brand';
+import { PortalLink, usePortal } from '@/components/transition/Portal';
+import { EXPERIENCE_HOME, homePath } from '@/lib/homeView';
+
+// The 3D band is decorative and lazy, so the sign-in form never waits for three.js.
+const LoginHero = lazy(() => import('@/cinematic/LoginHero'));
 import type { AuthorityTier, HierarchyConfig, RoleId, User } from '@/data/types';
 
 type Mode = 'directory' | 'configure';
@@ -39,8 +43,13 @@ export default function Login() {
   const [showHint, setShowHint] = useState(false);
   const [needPassword, setNeedPassword] = useState(false);
   const passwordInput = useRef<HTMLInputElement>(null);
+  // Already signed in when the page opened: go straight on. A fresh sign-in
+  // plays the transition instead (see choose / submit below).
+  const signedInOnArrival = useRef(!!user);
+  // The logo returns to whichever homepage the visitor came from (standard or 3D).
+  const home = useMemo(homePath, []);
 
-  if (user) return <Navigate to={next} replace />;
+  if (user && signedInOnArrival.current) return <Navigate to={next} replace />;
 
   const requirePassword = () => {
     if (password) return true;
@@ -51,25 +60,26 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-          <Link to="/" className="rounded-md focus-ring" aria-label={`${BRAND.product} home`}>
-            <Logo />
-          </Link>
-          <DemoDataBadge />
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <div className="max-w-2xl">
-          <h1 className="text-3xl font-semibold tracking-tight text-ink">Sign in</h1>
-          <p className="mt-2 text-md text-ink-2">
-            Your administrative position decides what you see — a national authority sees every State and UT, a district officer sees their district. The API enforces the
-            same scope.
-          </p>
-        </div>
-
-        <ol className="mt-8 space-y-8">
+      <Suspense fallback={<div className="h-[300px] bg-[#05070a]" />}>
+        <LoginHero>
+          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+            <PortalLink to={home} variant={home === EXPERIENCE_HOME ? 'dive' : 'rise'} className="rounded-md focus-ring" aria-label={`${BRAND.product} home`}>
+              <img src="/brand/landpulse-logo-on-dark.png" alt={BRAND.product} className="h-10 w-auto" width={560} height={221} />
+            </PortalLink>
+            <DemoDataBadge />
+          </div>
+          <div className="mx-auto max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-14">
+            <p className="font-mono text-2xs uppercase tracking-[0.16em] text-[#72b8c8]">{BRAND.product} · sign in</p>
+            <h1 className="mt-3 font-grotesk text-5xl font-semibold tracking-tight text-white">Sign in</h1>
+            <p className="mt-3 max-w-2xl text-md text-[#c3ced6]">
+              Your administrative position decides what you see — a national authority sees every State and UT, a district officer sees their district. The API enforces the
+              same scope.
+            </p>
+          </div>
+        </LoginHero>
+      </Suspense>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+        <ol className="space-y-8">
           <li>
             <StepHeading n={1} title="Enter your password" />
             <div className="mt-3 max-w-md">
@@ -172,7 +182,7 @@ function StepHeading({ n, title }: { n: number; title: string }) {
 
 function Directory({ next, password, requirePassword }: { next: string; password: string; requirePassword: () => boolean }) {
   const { signIn } = useAuth();
-  const navigate = useNavigate();
+  const { go } = usePortal();
   const users = useApi((signal) => fetchDemoUsers(signal), []);
   const [tier, setTier] = useState<'all' | AuthorityTier>('all');
   const [query, setQuery] = useState('');
@@ -206,7 +216,7 @@ function Directory({ next, password, requirePassword }: { next: string; password
     setError(null);
     try {
       await signIn(id, password);
-      navigate(next, { replace: true });
+      go(next, 'rise');
     } catch (err) {
       setError((err as Error).message);
       setBusy(null);
@@ -306,7 +316,7 @@ type Government = 'central' | 'state';
 
 function Configure({ next, password, requirePassword }: { next: string; password: string; requirePassword: () => boolean }) {
   const { signInWithPosition } = useAuth();
-  const navigate = useNavigate();
+  const { go } = usePortal();
   const config = useApi((signal) => fetchHierarchy(signal), []);
   const [government, setGovernment] = useState<Government>('central');
   const [ministry, setMinistry] = useState('in:morth');
@@ -347,7 +357,7 @@ function Configure({ next, password, requirePassword }: { next: string; password
     setError(null);
     try {
       await signInWithPosition(role, { orgId, units }, password);
-      navigate(next, { replace: true });
+      go(next, 'rise');
     } catch (err) {
       setError((err as Error).message);
       setBusy(false);

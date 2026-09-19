@@ -1,12 +1,28 @@
-import { lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, type ReactNode } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { LogoMark } from '@/components/layout/Logo';
 import { AuthProvider, useAuth } from '@/auth/AuthContext';
+import { PortalProvider } from '@/components/transition/Portal';
 import { Button, Card, EmptyState, PageSkeleton } from '@/components/ui';
 import Landing from '@/pages/Landing';
 import Login from '@/pages/Login';
+import { EXPERIENCE_HOME, applyViewParam, homePath } from '@/lib/homeView';
+
+// "/" opens the standard homepage by default; the immersive 3D experience ("Explore in 3D", /experience) loads on its own,
+// so the standard homepage and signed-in screens never pay for it.
+const CinematicLanding = lazy(() => import('@/cinematic/CinematicLanding'));
+
+/** "/" opens the view the visitor last chose (standard by default, see lib/homeView). */
+function Home() {
+  const { search } = useLocation();
+  const home = useMemo(() => {
+    applyViewParam(search);
+    return homePath();
+  }, [search]);
+  return home === EXPERIENCE_HOME ? <Navigate to={EXPERIENCE_HOME} replace /> : <Landing />;
+}
 
 // Signed-in screens load on demand so the landing and sign-in pages stay light.
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
@@ -144,12 +160,22 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <PortalProvider>
         <ScrollToTop />
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<Home />} />
+          <Route
+            path="/experience"
+            element={
+              <Suspense fallback={<div className="min-h-screen bg-[#05070a]" />}>
+                <CinematicLanding />
+              </Suspense>
+            }
+          />
           <Route path="/login" element={<Login />} />
           <Route path="/*" element={<Shell />} />
         </Routes>
+        </PortalProvider>
       </BrowserRouter>
     </AuthProvider>
   );

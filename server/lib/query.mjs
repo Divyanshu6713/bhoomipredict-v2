@@ -7,6 +7,7 @@
  * predicates costs single-digit milliseconds.
  */
 import { caseRowLite, caseAt, contributorsFor, dayFromISO } from './store.mjs';
+import { riskScoreOf } from '../domain/risk.mjs';
 import { interventionFor } from './interventions.mjs';
 
 const CACHE_LIMIT = 200;
@@ -435,7 +436,7 @@ export function queryMapPoints(store, f) {
         lat: Number(c.lat[row].toFixed(4)),
         lon: Number(c.lon[row].toFixed(4)),
         b: c.riskBand[row],
-        s: Math.round(c.score[row] * 100),
+        s: riskScoreOf(c.score[row]),
         st: c.stageIdx[row],
         p: store.projects[c.projectIdx[row]].id,
       })),

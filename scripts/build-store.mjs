@@ -20,6 +20,7 @@
  * materialising objects for rows nobody asked for.
  */
 import fs from 'node:fs';
+import { riskScoreOf } from '../server/domain/risk.mjs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
@@ -787,12 +788,12 @@ async function main() {
         isBlocked: lifecycle.isBlocked,
         residualBacklog: lifecycle.residualBacklog,
         parcelsAhead: lifecycle.parcelsAhead,
-        forecastCompletion: lifecycle.forecastCompletion,
-        timelineOverrunDays: lifecycle.timelineOverrunDays,
+        onPlanCompletion: lifecycle.onPlanCompletion,
+        onPlanOverrunDays: lifecycle.onPlanOverrunDays,
         notificationStatus: lifecycle.notificationStatus,
       },
       predictedDelayDays,
-      riskScore: Math.round(headlineProb * 100),
+      riskScore: riskScoreOf(headlineProb),
       riskBand: BAND_NAMES[projectBandOf(headlineProb)],
       delayProbability: Number(headlineProb.toFixed(4)),
       riskBasis: currentStageRisk && currentStageRisk.openCases > 0 ? 'next-milestone' : 'open-book-mean',

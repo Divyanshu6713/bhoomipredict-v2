@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, ClipboardCheck, FlaskConical, MapPin, Users } from 'lucide-react';
 import { RecommendationList } from '@/components/workflow';
@@ -8,7 +8,18 @@ import { Modal, Field, inputClass } from '@/components/ui/Modal';
 import { Badge, Button, Card, CardHeader, DemoDataBadge, EmptyState, InfoDot, PageSkeleton, Select, Skeleton } from '@/components/ui';
 import { ErrorState, KeyValue, QualityBadge, RiskMeter, RiskVerdict } from '@/components/ui/primitives';
 import { ContributorBars } from '@/components/explain/Contributors';
+
+// three.js loads only when the 3D explanation is shown
+const ExplainOrbit3D = lazy(() => import('@/components/three/ExplainOrbit3D'));
+const webgl2 = (() => {
+  try {
+    return !!document.createElement('canvas').getContext('webgl2');
+  } catch {
+    return false;
+  }
+})();
 import { STAGE_STATUS_CLASS, STAGE_STATUS_LABEL, humanise } from '@/lib/status';
+import { ParcelPosition } from '@/components/lifecycle/ParcelPosition';
 import { OUTCOME_CLASS } from '@/lib/risk';
 import { formatDate, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -29,6 +40,7 @@ export default function CaseDetail() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [explainView, setExplainView] = useState<'3d' | 'bars'>(webgl2 ? '3d' : 'bars');
 
   if (detail.error) return <ErrorState error={detail.error} onRetry={detail.reload} title="Could not load this case" />;
   if (detail.loading || !detail.data) return <PageSkeleton blocks={2} />;
@@ -88,8 +100,9 @@ export default function CaseDetail() {
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
               <Badge>Parcel {c.parcelId}</Badge>
               <Badge>Survey {c.surveyNumber}</Badge>
-              <Badge>Status: {humanise(c.caseStatus ?? 'OPEN')}</Badge>
-              <Badge className={OUTCOME_CLASS[c.outcome]}>{c.labelObserved ? `Outcome: ${c.outcome}` : 'Milestone open'}</Badge>
+              <Badge>Case file: {humanise(c.caseStatus ?? 'OPEN')}</Badge>
+              <Badge>Step: {c.stage}</Badge>
+              {c.labelObserved && <Badge className={OUTCOME_CLASS[c.outcome]}>Outcome: {c.outcome}</Badge>}
               <DemoDataBadge />
             </div>
           </div>
@@ -139,9 +152,41 @@ export default function CaseDetail() {
         </Card>
 
         <Card>
-          <CardHeader title="Why this case is at risk" subtitle={explanation.basis} />
+          <CardHeader
+            title="Why this parcel is at risk"
+            subtitle={`What raised or lowered its score · method: ${explanation.basis}`}
+            action={
+              webgl2 ? (
+                <div className="inline-flex rounded-lg bg-surface-3 p-0.5" role="radiogroup" aria-label="Explanation view">
+                  {(
+                    [
+                      ['3d', '3D'],
+                      ['bars', 'Bars'],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="radio"
+                      aria-checked={explainView === id}
+                      onClick={() => setExplainView(id)}
+                      className={cn('h-7 rounded-md px-2.5 text-xs font-medium transition-colors focus-ring', explainView === id ? 'bg-surface text-ink shadow-xs' : 'text-ink-3 hover:text-ink')}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              ) : undefined
+            }
+          />
           <div className="px-5 pb-5">
-            <ContributorBars contributors={c.contributors} max={6} showCaveat={false} />
+            {explainView === '3d' ? (
+              <Suspense fallback={<div className="grid h-[300px] place-items-center rounded-xl border border-line text-sm text-ink-3">Loading 3D view…</div>}>
+                <ExplainOrbit3D contributors={c.contributors} band={c.riskBand} unit={explanation.unit} />
+              </Suspense>
+            ) : (
+              <ContributorBars contributors={c.contributors} max={6} showCaveat={false} />
+            )}
             <p className="mt-4 border-t border-line pt-3 text-xs text-ink-3">{explanation.caveat}</p>
           </div>
         </Card>
@@ -205,26 +250,21 @@ export default function CaseDetail() {
         </Card>
 
         <Card>
-          <CardHeader title="Stage and schedule" subtitle="Where this case sits in the statutory lifecycle" />
+          <CardHeader title="Step and schedule" subtitle="Where this parcel stands, and how much time it has" />
           <div className="space-y-4 px-5 pb-5">
-            <div className="flex flex-wrap gap-1.5">
-              <Badge className={STAGE_STATUS_CLASS[stage.status]}>
-                Project stage “{stage.name}”: {STAGE_STATUS_LABEL[stage.status]}
-              </Badge>
-              <Badge>Case: {humanise(c.caseStatus ?? 'OPEN')}</Badge>
+            <ParcelPosition parcelStageIndex={c.stageIndex} projectStageIndex={project.currentStageIndex} stage={stage} open={!c.labelObserved} />
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-3">
+              <span>For the whole project, {stage.name} is</span>
+              <Badge className={STAGE_STATUS_CLASS[stage.status]}>{STAGE_STATUS_LABEL[stage.status]}</Badge>
+              <span>· this parcel’s case file is</span>
+              <Badge>{humanise(c.caseStatus ?? 'OPEN')}</Badge>
             </div>
-            <p className="text-sm text-ink-2">{stage.explanation}</p>
-            {stage.status === 'COMPLETED' && !c.labelObserved && (
-              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-ink-2 dark:border-amber-400/20 dark:bg-amber-400/5">
-                This is one of the {formatNumber(stage.openCases)} residual cases still open in a stage the project has already completed.
-              </p>
-            )}
             <KeyValue
               columns={2}
               rows={[
-                { label: 'Current stage', value: `${c.stage} (${c.stageIndex + 1}/9)` },
+                { label: 'This parcel’s step', value: `${c.stage} (${c.stageIndex + 1} of 9)` },
                 { label: 'Milestone', value: c.milestone ?? '—' },
-                { label: 'Stage started', value: formatDate(c.stageStartDate) },
+                { label: 'Step started', value: formatDate(c.stageStartDate) },
                 { label: 'Days allowed', value: `${c.expectedStageDays} d` },
                 { label: 'Days elapsed', value: `${c.elapsedStageDays} d` },
                 { label: 'Time consumed', value: `${Math.round((c.elapsedStageDays / Math.max(1, c.expectedStageDays)) * 100)}%`, tone: c.elapsedStageDays / Math.max(1, c.expectedStageDays) > 0.85 ? 'text-red-700 dark:text-red-300' : undefined },

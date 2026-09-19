@@ -2,6 +2,7 @@ import { Ban, CheckCircle2, CircleDashed, Clock, Timer } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { RISK_HEX, riskFromScore } from '@/lib/risk';
 import { STAGE_STATUS_LABEL } from '@/lib/status';
+import { parcelLine, type StageTone } from '@/lib/plainStage';
 import { formatDate } from '@/lib/format';
 import type { ProjectStage, StageStatus } from '@/data/types';
 
@@ -21,35 +22,36 @@ const TONE: Record<StageStatus, { ring: string; text: string; line: string }> = 
   PENDING: { ring: 'border-line-strong bg-surface text-ink-3', text: 'text-ink-3', line: 'bg-line' },
 };
 
+const LINE_TONE: Record<StageTone, string> = {
+  success: 'text-emerald-700 dark:text-emerald-300',
+  warning: 'text-amber-700 dark:text-amber-400',
+  danger: 'text-red-700 dark:text-red-300',
+  info: 'text-sky-700 dark:text-sky-300',
+  neutral: 'text-ink-3',
+};
+
 /**
- * Case backlog shown under a stage, deliberately separate from the stage
- * status above it: a stage can be statutorily COMPLETED while residual cases
- * attached to it are still open.
+ * Parcels shown under a stage, deliberately separate from the step status
+ * above it: a step can be done for the project while some of its parcels are
+ * still pending (see lib/plainStage).
  */
-function Backlog({ s, compact = false }: { s: ProjectStage; compact?: boolean }) {
-  if (s.totalCases === 0) {
-    return <p className="text-2xs leading-tight text-ink-3">{s.status === 'PENDING' ? 'no cases yet' : 'no case records'}</p>;
-  }
+function Parcels({ s, compact = false }: { s: ProjectStage; compact?: boolean }) {
+  const line = parcelLine(s);
+  if (s.totalCases === 0) return <p className="text-2xs leading-tight text-ink-3">{line.text}</p>;
   const resolved = s.resolutionPct ?? 0;
-  const label =
-    s.status === 'COMPLETED'
-      ? s.openCases > 0
-        ? `${s.openCases.toLocaleString('en-IN')} residual open`
-        : 'all cases resolved'
-      : s.status === 'PENDING'
-        ? `${s.openCases.toLocaleString('en-IN')} parcel${s.openCases === 1 ? '' : 's'} ahead`
-        : `${s.openCases.toLocaleString('en-IN')} open`;
   return (
-    <div className={cn(compact ? 'w-full' : 'mx-auto w-[92px]')}>
-      <p className="eyebrow">Case backlog</p>
-      <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-surface-3" title={`${resolved}% of ${s.totalCases} cases resolved`}>
+    <div className={cn(compact ? 'w-full' : 'mx-auto w-[96px]')}>
+      <p className="eyebrow">Parcels</p>
+      <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-surface-3" title={`${s.resolvedCases} of ${s.totalCases} parcels cleared at this step`}>
         <div className="h-full rounded-full bg-emerald-500/70" style={{ width: `${resolved}%` }} />
       </div>
-      <p className={cn('mt-0.5 text-2xs font-semibold leading-tight num', s.status === 'COMPLETED' && s.openCases > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-ink-2')}>{label}</p>
-      <p className="text-2xs text-ink-3 num">{resolved}% of {s.totalCases.toLocaleString('en-IN')} resolved</p>
+      <p className={cn('mt-0.5 text-2xs font-semibold leading-tight num', LINE_TONE[line.tone])}>{line.text}</p>
+      {line.sub && <p className="text-2xs text-ink-3 num">{line.sub}</p>}
     </div>
   );
 }
+
+const riskText = (s: ProjectStage, risk: number) => (s.status === 'COMPLETED' || s.status === 'PENDING' ? `${risk}% delay risk on these parcels` : `${risk}% delay risk`);
 
 export function StageTimeline({
   stages,
@@ -77,7 +79,7 @@ export function StageTimeline({
               <button
                 key={s.name}
                 onClick={() => onSelect?.(i)}
-                className={cn('relative flex-1 rounded-xl px-1 pb-2 text-center transition-colors', onSelect && 'cursor-pointer hover:bg-surface-2', isSelected && 'bg-surface-2')}
+                className={cn('relative flex flex-1 flex-col justify-start rounded-xl px-1 pb-2 text-center transition-colors', onSelect && 'cursor-pointer hover:bg-surface-2', isSelected && 'bg-surface-2')}
               >
                 {i > 0 && (
                   <span className={cn('absolute right-1/2 top-[19px] h-0.5 w-full', stages[i - 1].status === 'COMPLETED' ? 'bg-emerald-500/60' : 'bg-line')} />
@@ -86,7 +88,7 @@ export function StageTimeline({
                   <Icon className="h-[18px] w-[18px]" />
                 </div>
                 <p className="mt-2 text-xs font-bold leading-tight text-ink">{s.name}</p>
-                <p className="mt-1 eyebrow">Stage status</p>
+                <p className="mt-1 eyebrow">Project step</p>
                 <p className={cn('text-xs font-medium', tone.text)}>{STAGE_STATUS_LABEL[s.status]}</p>
                 <p className="text-2xs text-ink-3 num">
                   {s.status === 'COMPLETED' && s.actualCompletion ? formatDate(s.actualCompletion) : `due ${formatDate(s.expectedCompletion)}`}
@@ -95,11 +97,11 @@ export function StageTimeline({
                 {(s.status === 'DELAYED' || s.status === 'BLOCKED') && s.delayDays > 0 && <p className="text-2xs font-bold text-red-500 num">{s.delayDays}d overdue</p>}
                 {s.status === 'IN_PROGRESS' && <p className="text-2xs font-semibold text-ink-3 num">{s.daysRemaining}d left</p>}
                 <div className="mt-2 border-t border-line pt-1.5">
-                  <Backlog s={s} />
+                  <Parcels s={s} />
                 </div>
                 {risk !== null && (
-                  <p className="mt-1 text-2xs font-bold num" style={{ color: RISK_HEX[riskFromScore(risk)] }}>
-                    {risk}% milestone risk
+                  <p className="mt-1 text-2xs font-bold num" style={{ color: RISK_HEX[riskFromScore(risk)] }} title="Chance that the pending parcels miss their next milestone by more than 30 days">
+                    {riskText(s, risk)}
                   </p>
                 )}
               </button>
@@ -127,17 +129,17 @@ export function StageTimeline({
                   <p className="text-sm font-bold text-ink">{s.name}</p>
                   {risk !== null && (
                     <span className="text-xs font-bold num" style={{ color: RISK_HEX[riskFromScore(risk)] }}>
-                      {risk}% milestone risk
+                      {riskText(s, risk)}
                     </span>
                   )}
                 </div>
                 <p className={cn('text-xs font-semibold', tone.text)}>
-                  Stage: {STAGE_STATUS_LABEL[s.status]} ·{' '}
+                  Project step: {STAGE_STATUS_LABEL[s.status]} ·{' '}
                   {s.status === 'COMPLETED' && s.actualCompletion ? `completed ${formatDate(s.actualCompletion)}` : `due ${formatDate(s.expectedCompletion)}`}
                   {(s.status === 'DELAYED' || s.status === 'BLOCKED') && s.delayDays > 0 && <span className="text-red-500"> · {s.delayDays}d overdue</span>}
                 </p>
                 <div className="mt-1.5 max-w-xs">
-                  <Backlog s={s} compact />
+                  <Parcels s={s} compact />
                 </div>
               </div>
             </button>
@@ -153,7 +155,7 @@ export function StageTimeline({
           </span>
         ))}
         <span className="ml-auto text-xs text-ink-3">
-          Stage status tracks the statutory milestone; the case backlog bar tracks individual cases attached to that stage.
+          Colour = the project step. The green bar = parcels cleared at that step. Click a step to see its parcels.
         </span>
       </div>
     </div>

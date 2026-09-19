@@ -67,7 +67,7 @@ export const PROVIDER_CONTRACTS = {
     methods: {
       getCasesForParcel: { input: 'ParcelRef', returns: '{ legalDispute, caseCount, disputeComplexity, forum }' },
     },
-    futureSources: ['eCourts Services / National Judicial Data Grid (NJDG)', 'LARR Authority registries'],
+    futureSources: ['eCourts Services / National Judicial Data Grid (NJDG)', 'Revenue Court Case Monitoring Systems (RCCMS) of the States', 'LARR Authority registries'],
   },
   compensation: {
     label: 'Compensation & payments',
@@ -91,7 +91,7 @@ export const PROVIDER_CONTRACTS = {
     methods: {
       getProjectStatus: { input: 'ProjectRef', returns: '{ currentStage, stageStatus, progressPct, milestoneDeadline, stages }' },
     },
-    futureSources: ['PM Gati Shakti National Master Plan', 'Ministry and implementing-agency project monitoring systems'],
+    futureSources: ['PM Gati Shakti National Master Plan', 'Project Monitoring Group (PMG) portal, Cabinet Secretariat', 'Ministry and implementing-agency project monitoring systems'],
   },
   clearances: {
     label: 'Forest & environment clearances',
@@ -107,7 +107,7 @@ export const PROVIDER_CONTRACTS = {
     methods: {
       getParcelGeometry: { input: 'ParcelRef', returns: '{ point: [lon, lat], boundaryKey, geometry: "point" | "polygon" }' },
     },
-    futureSources: ['PM Gati Shakti National Master Plan layers', 'Bhuvan (NRSC / ISRO)', 'Survey of India', 'State cadastral maps'],
+    futureSources: ['PM Gati Shakti National Master Plan layers', 'NAKSHA (DoLR urban land survey)', 'Bhuvan (NRSC / ISRO)', 'Survey of India', 'State GIS and cadastral maps'],
   },
   administrativeUnits: {
     label: 'Administrative units',
